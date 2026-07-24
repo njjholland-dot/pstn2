@@ -211,17 +211,22 @@ PSTN2/
 
 ## Deployment Process
 
-All deployments use FTP via curl to NetworkSolutions hosting:
+Deploy the whole site with the root deploy script (lftp mirror over SFTP to
+NetworkSolutions hosting). It stages the repo into the deployed-site layout,
+uploads only files newer than what is on the server, and never deletes
+remote files (other projects share the same host under /htdocs).
 
 ```bash
-# Deploy animations
-cd animations && ./deploy.sh
-
-# Deploy code samples
-cd code && ./deploy.sh
+export PSTN2_FTP_PASSWORD='<SFTP password>'   # from the local credentials vault
+./deploy.sh --dry-run    # preview what would be uploaded
+./deploy.sh              # deploy changed files
+./deploy.sh --full       # re-upload everything
 ```
 
-FTP credentials stored in deploy scripts (not recommended for production, but acceptable for this educational project).
+The legacy per-directory scripts (animations/deploy.sh, code/deploy.sh,
+curl over plain FTP) still exist but the root script supersedes them.
+Credentials are never stored in the repo — all scripts read
+PSTN2_FTP_PASSWORD from the environment.
 
 ## License & Usage
 

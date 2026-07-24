@@ -31,3 +31,6 @@ venv/
 
 # Go
 *.test
+
+# Deploy staging area
+.deploy-stage/
