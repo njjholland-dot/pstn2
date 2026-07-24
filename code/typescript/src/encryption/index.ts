@@ -1,15 +1,15 @@
 /**
  * Encryption module
- * Handles end-to-end encryption key management
+ * Handles per-call signing key management.
+ *
+ * PSTN2 uses Ed25519 key pairs for message and call-setup signing
+ * (SPECIFICATION.md section 3.3). Media encryption keys are NOT wrapped or
+ * exchanged by this module: they are derived by the DTLS-SRTP handshake
+ * during media setup. This module only generates local SRTP key material
+ * for implementations that need it outside DTLS-SRTP.
  */
 
-import {
-  generateKeyPair,
-  encryptWithPublicKey,
-  decryptWithPrivateKey,
-  generateToken,
-} from '../utils/crypto';
-import { Base64String } from '../types';
+import { generateKeyPair, generateToken } from '../utils/crypto';
 import { getLogger } from '../utils/logger';
 
 const logger = getLogger();
@@ -28,7 +28,7 @@ export class EncryptionModule {
   private ephemeralKeys: Map<string, KeyPair> = new Map();
 
   /**
-   * Generate ephemeral key pair for a call
+   * Generate ephemeral Ed25519 key pair for a call
    * Keys should be generated fresh for each call
    */
   generateEphemeralKeyPair(callReference: string): KeyPair {
@@ -39,11 +39,13 @@ export class EncryptionModule {
     // Store temporarily (will be cleared after call setup)
     this.ephemeralKeys.set(callReference, keyPair);
 
-    // Auto-cleanup after 5 minutes
-    setTimeout(() => {
+    // Auto-cleanup after 5 minutes; unref so the timer never keeps the
+    // process alive
+    const timer = setTimeout(() => {
       this.ephemeralKeys.delete(callReference);
       logger.debug('Ephemeral keys auto-cleaned', { callReference });
     }, 5 * 60 * 1000);
+    timer.unref();
 
     return keyPair;
   }
@@ -64,8 +66,19 @@ export class EncryptionModule {
   }
 
   /**
-   * Generate media encryption keys
-   * Returns master key and salt for SRTP
+   * Clear all ephemeral keys (used by PSTN2Client.close())
+   */
+  clearAllEphemeralKeys(): void {
+    logger.debug('Clearing all ephemeral keys');
+    this.ephemeralKeys.clear();
+  }
+
+  /**
+   * Generate local SRTP media key material.
+   *
+   * In normal operation media keys are derived via DTLS-SRTP and this is
+   * not needed; it is provided for implementations using out-of-band SRTP
+   * keying.
    */
   generateMediaKeys(): MediaEncryptionKeys {
     const masterKey = generateToken(30); // 30 bytes for AES-256
@@ -77,36 +90,8 @@ export class EncryptionModule {
   }
 
   /**
-   * Exchange media keys securely
-   * Encrypts media keys with recipient's public key
-   */
-  encryptMediaKeys(
-    mediaKeys: MediaEncryptionKeys,
-    recipientPublicKey: string
-  ): Base64String {
-    const keysJson = JSON.stringify(mediaKeys);
-
-    logger.debug('Encrypting media keys with recipient public key');
-
-    return encryptWithPublicKey(keysJson, recipientPublicKey);
-  }
-
-  /**
-   * Decrypt received media keys
-   */
-  decryptMediaKeys(
-    encryptedKeys: Base64String,
-    privateKey: string
-  ): MediaEncryptionKeys {
-    logger.debug('Decrypting media keys with private key');
-
-    const decryptedJson = decryptWithPrivateKey(encryptedKeys, privateKey);
-    return JSON.parse(decryptedJson);
-  }
-
-  /**
    * Prepare encryption parameters for call setup
-   * Returns public key to share with recipient
+   * Returns Ed25519 public key to share with recipient
    */
   prepareCallEncryption(callReference: string): {
     publicKey: string;
@@ -120,65 +105,6 @@ export class EncryptionModule {
     });
 
     return keyPair;
-  }
-
-  /**
-   * Complete call encryption setup
-   * Called after receiving recipient's public key
-   */
-  completeCallEncryption(
-    callReference: string,
-    recipientPublicKey: string
-  ): {
-    encryptedMediaKeys: Base64String;
-    mediaKeys: MediaEncryptionKeys;
-  } {
-    const mediaKeys = this.generateMediaKeys();
-    const encryptedMediaKeys = this.encryptMediaKeys(mediaKeys, recipientPublicKey);
-
-    logger.info('Completed call encryption setup', {
-      callReference,
-      recipientPublicKeyLength: recipientPublicKey.length,
-    });
-
-    return {
-      encryptedMediaKeys,
-      mediaKeys,
-    };
-  }
-
-  /**
-   * Handle incoming encryption setup
-   * Called when receiving encryption request from caller
-   */
-  handleIncomingEncryption(
-    callReference: string,
-    callerPublicKey: string,
-    encryptedMediaKeys?: Base64String
-  ): {
-    publicKey: string;
-    mediaKeys?: MediaEncryptionKeys;
-  } {
-    // Generate our key pair
-    const keyPair = this.generateEphemeralKeyPair(callReference);
-
-    // If caller sent encrypted media keys, decrypt them
-    let mediaKeys: MediaEncryptionKeys | undefined;
-    if (encryptedMediaKeys) {
-      mediaKeys = this.decryptMediaKeys(encryptedMediaKeys, keyPair.privateKey);
-      logger.info('Decrypted caller media keys', { callReference });
-    }
-
-    logger.info('Handled incoming encryption', {
-      callReference,
-      callerPublicKeyLength: callerPublicKey.length,
-      receivedMediaKeys: !!encryptedMediaKeys,
-    });
-
-    return {
-      publicKey: keyPair.publicKey,
-      mediaKeys,
-    };
   }
 
   /**
@@ -203,9 +129,9 @@ export class EncryptionModule {
     keyExchange: string;
   } {
     return {
-      keySize: 2048,
-      algorithm: 'RSA-OAEP',
-      keyExchange: 'Ephemeral per-call',
+      keySize: 256,
+      algorithm: 'Ed25519',
+      keyExchange: 'DTLS-SRTP (media), ephemeral per-call signing keys',
     };
   }
 }

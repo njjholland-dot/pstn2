@@ -1,38 +1,63 @@
 /**
  * Cryptographic utilities for PSTN2
+ *
+ * The PSTN2 specification (SPECIFICATION.md section 3.3) requires Ed25519
+ * signatures for all inter-CP messages. Media encryption keys are NOT
+ * exchanged at this layer: they are derived via the DTLS-SRTP handshake
+ * during media setup, so no RSA key wrapping is needed here.
  */
 
 import crypto from 'crypto';
 import { Base64String } from '../types';
 
 /**
- * Generate HMAC-SHA256 signature for message authentication
+ * Generate an Ed25519 signature for message authentication.
+ *
+ * @param data - The payload to sign (objects are JSON stringified)
+ * @param privateKey - PEM-encoded Ed25519 private key (PKCS#8)
+ * @returns Base64-encoded signature
  */
 export function generateSignature(data: string | object, privateKey: string): Base64String {
   const payload = typeof data === 'string' ? data : JSON.stringify(data);
-  const hmac = crypto.createHmac('sha256', privateKey);
-  hmac.update(payload);
-  return hmac.digest('base64');
+  const signature = crypto.sign(null, Buffer.from(payload, 'utf8'), privateKey);
+  return signature.toString('base64');
 }
 
 /**
- * Verify HMAC-SHA256 signature
+ * Verify an Ed25519 signature.
+ *
+ * Never throws: malformed keys, signatures of the wrong length, or any
+ * other verification failure return false.
+ *
+ * @param data - The payload that was signed
+ * @param signature - Base64-encoded Ed25519 signature (64 bytes decoded)
+ * @param publicKey - PEM-encoded Ed25519 public key (SPKI)
  */
 export function verifySignature(
   data: string | object,
   signature: Base64String,
   publicKey: string
 ): boolean {
-  const expectedSignature = generateSignature(data, publicKey);
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  try {
+    const payload = typeof data === 'string' ? data : JSON.stringify(data);
+    const signatureBuffer = Buffer.from(signature, 'base64');
+
+    // Ed25519 signatures are always 64 bytes; reject anything else early
+    if (signatureBuffer.length !== 64) {
+      return false;
+    }
+
+    return crypto.verify(null, Buffer.from(payload, 'utf8'), publicKey, signatureBuffer);
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Generate RSA key pair for encryption
+ * Generate an Ed25519 key pair for message signing.
  */
 export function generateKeyPair(): { publicKey: string; privateKey: string } {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 2048,
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
     publicKeyEncoding: {
       type: 'spki',
       format: 'pem',
@@ -78,36 +103,4 @@ export function generateToken(length: number = 32): string {
  */
 export function sha256(data: string): string {
   return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-/**
- * Encrypt data with public key (for media encryption keys)
- */
-export function encryptWithPublicKey(data: string, publicKey: string): Base64String {
-  const buffer = Buffer.from(data, 'utf8');
-  const encrypted = crypto.publicEncrypt(
-    {
-      key: publicKey,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha256',
-    },
-    buffer
-  );
-  return encrypted.toString('base64');
-}
-
-/**
- * Decrypt data with private key
- */
-export function decryptWithPrivateKey(encryptedData: Base64String, privateKey: string): string {
-  const buffer = Buffer.from(encryptedData, 'base64');
-  const decrypted = crypto.privateDecrypt(
-    {
-      key: privateKey,
-      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      oaepHash: 'sha256',
-    },
-    buffer
-  );
-  return decrypted.toString('utf8');
 }

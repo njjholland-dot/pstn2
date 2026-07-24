@@ -32,1004 +32,1052 @@
             </div>
         </nav>
     <main class="doc-container">
-        <h1 id="map-deployment-on-aws">MAP Deployment on AWS</h1>
-
-<p><strong>Version:</strong> 1.0</p>
-<p><strong>Date:</strong> 2025-12-01</p>
-<p><strong>Target Audience:</strong> DevOps Engineers, Cloud Architects</p>
-
+<h1 id="map-deployment-on-aws">MAP Deployment on AWS</h1>
+<p><strong>Version:</strong> 1.0 <strong>Date:</strong> 2025-12-01
+<strong>Target Audience:</strong> DevOps Engineers, Cloud Architects</p>
 <h2 id="overview">Overview</h2>
-
-<p>This guide provides step-by-step instructions for deploying a MAP (Managed Access Provider) on Amazon Web Services (AWS). The architecture leverages managed AWS services to minimize operational overhead while providing scalability, reliability, and security.</p>
-
+<p>This guide provides step-by-step instructions for deploying a MAP
+(Managed Access Provider) on Amazon Web Services (AWS). The architecture
+leverages managed AWS services to minimize operational overhead while
+providing scalability, reliability, and security.</p>
 <h2 id="architecture-overview">Architecture Overview</h2>
-
-<pre><code class="language-">┌─────────────────────────────────────────────────────────────────┐
-<p>│                         AWS Cloud                                │</p>
-<p>│                                                                   │</p>
-<p>│  ┌──────────────────────────────────────────────────────────┐   │</p>
-<p>│  │                    Route 53 (DNS)                         │   │</p>
-<p>│  │                  api.map.example.com                      │   │</p>
-<p>│  └─────────────────────┬────────────────────────────────────┘   │</p>
-<p>│                        │                                          │</p>
-<p>│  ┌─────────────────────▼────────────────────────────────────┐   │</p>
-<p>│  │             CloudFront (CDN) + WAF                        │   │</p>
-<p>│  │              TLS Termination                              │   │</p>
-<p>│  └─────────────────────┬────────────────────────────────────┘   │</p>
-<p>│                        │                                          │</p>
-<p>│  ┌─────────────────────▼────────────────────────────────────┐   │</p>
-<p>│  │                API Gateway (REST API)                     │   │</p>
-<p>│  │        Authentication, Rate Limiting, Logging             │   │</p>
-<p>│  └─────────────────────┬────────────────────────────────────┘   │</p>
-<p>│                        │                                          │</p>
-<p>│  ┌─────────────────────▼────────────────────────────────────┐   │</p>
-<p>│  │                Application Load Balancer                  │   │</p>
-<p>│  └─────┬────────────────┬────────────────┬───────────────────┘   │</p>
-<p>│        │                │                │                        │</p>
-<p>│  ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐                 │</p>
-<p>│  │    ECS    │   │    ECS    │   │    ECS    │                 │</p>
-<p>│  │ Container │   │ Container │   │ Container │                 │</p>
-<p>│  │ (API Srv) │   │ (API Srv) │   │ (API Srv) │                 │</p>
-<p>│  └─────┬─────┘   └─────┬─────┘   └─────┬─────┘                 │</p>
-<p>│        │                │                │                        │</p>
-<p>│        └────────────────┴────────────────┘                        │</p>
-<p>│                        │                                          │</p>
-<p>│  ┌─────────────────────▼────────────────────────────────────┐   │</p>
-<p>│  │              ElastiCache (Redis Cluster)                  │   │</p>
-<p>│  │               Directory Cache, Sessions                   │   │</p>
-<p>│  └───────────────────────────────────────────────────────────┘   │</p>
-<p>│                        │                                          │</p>
-<p>│  ┌─────────────────────▼────────────────────────────────────┐   │</p>
-<p>│  │             RDS PostgreSQL (Multi-AZ)                     │   │</p>
-<p>│  │            Primary + Read Replicas                        │   │</p>
-<p>│  └───────────────────────────────────────────────────────────┘   │</p>
-<p>│                                                                   │</p>
-<p>│  ┌───────────────────────────────────────────────────────────┐   │</p>
-<p>│  │          AWS Secrets Manager (API Keys, DB Creds)         │   │</p>
-<p>│  └───────────────────────────────────────────────────────────┘   │</p>
-<p>│                                                                   │</p>
-<p>│  ┌───────────────────────────────────────────────────────────┐   │</p>
-<p>│  │              KMS (Key Management Service)                 │   │</p>
-<p>│  │            Master Key for Private Key Encryption          │   │</p>
-<p>│  └───────────────────────────────────────────────────────────┘   │</p>
-<p>│                                                                   │</p>
-<p>│  ┌───────────────────────────────────────────────────────────┐   │</p>
-<p>│  │            CloudWatch (Logs, Metrics, Alarms)             │   │</p>
-<p>│  └───────────────────────────────────────────────────────────┘   │</p>
-<p>│                                                                   │</p>
-<p>│  ┌───────────────────────────────────────────────────────────┐   │</p>
-<p>│  │                 S3 (Backups, Archives)                    │   │</p>
-<p>│  └───────────────────────────────────────────────────────────┘   │</p>
-<p>│                                                                   │</p>
-<p>└───────────────────────────────────────────────────────────────────┘</code></pre></p>
-
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                         AWS Cloud                                │
+│                                                                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    Route 53 (DNS)                         │   │
+│  │                  api.map.example.com                      │   │
+│  └─────────────────────┬────────────────────────────────────┘   │
+│                        │                                          │
+│  ┌─────────────────────▼────────────────────────────────────┐   │
+│  │             CloudFront (CDN) + WAF                        │   │
+│  │              TLS Termination                              │   │
+│  └─────────────────────┬────────────────────────────────────┘   │
+│                        │                                          │
+│  ┌─────────────────────▼────────────────────────────────────┐   │
+│  │                API Gateway (REST API)                     │   │
+│  │        Authentication, Rate Limiting, Logging             │   │
+│  └─────────────────────┬────────────────────────────────────┘   │
+│                        │                                          │
+│  ┌─────────────────────▼────────────────────────────────────┐   │
+│  │                Application Load Balancer                  │   │
+│  └─────┬────────────────┬────────────────┬───────────────────┘   │
+│        │                │                │                        │
+│  ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐                 │
+│  │    ECS    │   │    ECS    │   │    ECS    │                 │
+│  │ Container │   │ Container │   │ Container │                 │
+│  │ (API Srv) │   │ (API Srv) │   │ (API Srv) │                 │
+│  └─────┬─────┘   └─────┬─────┘   └─────┬─────┘                 │
+│        │                │                │                        │
+│        └────────────────┴────────────────┘                        │
+│                        │                                          │
+│  ┌─────────────────────▼────────────────────────────────────┐   │
+│  │              ElastiCache (Redis Cluster)                  │   │
+│  │               Directory Cache, Sessions                   │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                        │                                          │
+│  ┌─────────────────────▼────────────────────────────────────┐   │
+│  │             RDS PostgreSQL (Multi-AZ)                     │   │
+│  │            Primary + Read Replicas                        │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │          AWS Secrets Manager (API Keys, DB Creds)         │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │              KMS (Key Management Service)                 │   │
+│  │            Master Key for Private Key Encryption          │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │            CloudWatch (Logs, Metrics, Alarms)             │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │                 S3 (Backups, Archives)                    │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘</code></pre>
+<blockquote>
+<p><strong>Note — CDN &amp; API Gateway:</strong> The diagram above
+shows CloudFront (CDN + WAF) and API Gateway as optional edge layers.
+The reference deployment described in the steps below terminates at
+Route 53 → ALB → ECS, with WAF attached directly to the ALB (Step 10).
+The CloudFront and API Gateway rows in the cost table are optional
+extensions (global edge caching, managed API throttling/keys) and are
+not required for a functional MAP deployment.</p>
+</blockquote>
 <h2 id="aws-services-used">AWS Services Used</h2>
-
-<p>| Service | Purpose | Pricing Estimate (Month) |</p>
-<p>|---------|---------|--------------------------|</p>
-<p>| <strong>ECS Fargate</strong> | Container hosting for API servers | $150-$500 (3-10 containers) |</p>
-<p>| <strong>RDS PostgreSQL</strong> | Primary database (Multi-AZ) | $200-$800 (db.t3.medium to db.r5.large) |</p>
-<p>| <strong>ElastiCache Redis</strong> | Caching layer | $50-$200 (cache.t3.small to cache.r5.large) |</p>
-<p>| <strong>API Gateway</strong> | REST API management | $3.50 per million requests + $0.09/GB |</p>
-<p>| <strong>CloudFront</strong> | CDN & TLS termination | $0.085/GB + $0.01 per 10K requests |</p>
-<p>| <strong>Route 53</strong> | DNS hosting | $0.50/hosted zone + $0.40/million queries |</p>
-<p>| <strong>KMS</strong> | Encryption key management | $1/key/month + $0.03 per 10K requests |</p>
-<p>| <strong>Secrets Manager</strong> | Credentials storage | $0.40 per secret/month + $0.05 per 10K requests |</p>
-<p>| <strong>CloudWatch</strong> | Monitoring & logging | $0.50/GB ingested + $0.03/GB stored |</p>
-<p>| <strong>S3</strong> | Backup storage | $0.023/GB/month (Standard) |</p>
-<p>| <strong>WAF</strong> | Web application firewall | $5/month + $1 per rule |</p>
-
-<p><strong>Total Estimated Cost:</strong> $500-$2,500/month (depending on scale)</p>
-
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Purpose</th>
+<th>Pricing Estimate (Month)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ECS Fargate</strong></td>
+<td>Container hosting for API servers</td>
+<td><span class="math inline">150−</span>500 (3-10 containers)</td>
+</tr>
+<tr>
+<td><strong>RDS PostgreSQL</strong></td>
+<td>Primary database (Multi-AZ)</td>
+<td><span class="math inline">200−</span>800 (db.t3.medium to
+db.r5.large)</td>
+</tr>
+<tr>
+<td><strong>ElastiCache Redis</strong></td>
+<td>Caching layer</td>
+<td><span class="math inline">50−</span>200 (cache.t3.small to
+cache.r5.large)</td>
+</tr>
+<tr>
+<td><strong>API Gateway</strong></td>
+<td>REST API management</td>
+<td>$3.50 per million requests + $0.09/GB</td>
+</tr>
+<tr>
+<td><strong>CloudFront</strong></td>
+<td>CDN &amp; TLS termination</td>
+<td>$0.085/GB + $0.01 per 10K requests</td>
+</tr>
+<tr>
+<td><strong>Route 53</strong></td>
+<td>DNS hosting</td>
+<td>$0.50/hosted zone + $0.40/million queries</td>
+</tr>
+<tr>
+<td><strong>KMS</strong></td>
+<td>Encryption key management</td>
+<td>$1/key/month + $0.03 per 10K requests</td>
+</tr>
+<tr>
+<td><strong>Secrets Manager</strong></td>
+<td>Credentials storage</td>
+<td>$0.40 per secret/month + $0.05 per 10K requests</td>
+</tr>
+<tr>
+<td><strong>CloudWatch</strong></td>
+<td>Monitoring &amp; logging</td>
+<td>$0.50/GB ingested + $0.03/GB stored</td>
+</tr>
+<tr>
+<td><strong>S3</strong></td>
+<td>Backup storage</td>
+<td>$0.023/GB/month (Standard)</td>
+</tr>
+<tr>
+<td><strong>WAF</strong></td>
+<td>Web application firewall</td>
+<td>$5/month + $1 per rule</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total Estimated Cost:</strong> <span
+class="math inline">500−</span>2,500/month (depending on scale)</p>
 <h2 id="prerequisites">Prerequisites</h2>
-
-<ul>
+<ol type="1">
 <li><strong>AWS Account</strong> with administrative access</li>
 <li><strong>AWS CLI</strong> installed and configured</li>
-<li><strong>Terraform</strong> (v1.5+) or <strong>CloudFormation</strong> familiarity</li>
+<li><strong>Terraform</strong> (v1.5+) or
+<strong>CloudFormation</strong> familiarity</li>
 <li><strong>Docker</strong> for building container images</li>
-<li><strong>Domain name</strong> for API endpoint (e.g., api.map.example.com)</li>
-</ul>
-
+<li><strong>Domain name</strong> for API endpoint (e.g.,
+api.map.example.com)</li>
+</ol>
 <h2 id="deployment-steps">Deployment Steps</h2>
-
-<h3 id="step-1-set-up-vpc-and-networking">Step 1: Set Up VPC and Networking</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-networking-tf&quot;&gt;terraform/networking.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>vpc&quot; &quot;map</em>vpc&quot; {</p>
-<p>  cidr_block           = &quot;10.0.0.0/16&quot;</p>
-<p>  enable<em>dns</em>hostnames = true</p>
-<p>  enable<em>dns</em>support   = true</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-VPC&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;public-subnets-for-alb&quot;&gt;Public subnets (for ALB)&lt;/h1&gt;</p>
-<p>resource &quot;aws_subnet&quot; &quot;public&quot; {</p>
-<p>  count             = 3</p>
-<p>  vpc<em>id            = aws</em>vpc.map_vpc.id</p>
-<p>  cidr_block        = &quot;10.0.${count.index}.0/24&quot;</p>
-<p>  availability<em>zone = data.aws</em>availability_zones.available.names[count.index]</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-Public-${count.index + 1}&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;private-subnets-for-ecs-rds-elasticache&quot;&gt;Private subnets (for ECS, RDS, ElastiCache)&lt;/h1&gt;</p>
-<p>resource &quot;aws_subnet&quot; &quot;private&quot; {</p>
-<p>  count             = 3</p>
-<p>  vpc<em>id            = aws</em>vpc.map_vpc.id</p>
-<p>  cidr_block        = &quot;10.0.${count.index + 10}.0/24&quot;</p>
-<p>  availability<em>zone = data.aws</em>availability_zones.available.names[count.index]</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-Private-${count.index + 1}&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;internet-gateway&quot;&gt;Internet Gateway&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>internet</em>gateway&quot; &quot;map_igw&quot; {</p>
-<p>  vpc<em>id = aws</em>vpc.map_vpc.id</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-IGW&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;nat-gateways-one-per-az-for-high-availability&quot;&gt;NAT Gateways (one per AZ for high availability)&lt;/h1&gt;</p>
-<p>resource &quot;aws_eip&quot; &quot;nat&quot; {</p>
-<p>  count  = 3</p>
-<p>  domain = &quot;vpc&quot;</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>nat</em>gateway&quot; &quot;map_nat&quot; {</p>
-<p>  count         = 3</p>
-<p>  allocation<em>id = aws</em>eip.nat[count.index].id</p>
-<p>  subnet<em>id     = aws</em>subnet.public[count.index].id</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-NAT-${count.index + 1}&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;route-tables&quot;&gt;Route tables&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>route</em>table&quot; &quot;public&quot; {</p>
-<p>  vpc<em>id = aws</em>vpc.map_vpc.id</p>
-
-<p>  route {</p>
-<p>    cidr_block = &quot;0.0.0.0/0&quot;</p>
-<p>    gateway<em>id = aws</em>internet<em>gateway.map</em>igw.id</p>
-<p>  }</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-Public-RT&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>route</em>table&quot; &quot;private&quot; {</p>
-<p>  count  = 3</p>
-<p>  vpc<em>id = aws</em>vpc.map_vpc.id</p>
-
-<p>  route {</p>
-<p>    cidr_block     = &quot;0.0.0.0/0&quot;</p>
-<p>    nat<em>gateway</em>id = aws<em>nat</em>gateway.map_nat[count.index].id</p>
-<p>  }</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP-Private-RT-${count.index + 1}&quot;</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
-<strong>Apply:</strong>
-<pre><code class="language-bash">cd terraform
-<p>terraform init</p>
-<p>terraform plan</p>
-<p>terraform apply</code></pre></p>
-
-<h3 id="step-2-create-rds-postgresql-database">Step 2: Create RDS PostgreSQL Database</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-rds-tf&quot;&gt;terraform/rds.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>db</em>subnet<em>group&quot; &quot;map</em>db&quot; {</p>
-<p>  name       = &quot;map-db-subnet-group&quot;</p>
-<p>  subnet<em>ids = aws</em>subnet.private[*].id</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP DB Subnet Group&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>security</em>group&quot; &quot;rds&quot; {</p>
-<p>  name_prefix = &quot;map-rds-sg&quot;</p>
-<p>  vpc<em>id      = aws</em>vpc.map_vpc.id</p>
-
-<p>  ingress {</p>
-<p>    from_port       = 5432</p>
-<p>    to_port         = 5432</p>
-<p>    protocol        = &quot;tcp&quot;</p>
-<p>    security<em>groups = [aws</em>security<em>group.ecs</em>tasks.id]</p>
-<p>  }</p>
-
-<p>  egress {</p>
-<p>    from_port   = 0</p>
-<p>    to_port     = 0</p>
-<p>    protocol    = &quot;-1&quot;</p>
-<p>    cidr_blocks = [&quot;0.0.0.0/0&quot;]</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;random<em>password&quot; &quot;db</em>password&quot; {</p>
-<p>  length  = 32</p>
-<p>  special = true</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>secretsmanager</em>secret&quot; &quot;db_password&quot; {</p>
-<p>  name = &quot;map-db-password&quot;</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>secretsmanager</em>secret<em>version&quot; &quot;db</em>password&quot; {</p>
-<p>  secret<em>id     = aws</em>secretsmanager<em>secret.db</em>password.id</p>
-<p>  secret<em>string = random</em>password.db_password.result</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>db</em>instance&quot; &quot;map_db&quot; {</p>
-<p>  identifier             = &quot;map-postgresql&quot;</p>
-<p>  engine                 = &quot;postgres&quot;</p>
-<p>  engine_version         = &quot;15.4&quot;</p>
-<p>  instance_class         = &quot;db.t3.medium&quot;  # Adjust based on load</p>
-<p>  allocated_storage      = 100</p>
-<p>  storage_type           = &quot;gp3&quot;</p>
-<p>  storage_encrypted      = true</p>
-
-<p>  db_name  = &quot;mapdb&quot;</p>
-<p>  username = &quot;mapadmin&quot;</p>
-<p>  password = random<em>password.db</em>password.result</p>
-
-<p>  multi_az               = true  # High availability</p>
-<p>  db<em>subnet</em>group<em>name   = aws</em>db<em>subnet</em>group.map_db.name</p>
-<p>  vpc<em>security</em>group<em>ids = [aws</em>security_group.rds.id]</p>
-
-<p>  backup<em>retention</em>period = 30</p>
-<p>  backup_window           = &quot;03:00-04:00&quot;  # UTC</p>
-<p>  maintenance_window      = &quot;sun:04:00-sun:05:00&quot;</p>
-
-<p>  enabled<em>cloudwatch</em>logs_exports = [&quot;postgresql&quot;, &quot;upgrade&quot;]</p>
-
-<p>  deletion_protection = true  # Prevent accidental deletion</p>
-<p>  skip<em>final</em>snapshot = false</p>
-<p>  final<em>snapshot</em>identifier = &quot;map-db-final-snapshot&quot;</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP PostgreSQL&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;read-replicas-for-scaling-read-operations&quot;&gt;Read replicas for scaling read operations&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>db</em>instance&quot; &quot;map<em>db</em>replica&quot; {</p>
-<p>  count               = 2  # 2 read replicas</p>
-<p>  identifier          = &quot;map-postgresql-replica-${count.index + 1}&quot;</p>
-<p>  replicate<em>source</em>db = aws<em>db</em>instance.map_db.identifier</p>
-<p>  instance_class      = &quot;db.t3.medium&quot;</p>
-<p>  publicly_accessible = false</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP PostgreSQL Replica ${count.index + 1}&quot;</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
-<strong>Initialize Database Schema:</strong>
-<pre><code class="language-bash">&lt;h1 id=&quot;connect-to-database&quot;&gt;Connect to database&lt;/h1&gt;
-<p>export DB<em>HOST=$(terraform output -raw db</em>host)</p>
-<p>export DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id map-db-password --query SecretString --output text)</p>
-
-<p>psql -h $DB_HOST -U mapadmin -d mapdb -f ../sql/schema.sql</p>
-<p>psql -h $DB_HOST -U mapadmin -d mapdb -f ../sql/seed.sql</code></pre></p>
-
-<h3 id="step-3-create-elasticache-redis-cluster">Step 3: Create ElastiCache Redis Cluster</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-elasticache-tf&quot;&gt;terraform/elasticache.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>elasticache</em>subnet<em>group&quot; &quot;map</em>cache&quot; {</p>
-<p>  name       = &quot;map-cache-subnet-group&quot;</p>
-<p>  subnet<em>ids = aws</em>subnet.private[*].id</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>security</em>group&quot; &quot;elasticache&quot; {</p>
-<p>  name_prefix = &quot;map-elasticache-sg&quot;</p>
-<p>  vpc<em>id      = aws</em>vpc.map_vpc.id</p>
-
-<p>  ingress {</p>
-<p>    from_port       = 6379</p>
-<p>    to_port         = 6379</p>
-<p>    protocol        = &quot;tcp&quot;</p>
-<p>    security<em>groups = [aws</em>security<em>group.ecs</em>tasks.id]</p>
-<p>  }</p>
-
-<p>  egress {</p>
-<p>    from_port   = 0</p>
-<p>    to_port     = 0</p>
-<p>    protocol    = &quot;-1&quot;</p>
-<p>    cidr_blocks = [&quot;0.0.0.0/0&quot;]</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>elasticache</em>replication<em>group&quot; &quot;map</em>redis&quot; {</p>
-<p>  replication<em>group</em>id       = &quot;map-redis-cluster&quot;</p>
-<p>  replication<em>group</em>description = &quot;Redis cluster for MAP caching&quot;</p>
-
-<p>  engine               = &quot;redis&quot;</p>
-<p>  engine_version       = &quot;7.0&quot;</p>
-<p>  node_type            = &quot;cache.t3.small&quot;  # Adjust based on load</p>
-<p>  num<em>cache</em>clusters   = 3  # 1 primary + 2 replicas</p>
-
-<p>  port                       = 6379</p>
-<p>  parameter<em>group</em>name       = &quot;default.redis7&quot;</p>
-<p>  subnet<em>group</em>name          = aws<em>elasticache</em>subnet<em>group.map</em>cache.name</p>
-<p>  security<em>group</em>ids         = [aws<em>security</em>group.elasticache.id]</p>
-
-<p>  automatic<em>failover</em>enabled = true</p>
-<p>  multi<em>az</em>enabled           = true</p>
-
-<p>  at<em>rest</em>encryption_enabled = true</p>
-<p>  transit<em>encryption</em>enabled = true</p>
-<p>  auth<em>token</em>enabled         = true</p>
-
-<p>  snapshot<em>retention</em>limit   = 5</p>
-<p>  snapshot_window            = &quot;03:00-05:00&quot;</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP Redis Cluster&quot;</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
-<h3 id="step-4-create-kms-key-for-encryption">Step 4: Create KMS Key for Encryption</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-kms-tf&quot;&gt;terraform/kms.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>kms</em>key&quot; &quot;map<em>master</em>key&quot; {</p>
-<p>  description             = &quot;MAP master encryption key for CP private keys&quot;</p>
-<p>  deletion<em>window</em>in_days = 30</p>
-<p>  enable<em>key</em>rotation     = true</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP Master Key&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>kms</em>alias&quot; &quot;map<em>master</em>key&quot; {</p>
-<p>  name          = &quot;alias/map-master-key&quot;</p>
-<p>  target<em>key</em>id = aws<em>kms</em>key.map<em>master</em>key.key_id</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;store-master-key-id-in-secrets-manager-for-application-use&quot;&gt;Store master key ID in Secrets Manager for application use&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>secretsmanager</em>secret&quot; &quot;master<em>key</em>id&quot; {</p>
-<p>  name = &quot;map-master-key-id&quot;</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>secretsmanager</em>secret<em>version&quot; &quot;master</em>key_id&quot; {</p>
-<p>  secret<em>id     = aws</em>secretsmanager<em>secret.master</em>key_id.id</p>
-<p>  secret<em>string = aws</em>kms<em>key.map</em>master<em>key.key</em>id</p>
-<p>}</code></pre></p>
-
-<h3 id="step-5-build-and-push-docker-image">Step 5: Build and Push Docker Image</h3>
-
-<pre><code class="language-dockerfile">&lt;h1 id=&quot;dockerfile&quot;&gt;Dockerfile&lt;/h1&gt;
-
-<p>FROM node:20-alpine AS builder</p>
-
-<p>WORKDIR /app</p>
-
-<p>COPY package*.json ./</p>
-<p>RUN npm ci --only=production</p>
-
-<p>COPY . .</p>
-<p>RUN npm run build</p>
-
-<p>FROM node:20-alpine</p>
-
-<p>WORKDIR /app</p>
-
-<p>COPY --from=builder /app/dist ./dist</p>
-<p>COPY --from=builder /app/node<em>modules ./node</em>modules</p>
-<p>COPY --from=builder /app/package.json ./</p>
-
-<p>EXPOSE 3000</p>
-
-<p>USER node</p>
-
-<p>CMD [&quot;node&quot;, &quot;dist/server.js&quot;]</code></pre></p>
-
-<strong>Build and Push:</strong>
-<pre><code class="language-bash">&lt;h1 id=&quot;create-ecr-repository&quot;&gt;Create ECR repository&lt;/h1&gt;
-<p>aws ecr create-repository --repository-name map-api-server</p>
-
-<p>&lt;h1 id=&quot;get-ecr-login&quot;&gt;Get ECR login&lt;/h1&gt;</p>
-<p>aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin &lt;account-id&gt;.dkr.ecr.eu-west-1.amazonaws.com</p>
-
-<p>&lt;h1 id=&quot;build-image&quot;&gt;Build image&lt;/h1&gt;</p>
-<p>docker build -t map-api-server:latest .</p>
-
-<p>&lt;h1 id=&quot;tag-for-ecr&quot;&gt;Tag for ECR&lt;/h1&gt;</p>
-<p>docker tag map-api-server:latest &lt;account-id&gt;.dkr.ecr.eu-west-1.amazonaws.com/map-api-server:latest</p>
-
-<p>&lt;h1 id=&quot;push-to-ecr&quot;&gt;Push to ECR&lt;/h1&gt;</p>
-<p>docker push &lt;account-id&gt;.dkr.ecr.eu-west-1.amazonaws.com/map-api-server:latest</code></pre></p>
-
-<h3 id="step-6-deploy-ecs-fargate-service">Step 6: Deploy ECS Fargate Service</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-ecs-tf&quot;&gt;terraform/ecs.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>ecs</em>cluster&quot; &quot;map_cluster&quot; {</p>
-<p>  name = &quot;map-cluster&quot;</p>
-
-<p>  setting {</p>
-<p>    name  = &quot;containerInsights&quot;</p>
-<p>    value = &quot;enabled&quot;</p>
-<p>  }</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP ECS Cluster&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>ecs</em>task<em>definition&quot; &quot;map</em>api&quot; {</p>
-<p>  family                   = &quot;map-api-server&quot;</p>
-<p>  network_mode             = &quot;awsvpc&quot;</p>
-<p>  requires_compatibilities = [&quot;FARGATE&quot;]</p>
-<p>  cpu                      = &quot;512&quot;   # 0.5 vCPU</p>
-<p>  memory                   = &quot;1024&quot;  # 1 GB</p>
-<p>  execution<em>role</em>arn       = aws<em>iam</em>role.ecs<em>execution</em>role.arn</p>
-<p>  task<em>role</em>arn            = aws<em>iam</em>role.ecs<em>task</em>role.arn</p>
-
-<p>  container_definitions = jsonencode([</p>
-<p>    {</p>
-<p>      name      = &quot;map-api-server&quot;</p>
-<p>      image     = &quot;${aws<em>ecr</em>repository.map<em>api.repository</em>url}:latest&quot;</p>
-<p>      essential = true</p>
-
-<p>      portMappings = [</p>
-<p>        {</p>
-<p>          containerPort = 3000</p>
-<p>          protocol      = &quot;tcp&quot;</p>
-<p>        }</p>
-<p>      ]</p>
-
-<p>      environment = [</p>
-<p>        {</p>
-<p>          name  = &quot;NODE_ENV&quot;</p>
-<p>          value = &quot;production&quot;</p>
-<p>        },</p>
-<p>        {</p>
-<p>          name  = &quot;PORT&quot;</p>
-<p>          value = &quot;3000&quot;</p>
-<p>        },</p>
-<p>        {</p>
-<p>          name  = &quot;DB_HOST&quot;</p>
-<p>          value = aws<em>db</em>instance.map_db.address</p>
-<p>        },</p>
-<p>        {</p>
-<p>          name  = &quot;REDIS_HOST&quot;</p>
-<p>          value = aws<em>elasticache</em>replication<em>group.map</em>redis.primary<em>endpoint</em>address</p>
-<p>        }</p>
-<p>      ]</p>
-
-<p>      secrets = [</p>
-<p>        {</p>
-<p>          name      = &quot;DB_PASSWORD&quot;</p>
-<p>          valueFrom = aws<em>secretsmanager</em>secret.db_password.arn</p>
-<p>        },</p>
-<p>        {</p>
-<p>          name      = &quot;MASTER<em>KEY</em>ID&quot;</p>
-<p>          valueFrom = aws<em>secretsmanager</em>secret.master<em>key</em>id.arn</p>
-<p>        }</p>
-<p>      ]</p>
-
-<p>      logConfiguration = {</p>
-<p>        logDriver = &quot;awslogs&quot;</p>
-<p>        options = {</p>
-<p>          &quot;awslogs-group&quot;         = &quot;/ecs/map-api-server&quot;</p>
-<p>          &quot;awslogs-region&quot;        = &quot;eu-west-1&quot;</p>
-<p>          &quot;awslogs-stream-prefix&quot; = &quot;ecs&quot;</p>
-<p>        }</p>
-<p>      }</p>
-<p>    }</p>
-<p>  ])</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>ecs</em>service&quot; &quot;map_api&quot; {</p>
-<p>  name            = &quot;map-api-service&quot;</p>
-<p>  cluster         = aws<em>ecs</em>cluster.map_cluster.id</p>
-<p>  task<em>definition = aws</em>ecs<em>task</em>definition.map_api.arn</p>
-<p>  desired_count   = 3  # Start with 3 tasks</p>
-<p>  launch_type     = &quot;FARGATE&quot;</p>
-
-<p>  network_configuration {</p>
-<p>    subnets          = aws_subnet.private[*].id</p>
-<p>    security<em>groups  = [aws</em>security<em>group.ecs</em>tasks.id]</p>
-<p>    assign<em>public</em>ip = false</p>
-<p>  }</p>
-
-<p>  load_balancer {</p>
-<p>    target<em>group</em>arn = aws<em>lb</em>target<em>group.map</em>api.arn</p>
-<p>    container_name   = &quot;map-api-server&quot;</p>
-<p>    container_port   = 3000</p>
-<p>  }</p>
-
-<p>  # Auto-scaling configuration</p>
-<p>  lifecycle {</p>
-<p>    ignore<em>changes = [desired</em>count]  # Allow auto-scaling to manage count</p>
-<p>  }</p>
-
-<p>  depends<em>on = [aws</em>lb<em>listener.map</em>api]</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;auto-scaling&quot;&gt;Auto-scaling&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>appautoscaling</em>target&quot; &quot;ecs_target&quot; {</p>
-<p>  max_capacity       = 20</p>
-<p>  min_capacity       = 3</p>
-<p>  resource<em>id        = &quot;service/${aws</em>ecs<em>cluster.map</em>cluster.name}/${aws<em>ecs</em>service.map_api.name}&quot;</p>
-<p>  scalable_dimension = &quot;ecs:service:DesiredCount&quot;</p>
-<p>  service_namespace  = &quot;ecs&quot;</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>appautoscaling</em>policy&quot; &quot;ecs<em>cpu</em>policy&quot; {</p>
-<p>  name               = &quot;map-cpu-scaling&quot;</p>
-<p>  policy_type        = &quot;TargetTrackingScaling&quot;</p>
-<p>  resource<em>id        = aws</em>appautoscaling<em>target.ecs</em>target.resource_id</p>
-<p>  scalable<em>dimension = aws</em>appautoscaling<em>target.ecs</em>target.scalable_dimension</p>
-<p>  service<em>namespace  = aws</em>appautoscaling<em>target.ecs</em>target.service_namespace</p>
-
-<p>  target<em>tracking</em>scaling<em>policy</em>configuration {</p>
-<p>    target_value       = 70.0</p>
-<p>    predefined<em>metric</em>specification {</p>
-<p>      predefined<em>metric</em>type = &quot;ECSServiceAverageCPUUtilization&quot;</p>
-<p>    }</p>
-<p>    scale<em>in</em>cooldown  = 300</p>
-<p>    scale<em>out</em>cooldown = 60</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
-<h3 id="step-7-configure-application-load-balancer">Step 7: Configure Application Load Balancer</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-alb-tf&quot;&gt;terraform/alb.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>security</em>group&quot; &quot;alb&quot; {</p>
-<p>  name_prefix = &quot;map-alb-sg&quot;</p>
-<p>  vpc<em>id      = aws</em>vpc.map_vpc.id</p>
-
-<p>  ingress {</p>
-<p>    from_port   = 443</p>
-<p>    to_port     = 443</p>
-<p>    protocol    = &quot;tcp&quot;</p>
-<p>    cidr_blocks = [&quot;0.0.0.0/0&quot;]</p>
-<p>  }</p>
-
-<p>  egress {</p>
-<p>    from_port   = 0</p>
-<p>    to_port     = 0</p>
-<p>    protocol    = &quot;-1&quot;</p>
-<p>    cidr_blocks = [&quot;0.0.0.0/0&quot;]</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>lb&quot; &quot;map</em>alb&quot; {</p>
-<p>  name               = &quot;map-alb&quot;</p>
-<p>  internal           = false</p>
-<p>  load<em>balancer</em>type = &quot;application&quot;</p>
-<p>  security<em>groups    = [aws</em>security_group.alb.id]</p>
-<p>  subnets            = aws_subnet.public[*].id</p>
-
-<p>  enable<em>deletion</em>protection = true</p>
-<p>  enable_http2               = true</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP ALB&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>lb</em>target<em>group&quot; &quot;map</em>api&quot; {</p>
-<p>  name        = &quot;map-api-tg&quot;</p>
-<p>  port        = 3000</p>
-<p>  protocol    = &quot;HTTP&quot;</p>
-<p>  vpc<em>id      = aws</em>vpc.map_vpc.id</p>
-<p>  target_type = &quot;ip&quot;</p>
-
-<p>  health_check {</p>
-<p>    enabled             = true</p>
-<p>    healthy_threshold   = 2</p>
-<p>    unhealthy_threshold = 3</p>
-<p>    timeout             = 5</p>
-<p>    interval            = 30</p>
-<p>    path                = &quot;/health&quot;</p>
-<p>    matcher             = &quot;200&quot;</p>
-<p>  }</p>
-
-<p>  deregistration_delay = 30</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP API Target Group&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>lb</em>listener&quot; &quot;map_api&quot; {</p>
-<p>  load<em>balancer</em>arn = aws<em>lb.map</em>alb.arn</p>
-<p>  port              = &quot;443&quot;</p>
-<p>  protocol          = &quot;HTTPS&quot;</p>
-<p>  ssl_policy        = &quot;ELBSecurityPolicy-TLS13-1-2-2021-06&quot;</p>
-<p>  certificate<em>arn   = aws</em>acm<em>certificate.map</em>cert.arn</p>
-
-<p>  default_action {</p>
-<p>    type             = &quot;forward&quot;</p>
-<p>    target<em>group</em>arn = aws<em>lb</em>target<em>group.map</em>api.arn</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
-<h3 id="step-8-configure-route-53-and-ssl-certificate">Step 8: Configure Route 53 and SSL Certificate</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-dns-tf&quot;&gt;terraform/dns.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>route53</em>zone&quot; &quot;map_domain&quot; {</p>
-<p>  name = &quot;map.example.com&quot;</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP Domain&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>acm</em>certificate&quot; &quot;map_cert&quot; {</p>
-<p>  domain_name       = &quot;api.map.example.com&quot;</p>
-<p>  validation_method = &quot;DNS&quot;</p>
-
-<p>  lifecycle {</p>
-<p>    create<em>before</em>destroy = true</p>
-<p>  }</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP API Certificate&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>route53</em>record&quot; &quot;cert_validation&quot; {</p>
-<p>  for_each = {</p>
-<p>    for dvo in aws<em>acm</em>certificate.map<em>cert.domain</em>validation<em>options : dvo.domain</em>name =&gt; {</p>
-<p>      name   = dvo.resource<em>record</em>name</p>
-<p>      record = dvo.resource<em>record</em>value</p>
-<p>      type   = dvo.resource<em>record</em>type</p>
-<p>    }</p>
-<p>  }</p>
-
-<p>  allow_overwrite = true</p>
-<p>  name            = each.value.name</p>
-<p>  records         = [each.value.record]</p>
-<p>  ttl             = 60</p>
-<p>  type            = each.value.type</p>
-<p>  zone<em>id         = aws</em>route53<em>zone.map</em>domain.zone_id</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>acm</em>certificate<em>validation&quot; &quot;map</em>cert&quot; {</p>
-<p>  certificate<em>arn         = aws</em>acm<em>certificate.map</em>cert.arn</p>
-<p>  validation<em>record</em>fqdns = [for record in aws<em>route53</em>record.cert_validation : record.fqdn]</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>route53</em>record&quot; &quot;api&quot; {</p>
-<p>  zone<em>id = aws</em>route53<em>zone.map</em>domain.zone_id</p>
-<p>  name    = &quot;api.map.example.com&quot;</p>
-<p>  type    = &quot;A&quot;</p>
-
-<p>  alias {</p>
-<p>    name                   = aws<em>lb.map</em>alb.dns_name</p>
-<p>    zone<em>id                = aws</em>lb.map<em>alb.zone</em>id</p>
-<p>    evaluate<em>target</em>health = true</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
-<h3 id="step-9-configure-cloudwatch-monitoring">Step 9: Configure CloudWatch Monitoring</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-cloudwatch-tf&quot;&gt;terraform/cloudwatch.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>cloudwatch</em>log<em>group&quot; &quot;ecs</em>logs&quot; {</p>
-<p>  name              = &quot;/ecs/map-api-server&quot;</p>
-<p>  retention<em>in</em>days = 30</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP ECS Logs&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;alarm-high-error-rate&quot;&gt;Alarm: High error rate&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>cloudwatch</em>metric<em>alarm&quot; &quot;high</em>error_rate&quot; {</p>
-<p>  alarm_name          = &quot;map-high-error-rate&quot;</p>
-<p>  comparison_operator = &quot;GreaterThanThreshold&quot;</p>
-<p>  evaluation_periods  = &quot;2&quot;</p>
-<p>  metric_name         = &quot;5XXError&quot;</p>
-<p>  namespace           = &quot;AWS/ApplicationELB&quot;</p>
-<p>  period              = &quot;300&quot;</p>
-<p>  statistic           = &quot;Sum&quot;</p>
-<p>  threshold           = &quot;10&quot;</p>
-<p>  alarm_description   = &quot;This metric monitors API 5xx errors&quot;</p>
-<p>  alarm<em>actions       = [aws</em>sns_topic.alerts.arn]</p>
-
-<p>  dimensions = {</p>
-<p>    LoadBalancer = aws<em>lb.map</em>alb.arn_suffix</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;alarm-high-response-time&quot;&gt;Alarm: High response time&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>cloudwatch</em>metric<em>alarm&quot; &quot;high</em>response_time&quot; {</p>
-<p>  alarm_name          = &quot;map-high-response-time&quot;</p>
-<p>  comparison_operator = &quot;GreaterThanThreshold&quot;</p>
-<p>  evaluation_periods  = &quot;2&quot;</p>
-<p>  metric_name         = &quot;TargetResponseTime&quot;</p>
-<p>  namespace           = &quot;AWS/ApplicationELB&quot;</p>
-<p>  period              = &quot;300&quot;</p>
-<p>  statistic           = &quot;Average&quot;</p>
-<p>  threshold           = &quot;1.0&quot;  # 1 second</p>
-<p>  alarm_description   = &quot;API response time is too high&quot;</p>
-<p>  alarm<em>actions       = [aws</em>sns_topic.alerts.arn]</p>
-
-<p>  dimensions = {</p>
-<p>    LoadBalancer = aws<em>lb.map</em>alb.arn_suffix</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;alarm-database-cpu-high&quot;&gt;Alarm: Database CPU high&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>cloudwatch</em>metric<em>alarm&quot; &quot;db</em>cpu_high&quot; {</p>
-<p>  alarm_name          = &quot;map-db-cpu-high&quot;</p>
-<p>  comparison_operator = &quot;GreaterThanThreshold&quot;</p>
-<p>  evaluation_periods  = &quot;2&quot;</p>
-<p>  metric_name         = &quot;CPUUtilization&quot;</p>
-<p>  namespace           = &quot;AWS/RDS&quot;</p>
-<p>  period              = &quot;300&quot;</p>
-<p>  statistic           = &quot;Average&quot;</p>
-<p>  threshold           = &quot;80&quot;</p>
-<p>  alarm_description   = &quot;Database CPU utilization is high&quot;</p>
-<p>  alarm<em>actions       = [aws</em>sns_topic.alerts.arn]</p>
-
-<p>  dimensions = {</p>
-<p>    DBInstanceIdentifier = aws<em>db</em>instance.map_db.id</p>
-<p>  }</p>
-<p>}</p>
-
-<p>&lt;h1 id=&quot;sns-topic-for-alerts&quot;&gt;SNS topic for alerts&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>sns</em>topic&quot; &quot;alerts&quot; {</p>
-<p>  name = &quot;map-alerts&quot;</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP Alerts&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>sns</em>topic<em>subscription&quot; &quot;alerts</em>email&quot; {</p>
-<p>  topic<em>arn = aws</em>sns_topic.alerts.arn</p>
-<p>  protocol  = &quot;email&quot;</p>
-<p>  endpoint  = &quot;ops@example.com&quot;  # Change to your ops email</p>
-<p>}</code></pre></p>
-
-<h3 id="step-10-configure-waf-web-application-firewall">Step 10: Configure WAF (Web Application Firewall)</h3>
-
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-waf-tf&quot;&gt;terraform/waf.tf&lt;/h1&gt;
-
-<p>resource &quot;aws<em>wafv2</em>web<em>acl&quot; &quot;map</em>waf&quot; {</p>
-<p>  name  = &quot;map-waf&quot;</p>
-<p>  scope = &quot;REGIONAL&quot;</p>
-
-<p>  default_action {</p>
-<p>    allow {}</p>
-<p>  }</p>
-
-<p>  # Rule 1: Rate limiting (1000 requests per 5 minutes per IP)</p>
-<p>  rule {</p>
-<p>    name     = &quot;rate-limit-rule&quot;</p>
-<p>    priority = 1</p>
-
-<p>    action {</p>
-<p>      block {}</p>
-<p>    }</p>
-
-<p>    statement {</p>
-<p>      rate<em>based</em>statement {</p>
-<p>        limit              = 1000</p>
-<p>        aggregate<em>key</em>type = &quot;IP&quot;</p>
-<p>      }</p>
-<p>    }</p>
-
-<p>    visibility_config {</p>
-<p>      cloudwatch<em>metrics</em>enabled = true</p>
-<p>      metric_name                = &quot;RateLimitRule&quot;</p>
-<p>      sampled<em>requests</em>enabled   = true</p>
-<p>    }</p>
-<p>  }</p>
-
-<p>  # Rule 2: AWS managed rule for common threats</p>
-<p>  rule {</p>
-<p>    name     = &quot;aws-managed-rules&quot;</p>
-<p>    priority = 2</p>
-
-<p>    override_action {</p>
-<p>      none {}</p>
-<p>    }</p>
-
-<p>    statement {</p>
-<p>      managed<em>rule</em>group_statement {</p>
-<p>        name        = &quot;AWSManagedRulesCommonRuleSet&quot;</p>
-<p>        vendor_name = &quot;AWS&quot;</p>
-<p>      }</p>
-<p>    }</p>
-
-<p>    visibility_config {</p>
-<p>      cloudwatch<em>metrics</em>enabled = true</p>
-<p>      metric_name                = &quot;AWSManagedRules&quot;</p>
-<p>      sampled<em>requests</em>enabled   = true</p>
-<p>    }</p>
-<p>  }</p>
-
-<p>  visibility_config {</p>
-<p>    cloudwatch<em>metrics</em>enabled = true</p>
-<p>    metric_name                = &quot;MAPWAF&quot;</p>
-<p>    sampled<em>requests</em>enabled   = true</p>
-<p>  }</p>
-
-<p>  tags = {</p>
-<p>    Name = &quot;MAP WAF&quot;</p>
-<p>  }</p>
-<p>}</p>
-
-<p>resource &quot;aws<em>wafv2</em>web<em>acl</em>association&quot; &quot;alb&quot; {</p>
-<p>  resource<em>arn = aws</em>lb.map_alb.arn</p>
-<p>  web<em>acl</em>arn  = aws<em>wafv2</em>web<em>acl.map</em>waf.arn</p>
-<p>}</code></pre></p>
-
+<h3 id="step-1-set-up-vpc-and-networking">Step 1: Set Up VPC and
+Networking</h3>
+<pre class="hcl"><code># terraform/networking.tf
+
+resource &quot;aws_vpc&quot; &quot;map_vpc&quot; {
+  cidr_block           = &quot;10.0.0.0/16&quot;
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = &quot;MAP-VPC&quot;
+  }
+}
+
+# Public subnets (for ALB)
+resource &quot;aws_subnet&quot; &quot;public&quot; {
+  count             = 3
+  vpc_id            = aws_vpc.map_vpc.id
+  cidr_block        = &quot;10.0.${count.index}.0/24&quot;
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = {
+    Name = &quot;MAP-Public-${count.index + 1}&quot;
+  }
+}
+
+# Private subnets (for ECS, RDS, ElastiCache)
+resource &quot;aws_subnet&quot; &quot;private&quot; {
+  count             = 3
+  vpc_id            = aws_vpc.map_vpc.id
+  cidr_block        = &quot;10.0.${count.index + 10}.0/24&quot;
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = {
+    Name = &quot;MAP-Private-${count.index + 1}&quot;
+  }
+}
+
+# Internet Gateway
+resource &quot;aws_internet_gateway&quot; &quot;map_igw&quot; {
+  vpc_id = aws_vpc.map_vpc.id
+
+  tags = {
+    Name = &quot;MAP-IGW&quot;
+  }
+}
+
+# NAT Gateways (one per AZ for high availability)
+resource &quot;aws_eip&quot; &quot;nat&quot; {
+  count  = 3
+  domain = &quot;vpc&quot;
+}
+
+resource &quot;aws_nat_gateway&quot; &quot;map_nat&quot; {
+  count         = 3
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = {
+    Name = &quot;MAP-NAT-${count.index + 1}&quot;
+  }
+}
+
+# Route tables
+resource &quot;aws_route_table&quot; &quot;public&quot; {
+  vpc_id = aws_vpc.map_vpc.id
+
+  route {
+    cidr_block = &quot;0.0.0.0/0&quot;
+    gateway_id = aws_internet_gateway.map_igw.id
+  }
+
+  tags = {
+    Name = &quot;MAP-Public-RT&quot;
+  }
+}
+
+resource &quot;aws_route_table&quot; &quot;private&quot; {
+  count  = 3
+  vpc_id = aws_vpc.map_vpc.id
+
+  route {
+    cidr_block     = &quot;0.0.0.0/0&quot;
+    nat_gateway_id = aws_nat_gateway.map_nat[count.index].id
+  }
+
+  tags = {
+    Name = &quot;MAP-Private-RT-${count.index + 1}&quot;
+  }
+}</code></pre>
+<p><strong>Apply:</strong></p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> terraform</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">terraform</span> init</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">terraform</span> plan</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">terraform</span> apply</span></code></pre></div>
+<h3 id="step-2-create-rds-postgresql-database">Step 2: Create RDS
+PostgreSQL Database</h3>
+<pre class="hcl"><code># terraform/rds.tf
+
+resource &quot;aws_db_subnet_group&quot; &quot;map_db&quot; {
+  name       = &quot;map-db-subnet-group&quot;
+  subnet_ids = aws_subnet.private[*].id
+
+  tags = {
+    Name = &quot;MAP DB Subnet Group&quot;
+  }
+}
+
+resource &quot;aws_security_group&quot; &quot;rds&quot; {
+  name_prefix = &quot;map-rds-sg&quot;
+  vpc_id      = aws_vpc.map_vpc.id
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = &quot;tcp&quot;
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+resource &quot;random_password&quot; &quot;db_password&quot; {
+  length  = 32
+  special = true
+}
+
+resource &quot;aws_secretsmanager_secret&quot; &quot;db_password&quot; {
+  name = &quot;map-db-password&quot;
+}
+
+resource &quot;aws_secretsmanager_secret_version&quot; &quot;db_password&quot; {
+  secret_id     = aws_secretsmanager_secret.db_password.id
+  secret_string = random_password.db_password.result
+}
+
+resource &quot;aws_db_instance&quot; &quot;map_db&quot; {
+  identifier             = &quot;map-postgresql&quot;
+  engine                 = &quot;postgres&quot;
+  engine_version         = &quot;15.4&quot;
+  instance_class         = &quot;db.t3.medium&quot;  # Adjust based on load
+  allocated_storage      = 100
+  storage_type           = &quot;gp3&quot;
+  storage_encrypted      = true
+
+  db_name  = &quot;mapdb&quot;
+  username = &quot;mapadmin&quot;
+  password = random_password.db_password.result
+
+  multi_az               = true  # High availability
+  db_subnet_group_name   = aws_db_subnet_group.map_db.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  backup_retention_period = 30
+  backup_window           = &quot;03:00-04:00&quot;  # UTC
+  maintenance_window      = &quot;sun:04:00-sun:05:00&quot;
+
+  enabled_cloudwatch_logs_exports = [&quot;postgresql&quot;, &quot;upgrade&quot;]
+
+  deletion_protection = true  # Prevent accidental deletion
+  skip_final_snapshot = false
+  final_snapshot_identifier = &quot;map-db-final-snapshot&quot;
+
+  tags = {
+    Name = &quot;MAP PostgreSQL&quot;
+  }
+}
+
+# Read replicas for scaling read operations
+resource &quot;aws_db_instance&quot; &quot;map_db_replica&quot; {
+  count               = 2  # 2 read replicas
+  identifier          = &quot;map-postgresql-replica-${count.index + 1}&quot;
+  replicate_source_db = aws_db_instance.map_db.identifier
+  instance_class      = &quot;db.t3.medium&quot;
+  publicly_accessible = false
+
+  tags = {
+    Name = &quot;MAP PostgreSQL Replica ${count.index + 1}&quot;
+  }
+}</code></pre>
+<p><strong>Initialize Database Schema:</strong></p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to database</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_HOST</span><span class="op">=</span><span class="va">$(</span><span class="ex">terraform</span> output <span class="at">-raw</span> db_host<span class="va">)</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_PASSWORD</span><span class="op">=</span><span class="va">$(</span><span class="ex">aws</span> secretsmanager get-secret-value <span class="at">--secret-id</span> map-db-password <span class="at">--query</span> SecretString <span class="at">--output</span> text<span class="va">)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-h</span> <span class="va">$DB_HOST</span> <span class="at">-U</span> mapadmin <span class="at">-d</span> mapdb <span class="at">-f</span> ../sql/schema.sql</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-h</span> <span class="va">$DB_HOST</span> <span class="at">-U</span> mapadmin <span class="at">-d</span> mapdb <span class="at">-f</span> ../sql/seed.sql</span></code></pre></div>
+<h3 id="step-3-create-elasticache-redis-cluster">Step 3: Create
+ElastiCache Redis Cluster</h3>
+<pre class="hcl"><code># terraform/elasticache.tf
+
+resource &quot;aws_elasticache_subnet_group&quot; &quot;map_cache&quot; {
+  name       = &quot;map-cache-subnet-group&quot;
+  subnet_ids = aws_subnet.private[*].id
+}
+
+resource &quot;aws_security_group&quot; &quot;elasticache&quot; {
+  name_prefix = &quot;map-elasticache-sg&quot;
+  vpc_id      = aws_vpc.map_vpc.id
+
+  ingress {
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = &quot;tcp&quot;
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+resource &quot;aws_elasticache_replication_group&quot; &quot;map_redis&quot; {
+  replication_group_id       = &quot;map-redis-cluster&quot;
+  replication_group_description = &quot;Redis cluster for MAP caching&quot;
+
+  engine               = &quot;redis&quot;
+  engine_version       = &quot;7.0&quot;
+  node_type            = &quot;cache.t3.small&quot;  # Adjust based on load
+  num_cache_clusters   = 3  # 1 primary + 2 replicas
+
+  port                       = 6379
+  parameter_group_name       = &quot;default.redis7&quot;
+  subnet_group_name          = aws_elasticache_subnet_group.map_cache.name
+  security_group_ids         = [aws_security_group.elasticache.id]
+
+  automatic_failover_enabled = true
+  multi_az_enabled           = true
+
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = true
+  auth_token_enabled         = true
+
+  snapshot_retention_limit   = 5
+  snapshot_window            = &quot;03:00-05:00&quot;
+
+  tags = {
+    Name = &quot;MAP Redis Cluster&quot;
+  }
+}</code></pre>
+<h3 id="step-4-create-kms-key-for-encryption">Step 4: Create KMS Key for
+Encryption</h3>
+<pre class="hcl"><code># terraform/kms.tf
+
+resource &quot;aws_kms_key&quot; &quot;map_master_key&quot; {
+  description             = &quot;MAP master encryption key for CP private keys&quot;
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = {
+    Name = &quot;MAP Master Key&quot;
+  }
+}
+
+resource &quot;aws_kms_alias&quot; &quot;map_master_key&quot; {
+  name          = &quot;alias/map-master-key&quot;
+  target_key_id = aws_kms_key.map_master_key.key_id
+}
+
+# Store master key ID in Secrets Manager for application use
+resource &quot;aws_secretsmanager_secret&quot; &quot;master_key_id&quot; {
+  name = &quot;map-master-key-id&quot;
+}
+
+resource &quot;aws_secretsmanager_secret_version&quot; &quot;master_key_id&quot; {
+  secret_id     = aws_secretsmanager_secret.master_key_id.id
+  secret_string = aws_kms_key.map_master_key.key_id
+}</code></pre>
+<h3 id="step-5-build-and-push-docker-image">Step 5: Build and Push
+Docker Image</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dockerfile</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> builder</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> ci <span class="at">--only</span><span class="op">=</span>production</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> run build</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:20-alpine</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/dist ./dist</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/node_modules ./node_modules</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/package.json ./</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3000</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> node</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;dist/server.js&quot;</span>]</span></code></pre></div>
+<p><strong>Build and Push:</strong></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create ECR repository</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> ecr create-repository <span class="at">--repository-name</span> map-api-server</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Get ECR login</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> ecr get-login-password <span class="at">--region</span> eu-west-1 <span class="kw">|</span> <span class="ex">docker</span> login <span class="at">--username</span> AWS <span class="at">--password-stdin</span> <span class="op">&lt;</span>account-id<span class="op">&gt;</span>.dkr.ecr.eu-west-1.amazonaws.com</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Build image</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> map-api-server:latest .</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Tag for ECR</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> tag map-api-server:latest <span class="op">&lt;</span>account-id<span class="op">&gt;</span>.dkr.ecr.eu-west-1.amazonaws.com/map-api-server:latest</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Push to ECR</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> push <span class="op">&lt;</span>account-id<span class="op">&gt;</span>.dkr.ecr.eu-west-1.amazonaws.com/map-api-server:latest</span></code></pre></div>
+<h3 id="step-6-deploy-ecs-fargate-service">Step 6: Deploy ECS Fargate
+Service</h3>
+<pre class="hcl"><code># terraform/ecs.tf
+
+# ECR repository for the API server image (referenced by the task definition
+# below; equivalent to the `aws ecr create-repository` CLI call in Step 5)
+resource &quot;aws_ecr_repository&quot; &quot;map_api&quot; {
+  name = &quot;map-api-server&quot;
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = &quot;MAP API Server Repository&quot;
+  }
+}
+
+resource &quot;aws_ecs_cluster&quot; &quot;map_cluster&quot; {
+  name = &quot;map-cluster&quot;
+
+  setting {
+    name  = &quot;containerInsights&quot;
+    value = &quot;enabled&quot;
+  }
+
+  tags = {
+    Name = &quot;MAP ECS Cluster&quot;
+  }
+}
+
+resource &quot;aws_ecs_task_definition&quot; &quot;map_api&quot; {
+  family                   = &quot;map-api-server&quot;
+  network_mode             = &quot;awsvpc&quot;
+  requires_compatibilities = [&quot;FARGATE&quot;]
+  cpu                      = &quot;512&quot;   # 0.5 vCPU
+  memory                   = &quot;1024&quot;  # 1 GB
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = &quot;map-api-server&quot;
+      image     = &quot;${aws_ecr_repository.map_api.repository_url}:latest&quot;
+      essential = true
+
+      portMappings = [
+        {
+          containerPort = 3000
+          protocol      = &quot;tcp&quot;
+        }
+      ]
+
+      environment = [
+        {
+          name  = &quot;NODE_ENV&quot;
+          value = &quot;production&quot;
+        },
+        {
+          name  = &quot;PORT&quot;
+          value = &quot;3000&quot;
+        },
+        {
+          name  = &quot;DB_HOST&quot;
+          value = aws_db_instance.map_db.address
+        },
+        {
+          name  = &quot;REDIS_HOST&quot;
+          value = aws_elasticache_replication_group.map_redis.primary_endpoint_address
+        }
+      ]
+
+      secrets = [
+        {
+          name      = &quot;DB_PASSWORD&quot;
+          valueFrom = aws_secretsmanager_secret.db_password.arn
+        },
+        {
+          name      = &quot;MASTER_KEY_ID&quot;
+          valueFrom = aws_secretsmanager_secret.master_key_id.arn
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = &quot;awslogs&quot;
+        options = {
+          &quot;awslogs-group&quot;         = &quot;/ecs/map-api-server&quot;
+          &quot;awslogs-region&quot;        = &quot;eu-west-1&quot;
+          &quot;awslogs-stream-prefix&quot; = &quot;ecs&quot;
+        }
+      }
+    }
+  ])
+}
+
+resource &quot;aws_ecs_service&quot; &quot;map_api&quot; {
+  name            = &quot;map-api-service&quot;
+  cluster         = aws_ecs_cluster.map_cluster.id
+  task_definition = aws_ecs_task_definition.map_api.arn
+  desired_count   = 3  # Start with 3 tasks
+  launch_type     = &quot;FARGATE&quot;
+
+  network_configuration {
+    subnets          = aws_subnet.private[*].id
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.map_api.arn
+    container_name   = &quot;map-api-server&quot;
+    container_port   = 3000
+  }
+
+  # Auto-scaling configuration
+  lifecycle {
+    ignore_changes = [desired_count]  # Allow auto-scaling to manage count
+  }
+
+  depends_on = [aws_lb_listener.map_api]
+}
+
+# Auto-scaling
+resource &quot;aws_appautoscaling_target&quot; &quot;ecs_target&quot; {
+  max_capacity       = 20
+  min_capacity       = 3
+  resource_id        = &quot;service/${aws_ecs_cluster.map_cluster.name}/${aws_ecs_service.map_api.name}&quot;
+  scalable_dimension = &quot;ecs:service:DesiredCount&quot;
+  service_namespace  = &quot;ecs&quot;
+}
+
+resource &quot;aws_appautoscaling_policy&quot; &quot;ecs_cpu_policy&quot; {
+  name               = &quot;map-cpu-scaling&quot;
+  policy_type        = &quot;TargetTrackingScaling&quot;
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 70.0
+    predefined_metric_specification {
+      predefined_metric_type = &quot;ECSServiceAverageCPUUtilization&quot;
+    }
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 60
+  }
+}</code></pre>
+<h3 id="step-7-configure-application-load-balancer">Step 7: Configure
+Application Load Balancer</h3>
+<pre class="hcl"><code># terraform/alb.tf
+
+resource &quot;aws_security_group&quot; &quot;alb&quot; {
+  name_prefix = &quot;map-alb-sg&quot;
+  vpc_id      = aws_vpc.map_vpc.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = &quot;tcp&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = &quot;-1&quot;
+    cidr_blocks = [&quot;0.0.0.0/0&quot;]
+  }
+}
+
+resource &quot;aws_lb&quot; &quot;map_alb&quot; {
+  name               = &quot;map-alb&quot;
+  internal           = false
+  load_balancer_type = &quot;application&quot;
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = aws_subnet.public[*].id
+
+  enable_deletion_protection = true
+  enable_http2               = true
+
+  tags = {
+    Name = &quot;MAP ALB&quot;
+  }
+}
+
+resource &quot;aws_lb_target_group&quot; &quot;map_api&quot; {
+  name        = &quot;map-api-tg&quot;
+  port        = 3000
+  protocol    = &quot;HTTP&quot;
+  vpc_id      = aws_vpc.map_vpc.id
+  target_type = &quot;ip&quot;
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    path                = &quot;/health&quot;
+    matcher             = &quot;200&quot;
+  }
+
+  deregistration_delay = 30
+
+  tags = {
+    Name = &quot;MAP API Target Group&quot;
+  }
+}
+
+resource &quot;aws_lb_listener&quot; &quot;map_api&quot; {
+  load_balancer_arn = aws_lb.map_alb.arn
+  port              = &quot;443&quot;
+  protocol          = &quot;HTTPS&quot;
+  ssl_policy        = &quot;ELBSecurityPolicy-TLS13-1-2-2021-06&quot;
+  certificate_arn   = aws_acm_certificate.map_cert.arn
+
+  default_action {
+    type             = &quot;forward&quot;
+    target_group_arn = aws_lb_target_group.map_api.arn
+  }
+}</code></pre>
+<h3 id="step-8-configure-route-53-and-ssl-certificate">Step 8: Configure
+Route 53 and SSL Certificate</h3>
+<pre class="hcl"><code># terraform/dns.tf
+
+resource &quot;aws_route53_zone&quot; &quot;map_domain&quot; {
+  name = &quot;map.example.com&quot;
+
+  tags = {
+    Name = &quot;MAP Domain&quot;
+  }
+}
+
+resource &quot;aws_acm_certificate&quot; &quot;map_cert&quot; {
+  domain_name       = &quot;api.map.example.com&quot;
+  validation_method = &quot;DNS&quot;
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name = &quot;MAP API Certificate&quot;
+  }
+}
+
+resource &quot;aws_route53_record&quot; &quot;cert_validation&quot; {
+  for_each = {
+    for dvo in aws_acm_certificate.map_cert.domain_validation_options : dvo.domain_name =&gt; {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = aws_route53_zone.map_domain.zone_id
+}
+
+resource &quot;aws_acm_certificate_validation&quot; &quot;map_cert&quot; {
+  certificate_arn         = aws_acm_certificate.map_cert.arn
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+}
+
+resource &quot;aws_route53_record&quot; &quot;api&quot; {
+  zone_id = aws_route53_zone.map_domain.zone_id
+  name    = &quot;api.map.example.com&quot;
+  type    = &quot;A&quot;
+
+  alias {
+    name                   = aws_lb.map_alb.dns_name
+    zone_id                = aws_lb.map_alb.zone_id
+    evaluate_target_health = true
+  }
+}</code></pre>
+<h3 id="step-9-configure-cloudwatch-monitoring">Step 9: Configure
+CloudWatch Monitoring</h3>
+<pre class="hcl"><code># terraform/cloudwatch.tf
+
+resource &quot;aws_cloudwatch_log_group&quot; &quot;ecs_logs&quot; {
+  name              = &quot;/ecs/map-api-server&quot;
+  retention_in_days = 30
+
+  tags = {
+    Name = &quot;MAP ECS Logs&quot;
+  }
+}
+
+# Alarm: High error rate
+resource &quot;aws_cloudwatch_metric_alarm&quot; &quot;high_error_rate&quot; {
+  alarm_name          = &quot;map-high-error-rate&quot;
+  comparison_operator = &quot;GreaterThanThreshold&quot;
+  evaluation_periods  = &quot;2&quot;
+  metric_name         = &quot;5XXError&quot;
+  namespace           = &quot;AWS/ApplicationELB&quot;
+  period              = &quot;300&quot;
+  statistic           = &quot;Sum&quot;
+  threshold           = &quot;10&quot;
+  alarm_description   = &quot;This metric monitors API 5xx errors&quot;
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.map_alb.arn_suffix
+  }
+}
+
+# Alarm: High response time
+resource &quot;aws_cloudwatch_metric_alarm&quot; &quot;high_response_time&quot; {
+  alarm_name          = &quot;map-high-response-time&quot;
+  comparison_operator = &quot;GreaterThanThreshold&quot;
+  evaluation_periods  = &quot;2&quot;
+  metric_name         = &quot;TargetResponseTime&quot;
+  namespace           = &quot;AWS/ApplicationELB&quot;
+  period              = &quot;300&quot;
+  statistic           = &quot;Average&quot;
+  threshold           = &quot;1.0&quot;  # 1 second
+  alarm_description   = &quot;API response time is too high&quot;
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.map_alb.arn_suffix
+  }
+}
+
+# Alarm: Database CPU high
+resource &quot;aws_cloudwatch_metric_alarm&quot; &quot;db_cpu_high&quot; {
+  alarm_name          = &quot;map-db-cpu-high&quot;
+  comparison_operator = &quot;GreaterThanThreshold&quot;
+  evaluation_periods  = &quot;2&quot;
+  metric_name         = &quot;CPUUtilization&quot;
+  namespace           = &quot;AWS/RDS&quot;
+  period              = &quot;300&quot;
+  statistic           = &quot;Average&quot;
+  threshold           = &quot;80&quot;
+  alarm_description   = &quot;Database CPU utilization is high&quot;
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.map_db.id
+  }
+}
+
+# SNS topic for alerts
+resource &quot;aws_sns_topic&quot; &quot;alerts&quot; {
+  name = &quot;map-alerts&quot;
+
+  tags = {
+    Name = &quot;MAP Alerts&quot;
+  }
+}
+
+resource &quot;aws_sns_topic_subscription&quot; &quot;alerts_email&quot; {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = &quot;email&quot;
+  endpoint  = &quot;ops@example.com&quot;  # Change to your ops email
+}</code></pre>
+<h3 id="step-10-configure-waf-web-application-firewall">Step 10:
+Configure WAF (Web Application Firewall)</h3>
+<pre class="hcl"><code># terraform/waf.tf
+
+resource &quot;aws_wafv2_web_acl&quot; &quot;map_waf&quot; {
+  name  = &quot;map-waf&quot;
+  scope = &quot;REGIONAL&quot;
+
+  default_action {
+    allow {}
+  }
+
+  # Rule 1: Rate limiting (1000 requests per 5 minutes per IP)
+  rule {
+    name     = &quot;rate-limit-rule&quot;
+    priority = 1
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 1000
+        aggregate_key_type = &quot;IP&quot;
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = &quot;RateLimitRule&quot;
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # Rule 2: AWS managed rule for common threats
+  rule {
+    name     = &quot;aws-managed-rules&quot;
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = &quot;AWSManagedRulesCommonRuleSet&quot;
+        vendor_name = &quot;AWS&quot;
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = &quot;AWSManagedRules&quot;
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = &quot;MAPWAF&quot;
+    sampled_requests_enabled   = true
+  }
+
+  tags = {
+    Name = &quot;MAP WAF&quot;
+  }
+}
+
+resource &quot;aws_wafv2_web_acl_association&quot; &quot;alb&quot; {
+  resource_arn = aws_lb.map_alb.arn
+  web_acl_arn  = aws_wafv2_web_acl.map_waf.arn
+}</code></pre>
 <h2 id="cost-optimization">Cost Optimization</h2>
-
 <h3 id="1-right-sizing">1. Right-Sizing</h3>
-
-<strong>Monitor and adjust:</strong>
+<p><strong>Monitor and adjust:</strong></p>
 <ul>
 <li>ECS task CPU/memory based on actual usage</li>
 <li>RDS instance class (start with t3.medium, upgrade if needed)</li>
 <li>ElastiCache node type (start with t3.small)</li>
 </ul>
-
-<strong>Use Reserved Instances:</strong>
+<p><strong>Use Reserved Instances:</strong></p>
 <ul>
 <li>RDS Reserved Instances (1-3 year commitment) save 30-60%</li>
 <li>Savings Plans for ECS Fargate save up to 50%</li>
 </ul>
-
 <h3 id="2-storage-optimization">2. Storage Optimization</h3>
+<pre class="hcl"><code># S3 lifecycle policy for log archival
+resource &quot;aws_s3_bucket_lifecycle_configuration&quot; &quot;logs&quot; {
+  bucket = aws_s3_bucket.logs.id
 
-<pre><code class="language-hcl">&lt;h1 id=&quot;s3-lifecycle-policy-for-log-archival&quot;&gt;S3 lifecycle policy for log archival&lt;/h1&gt;
-<p>resource &quot;aws<em>s3</em>bucket<em>lifecycle</em>configuration&quot; &quot;logs&quot; {</p>
-<p>  bucket = aws<em>s3</em>bucket.logs.id</p>
+  rule {
+    id     = &quot;archive-old-logs&quot;
+    status = &quot;Enabled&quot;
 
-<p>  rule {</p>
-<p>    id     = &quot;archive-old-logs&quot;</p>
-<p>    status = &quot;Enabled&quot;</p>
+    transition {
+      days          = 90
+      storage_class = &quot;GLACIER&quot;
+    }
 
-<p>    transition {</p>
-<p>      days          = 90</p>
-<p>      storage_class = &quot;GLACIER&quot;</p>
-<p>    }</p>
-
-<p>    expiration {</p>
-<p>      days = 2555  # 7 years for compliance</p>
-<p>    }</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
+    expiration {
+      days = 2555  # 7 years for compliance
+    }
+  }
+}</code></pre>
 <h3 id="3-auto-scaling">3. Auto-Scaling</h3>
-
 <ul>
 <li>Use auto-scaling for ECS tasks (saves $$ during low traffic)</li>
 <li>Enable RDS auto-scaling for storage</li>
 <li>Use ElastiCache with multiple read replicas only if needed</li>
 </ul>
-
 <h2 id="security-best-practices">Security Best Practices</h2>
-
 <h3 id="1-iam-roles-and-policies">1. IAM Roles and Policies</h3>
+<pre class="hcl"><code># terraform/iam.tf
 
-<pre><code class="language-hcl">&lt;h1 id=&quot;terraform-iam-tf&quot;&gt;terraform/iam.tf&lt;/h1&gt;
+# ECS Task Execution Role (for pulling images, writing logs)
+resource &quot;aws_iam_role&quot; &quot;ecs_execution_role&quot; {
+  name = &quot;map-ecs-execution-role&quot;
 
-<p>&lt;h1 id=&quot;ecs-task-execution-role-for-pulling-images-writing-logs&quot;&gt;ECS Task Execution Role (for pulling images, writing logs)&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>iam</em>role&quot; &quot;ecs<em>execution</em>role&quot; {</p>
-<p>  name = &quot;map-ecs-execution-role&quot;</p>
+  assume_role_policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [
+      {
+        Action = &quot;sts:AssumeRole&quot;
+        Effect = &quot;Allow&quot;
+        Principal = {
+          Service = &quot;ecs-tasks.amazonaws.com&quot;
+        }
+      }
+    ]
+  })
+}
 
-<p>  assume<em>role</em>policy = jsonencode({</p>
-<p>    Version = &quot;2012-10-17&quot;</p>
-<p>    Statement = [</p>
-<p>      {</p>
-<p>        Action = &quot;sts:AssumeRole&quot;</p>
-<p>        Effect = &quot;Allow&quot;</p>
-<p>        Principal = {</p>
-<p>          Service = &quot;ecs-tasks.amazonaws.com&quot;</p>
-<p>        }</p>
-<p>      }</p>
-<p>    ]</p>
-<p>  })</p>
-<p>}</p>
+resource &quot;aws_iam_role_policy_attachment&quot; &quot;ecs_execution_role_policy&quot; {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = &quot;arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy&quot;
+}
 
-<p>resource &quot;aws<em>iam</em>role<em>policy</em>attachment&quot; &quot;ecs<em>execution</em>role_policy&quot; {</p>
-<p>  role       = aws<em>iam</em>role.ecs<em>execution</em>role.name</p>
-<p>  policy_arn = &quot;arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy&quot;</p>
-<p>}</p>
+# ECS Task Role (for application to access AWS services)
+resource &quot;aws_iam_role&quot; &quot;ecs_task_role&quot; {
+  name = &quot;map-ecs-task-role&quot;
 
-<p>&lt;h1 id=&quot;ecs-task-role-for-application-to-access-aws-services&quot;&gt;ECS Task Role (for application to access AWS services)&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>iam</em>role&quot; &quot;ecs<em>task</em>role&quot; {</p>
-<p>  name = &quot;map-ecs-task-role&quot;</p>
+  assume_role_policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [
+      {
+        Action = &quot;sts:AssumeRole&quot;
+        Effect = &quot;Allow&quot;
+        Principal = {
+          Service = &quot;ecs-tasks.amazonaws.com&quot;
+        }
+      }
+    ]
+  })
+}
 
-<p>  assume<em>role</em>policy = jsonencode({</p>
-<p>    Version = &quot;2012-10-17&quot;</p>
-<p>    Statement = [</p>
-<p>      {</p>
-<p>        Action = &quot;sts:AssumeRole&quot;</p>
-<p>        Effect = &quot;Allow&quot;</p>
-<p>        Principal = {</p>
-<p>          Service = &quot;ecs-tasks.amazonaws.com&quot;</p>
-<p>        }</p>
-<p>      }</p>
-<p>    ]</p>
-<p>  })</p>
-<p>}</p>
+# Policy: Allow access to Secrets Manager
+resource &quot;aws_iam_role_policy&quot; &quot;secrets_access&quot; {
+  name = &quot;secrets-access&quot;
+  role = aws_iam_role.ecs_task_role.id
 
-<p>&lt;h1 id=&quot;policy-allow-access-to-secrets-manager&quot;&gt;Policy: Allow access to Secrets Manager&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>iam</em>role<em>policy&quot; &quot;secrets</em>access&quot; {</p>
-<p>  name = &quot;secrets-access&quot;</p>
-<p>  role = aws<em>iam</em>role.ecs<em>task</em>role.id</p>
+  policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [
+      {
+        Effect = &quot;Allow&quot;
+        Action = [
+          &quot;secretsmanager:GetSecretValue&quot;
+        ]
+        Resource = [
+          aws_secretsmanager_secret.db_password.arn,
+          aws_secretsmanager_secret.master_key_id.arn
+        ]
+      }
+    ]
+  })
+}
 
-<p>  policy = jsonencode({</p>
-<p>    Version = &quot;2012-10-17&quot;</p>
-<p>    Statement = [</p>
-<p>      {</p>
-<p>        Effect = &quot;Allow&quot;</p>
-<p>        Action = [</p>
-<p>          &quot;secretsmanager:GetSecretValue&quot;</p>
-<p>        ]</p>
-<p>        Resource = [</p>
-<p>          aws<em>secretsmanager</em>secret.db_password.arn,</p>
-<p>          aws<em>secretsmanager</em>secret.master<em>key</em>id.arn</p>
-<p>        ]</p>
-<p>      }</p>
-<p>    ]</p>
-<p>  })</p>
-<p>}</p>
+# Policy: Allow KMS decrypt
+resource &quot;aws_iam_role_policy&quot; &quot;kms_access&quot; {
+  name = &quot;kms-access&quot;
+  role = aws_iam_role.ecs_task_role.id
 
-<p>&lt;h1 id=&quot;policy-allow-kms-decrypt&quot;&gt;Policy: Allow KMS decrypt&lt;/h1&gt;</p>
-<p>resource &quot;aws<em>iam</em>role<em>policy&quot; &quot;kms</em>access&quot; {</p>
-<p>  name = &quot;kms-access&quot;</p>
-<p>  role = aws<em>iam</em>role.ecs<em>task</em>role.id</p>
-
-<p>  policy = jsonencode({</p>
-<p>    Version = &quot;2012-10-17&quot;</p>
-<p>    Statement = [</p>
-<p>      {</p>
-<p>        Effect = &quot;Allow&quot;</p>
-<p>        Action = [</p>
-<p>          &quot;kms:Decrypt&quot;,</p>
-<p>          &quot;kms:Encrypt&quot;,</p>
-<p>          &quot;kms:GenerateDataKey&quot;</p>
-<p>        ]</p>
-<p>        Resource = aws<em>kms</em>key.map<em>master</em>key.arn</p>
-<p>      }</p>
-<p>    ]</p>
-<p>  })</p>
-<p>}</code></pre></p>
-
+  policy = jsonencode({
+    Version = &quot;2012-10-17&quot;
+    Statement = [
+      {
+        Effect = &quot;Allow&quot;
+        Action = [
+          &quot;kms:Decrypt&quot;,
+          &quot;kms:Encrypt&quot;,
+          &quot;kms:GenerateDataKey&quot;
+        ]
+        Resource = aws_kms_key.map_master_key.arn
+      }
+    ]
+  })
+}</code></pre>
 <h3 id="2-network-security">2. Network Security</h3>
-
 <ul>
 <li>All services in private subnets (except ALB)</li>
 <li>Security groups with least privilege</li>
 <li>NACLs for additional layer of security</li>
 <li>VPC Flow Logs for network monitoring</li>
 </ul>
-
 <h3 id="3-data-encryption">3. Data Encryption</h3>
-
 <ul>
 <li>RDS encryption at rest (enabled)</li>
 <li>ElastiCache encryption in transit and at rest</li>
@@ -1037,209 +1085,195 @@
 <li>KMS for private key encryption</li>
 <li>TLS 1.3 for all communications</li>
 </ul>
-
 <h2 id="disaster-recovery">Disaster Recovery</h2>
-
 <h3 id="backup-strategy">Backup Strategy</h3>
+<pre class="hcl"><code># RDS automated backups (already configured above)
+# - Retention: 30 days
+# - Backup window: 03:00-04:00 UTC
+# - Multi-AZ for failover
 
-<pre><code class="language-hcl">&lt;h1 id=&quot;rds-automated-backups-already-configured-above&quot;&gt;RDS automated backups (already configured above)&lt;/h1&gt;
-<p>&lt;h1 id=&quot;retention-30-days&quot;&gt;- Retention: 30 days&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;backup-window-03-00-04-00-utc&quot;&gt;- Backup window: 03:00-04:00 UTC&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;multi-az-for-failover&quot;&gt;- Multi-AZ for failover&lt;/h1&gt;</p>
+# Manual snapshot before major changes
+resource &quot;null_resource&quot; &quot;manual_snapshot&quot; {
+  triggers = {
+    version = &quot;1.0.0&quot;  # Update this to trigger new snapshot
+  }
 
-<p>&lt;h1 id=&quot;manual-snapshot-before-major-changes&quot;&gt;Manual snapshot before major changes&lt;/h1&gt;</p>
-<p>resource &quot;null<em>resource&quot; &quot;manual</em>snapshot&quot; {</p>
-<p>  triggers = {</p>
-<p>    version = &quot;1.0.0&quot;  # Update this to trigger new snapshot</p>
-<p>  }</p>
-
-<p>  provisioner &quot;local-exec&quot; {</p>
-<p>    command = &lt;&lt;EOF</p>
-<p>aws rds create-db-snapshot \</p>
-<p>  --db-instance-identifier ${aws<em>db</em>instance.map_db.id} \</p>
-<p>  --db-snapshot-identifier map-db-manual-${timestamp()}</p>
-<p>EOF</p>
-<p>  }</p>
-<p>}</code></pre></p>
-
+  provisioner &quot;local-exec&quot; {
+    command = &lt;&lt;EOF
+aws rds create-db-snapshot \
+  --db-instance-identifier ${aws_db_instance.map_db.id} \
+  --db-snapshot-identifier map-db-manual-${timestamp()}
+EOF
+  }
+}</code></pre>
 <h3 id="multi-region-failover">Multi-Region Failover</h3>
-
-<strong>For Production:</strong>
-<ul>
+<p><strong>For Production:</strong></p>
+<ol type="1">
 <li>Replicate RDS to secondary region (cross-region replica)</li>
 <li>Replicate ElastiCache with Global Datastore</li>
 <li>Deploy ECS tasks in secondary region (standby)</li>
 <li>Use Route 53 health checks for automatic failover</li>
-</ul>
-
-<p><strong>RTO:</strong> 5 minutes (automated failover)</p>
-<p><strong>RPO:</strong> 5 minutes (replication lag)</p>
-
+</ol>
+<p><strong>RTO:</strong> 5 minutes (automated failover)
+<strong>RPO:</strong> 5 minutes (replication lag)</p>
 <h2 id="deployment-workflow">Deployment Workflow</h2>
-
-<h3 id="ci-cd-pipeline-github-actions-example">CI/CD Pipeline (GitHub Actions Example)</h3>
-
-<pre><code class="language-yaml">&lt;h1 id=&quot;github-workflows-deploy-yml&quot;&gt;.github/workflows/deploy.yml&lt;/h1&gt;
-
-<p>name: Deploy to AWS</p>
-
-<p>on:</p>
-<p>  push:</p>
-<p>    branches: [main]</p>
-
-<p>jobs:</p>
-<p>  deploy:</p>
-<p>    runs-on: ubuntu-latest</p>
-
-<p>    steps:</p>
-<p>      - uses: actions/checkout@v3</p>
-
-<p>      - name: Configure AWS credentials</p>
-<p>        uses: aws-actions/configure-aws-credentials@v2</p>
-<p>        with:</p>
-<p>          aws-access-key-id: ${{ secrets.AWS<em>ACCESS</em>KEY_ID }}</p>
-<p>          aws-secret-access-key: ${{ secrets.AWS<em>SECRET</em>ACCESS_KEY }}</p>
-<p>          aws-region: eu-west-1</p>
-
-<p>      - name: Login to Amazon ECR</p>
-<p>        id: login-ecr</p>
-<p>        uses: aws-actions/amazon-ecr-login@v1</p>
-
-<p>      - name: Build and push Docker image</p>
-<p>        env:</p>
-<p>          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}</p>
-<p>          ECR_REPOSITORY: map-api-server</p>
-<p>          IMAGE_TAG: ${{ github.sha }}</p>
-<p>        run: |</p>
-<p>          docker build -t $ECR<em>REGISTRY/$ECR</em>REPOSITORY:$IMAGE_TAG .</p>
-<p>          docker tag $ECR<em>REGISTRY/$ECR</em>REPOSITORY:$IMAGE<em>TAG $ECR</em>REGISTRY/$ECR_REPOSITORY:latest</p>
-<p>          docker push $ECR<em>REGISTRY/$ECR</em>REPOSITORY:$IMAGE_TAG</p>
-<p>          docker push $ECR<em>REGISTRY/$ECR</em>REPOSITORY:latest</p>
-
-<p>      - name: Update ECS service</p>
-<p>        run: |</p>
-<p>          aws ecs update-service \</p>
-<p>            --cluster map-cluster \</p>
-<p>            --service map-api-service \</p>
-<p>            --force-new-deployment</p>
-
-<p>      - name: Wait for deployment</p>
-<p>        run: |</p>
-<p>          aws ecs wait services-stable \</p>
-<p>            --cluster map-cluster \</p>
-<p>            --services map-api-service</code></pre></p>
-
+<h3 id="cicd-pipeline-github-actions-example">CI/CD Pipeline (GitHub
+Actions Example)</h3>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># .github/workflows/deploy.yml</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> Deploy to AWS</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">]</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">deploy</span><span class="kw">:</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v3</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Configure AWS credentials</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> aws-actions/configure-aws-credentials@v2</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">aws-access-key-id</span><span class="kw">:</span><span class="at"> ${{ secrets.AWS_ACCESS_KEY_ID }}</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">aws-secret-access-key</span><span class="kw">:</span><span class="at"> ${{ secrets.AWS_SECRET_ACCESS_KEY }}</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">aws-region</span><span class="kw">:</span><span class="at"> eu-west-1</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Login to Amazon ECR</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">id</span><span class="kw">:</span><span class="at"> login-ecr</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> aws-actions/amazon-ecr-login@v1</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build and push Docker image</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ECR_REGISTRY</span><span class="kw">:</span><span class="at"> ${{ steps.login-ecr.outputs.registry }}</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ECR_REPOSITORY</span><span class="kw">:</span><span class="at"> map-api-server</span></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">IMAGE_TAG</span><span class="kw">:</span><span class="at"> ${{ github.sha }}</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest</span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest</span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Update ECS service</span></span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>          aws ecs update-service \</span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>            --cluster map-cluster \</span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>            --service map-api-service \</span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>            --force-new-deployment</span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Wait for deployment</span></span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a>          aws ecs wait services-stable \</span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>            --cluster map-cluster \</span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>            --services map-api-service</span></code></pre></div>
 <h2 id="testing">Testing</h2>
-
 <h3 id="load-testing-using-k6">Load Testing (using k6)</h3>
-
-<pre><code class="language-javascript">// load-test.js
-<p>import http from &#039;k6/http&#039;;</p>
-<p>import { check, sleep } from &#039;k6&#039;;</p>
-
-<p>export let options = {</p>
-<p>  stages: [</p>
-<p>    { duration: &#039;2m&#039;, target: 100 },  // Ramp up to 100 users</p>
-<p>    { duration: &#039;5m&#039;, target: 100 },  // Stay at 100 users</p>
-<p>    { duration: &#039;2m&#039;, target: 200 },  // Ramp up to 200 users</p>
-<p>    { duration: &#039;5m&#039;, target: 200 },  // Stay at 200 users</p>
-<p>    { duration: &#039;2m&#039;, target: 0 },    // Ramp down to 0 users</p>
-<p>  ],</p>
-<p>  thresholds: {</p>
-<p>    http<em>req</em>duration: [&#039;p(95)&lt;500&#039;],  // 95% of requests must complete below 500ms</p>
-<p>    http<em>req</em>failed: [&#039;rate&lt;0.01&#039;],    // Less than 1% errors</p>
-<p>  },</p>
-<p>};</p>
-
-<p>export default function () {</p>
-<p>  const url = &#039;https://api.map.example.com/api/v1/auth/verify&#039;;</p>
-<p>  const payload = JSON.stringify({</p>
-<p>    caller_id: &#039;+441234567890&#039;,</p>
-<p>    called_id: &#039;+447700900123&#039;,</p>
-<p>    call_reference: <code>call-${<strong>VU}-${</strong>ITER}</code>,</p>
-<p>    originating_cp: &#039;CP3-UK-0007&#039;,</p>
-<p>  });</p>
-
-<p>  const params = {</p>
-<p>    headers: {</p>
-<p>      &#039;Content-Type&#039;: &#039;application/json&#039;,</p>
-<p>      &#039;Authorization&#039;: &#039;Bearer YOUR<em>API</em>KEY&#039;,</p>
-<p>    },</p>
-<p>  };</p>
-
-<p>  const res = http.post(url, payload, params);</p>
-
-<p>  check(res, {</p>
-<p>    &#039;status is 200&#039;: (r) =&gt; r.status === 200,</p>
-<p>    &#039;response time &lt; 500ms&#039;: (r) =&gt; r.timings.duration &lt; 500,</p>
-<p>    &#039;verified field exists&#039;: (r) =&gt; JSON.parse(r.body).hasOwnProperty(&#039;verified&#039;),</p>
-<p>  });</p>
-
-<p>  sleep(1);</p>
-<p>}</code></pre></p>
-
-<strong>Run load test:</strong>
-<pre><code class="language-bash">k6 run load-test.js</code></pre>
-
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">// load-test.js</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> http <span class="im">from</span> <span class="st">&#39;k6/http&#39;</span><span class="op">;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { check<span class="op">,</span> sleep } <span class="im">from</span> <span class="st">&#39;k6&#39;</span><span class="op">;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">let</span> options <span class="op">=</span> {</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">stages</span><span class="op">:</span> [</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;2m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">100</span> }<span class="op">,</span>  <span class="co">// Ramp up to 100 users</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;5m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">100</span> }<span class="op">,</span>  <span class="co">// Stay at 100 users</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;2m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">200</span> }<span class="op">,</span>  <span class="co">// Ramp up to 200 users</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;5m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">200</span> }<span class="op">,</span>  <span class="co">// Stay at 200 users</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;2m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">0</span> }<span class="op">,</span>    <span class="co">// Ramp down to 0 users</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  ]<span class="op">,</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">thresholds</span><span class="op">:</span> {</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">http_req_duration</span><span class="op">:</span> [<span class="st">&#39;p(95)&lt;500&#39;</span>]<span class="op">,</span>  <span class="co">// 95% of requests must complete below 500ms</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">http_req_failed</span><span class="op">:</span> [<span class="st">&#39;rate&lt;0.01&#39;</span>]<span class="op">,</span>    <span class="co">// Less than 1% errors</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="im">default</span> <span class="kw">function</span> () {</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> url <span class="op">=</span> <span class="st">&#39;https://api.map.example.com/api/v1/auth/verify&#39;</span><span class="op">;</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> payload <span class="op">=</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">caller_id</span><span class="op">:</span> <span class="st">&#39;+441234567890&#39;</span><span class="op">,</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="dt">called_id</span><span class="op">:</span> <span class="st">&#39;+447700900123&#39;</span><span class="op">,</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    <span class="dt">call_reference</span><span class="op">:</span> <span class="vs">`call-</span><span class="sc">${</span>__VU<span class="sc">}</span><span class="vs">-</span><span class="sc">${</span>__ITER<span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="dt">originating_cp</span><span class="op">:</span> <span class="st">&#39;CP1-UK-0007&#39;</span><span class="op">,</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> {</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> {</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;Content-Type&#39;</span><span class="op">:</span> <span class="st">&#39;application/json&#39;</span><span class="op">,</span></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;Authorization&#39;</span><span class="op">:</span> <span class="st">&#39;Bearer YOUR_API_KEY&#39;</span><span class="op">,</span></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>  }<span class="op">;</span></span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> res <span class="op">=</span> http<span class="op">.</span><span class="fu">post</span>(url<span class="op">,</span> payload<span class="op">,</span> params)<span class="op">;</span></span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">check</span>(res<span class="op">,</span> {</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;status is 200&#39;</span><span class="op">:</span> (r) <span class="kw">=&gt;</span> r<span class="op">.</span><span class="at">status</span> <span class="op">===</span> <span class="dv">200</span><span class="op">,</span></span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;response time &lt; 500ms&#39;</span><span class="op">:</span> (r) <span class="kw">=&gt;</span> r<span class="op">.</span><span class="at">timings</span><span class="op">.</span><span class="at">duration</span> <span class="op">&lt;</span> <span class="dv">500</span><span class="op">,</span></span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;verified field exists&#39;</span><span class="op">:</span> (r) <span class="kw">=&gt;</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(r<span class="op">.</span><span class="at">body</span>)<span class="op">.</span><span class="fu">hasOwnProperty</span>(<span class="st">&#39;verified&#39;</span>)<span class="op">,</span></span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sleep</span>(<span class="dv">1</span>)<span class="op">;</span></span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>Run load test:</strong></p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">k6</span> run load-test.js</span></code></pre></div>
 <h2 id="monitoring-dashboard">Monitoring Dashboard</h2>
+<p><strong>CloudWatch Dashboard:</strong></p>
+<pre class="hcl"><code>resource &quot;aws_cloudwatch_dashboard&quot; &quot;map_dashboard&quot; {
+  dashboard_name = &quot;MAP-Operations-Dashboard&quot;
 
-<strong>CloudWatch Dashboard:</strong>
-<pre><code class="language-hcl">resource &quot;aws<em>cloudwatch</em>dashboard&quot; &quot;map_dashboard&quot; {
-<p>  dashboard_name = &quot;MAP-Operations-Dashboard&quot;</p>
-
-<p>  dashboard_body = jsonencode({</p>
-<p>    widgets = [</p>
-<p>      {</p>
-<p>        type = &quot;metric&quot;</p>
-<p>        properties = {</p>
-<p>          metrics = [</p>
-<p>            [&quot;AWS/ECS&quot;, &quot;CPUUtilization&quot;, { stat = &quot;Average&quot;, label = &quot;ECS CPU&quot; }],</p>
-<p>            [&quot;AWS/ECS&quot;, &quot;MemoryUtilization&quot;, { stat = &quot;Average&quot;, label = &quot;ECS Memory&quot; }]</p>
-<p>          ]</p>
-<p>          period = 300</p>
-<p>          stat   = &quot;Average&quot;</p>
-<p>          region = &quot;eu-west-1&quot;</p>
-<p>          title  = &quot;ECS Utilization&quot;</p>
-<p>        }</p>
-<p>      },</p>
-<p>      {</p>
-<p>        type = &quot;metric&quot;</p>
-<p>        properties = {</p>
-<p>          metrics = [</p>
-<p>            [&quot;AWS/RDS&quot;, &quot;CPUUtilization&quot;, { stat = &quot;Average&quot;, label = &quot;RDS CPU&quot; }],</p>
-<p>            [&quot;AWS/RDS&quot;, &quot;DatabaseConnections&quot;, { stat = &quot;Sum&quot;, label = &quot;Connections&quot; }]</p>
-<p>          ]</p>
-<p>          period = 300</p>
-<p>          stat   = &quot;Average&quot;</p>
-<p>          region = &quot;eu-west-1&quot;</p>
-<p>          title  = &quot;RDS Performance&quot;</p>
-<p>        }</p>
-<p>      },</p>
-<p>      {</p>
-<p>        type = &quot;metric&quot;</p>
-<p>        properties = {</p>
-<p>          metrics = [</p>
-<p>            [&quot;AWS/ApplicationELB&quot;, &quot;TargetResponseTime&quot;, { stat = &quot;Average&quot;, label = &quot;Response Time&quot; }],</p>
-<p>            [&quot;AWS/ApplicationELB&quot;, &quot;RequestCount&quot;, { stat = &quot;Sum&quot;, label = &quot;Requests&quot; }]</p>
-<p>          ]</p>
-<p>          period = 300</p>
-<p>          region = &quot;eu-west-1&quot;</p>
-<p>          title  = &quot;API Performance&quot;</p>
-<p>        }</p>
-<p>      }</p>
-<p>    ]</p>
-<p>  })</p>
-<p>}</code></pre></p>
-
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type = &quot;metric&quot;
+        properties = {
+          metrics = [
+            [&quot;AWS/ECS&quot;, &quot;CPUUtilization&quot;, { stat = &quot;Average&quot;, label = &quot;ECS CPU&quot; }],
+            [&quot;AWS/ECS&quot;, &quot;MemoryUtilization&quot;, { stat = &quot;Average&quot;, label = &quot;ECS Memory&quot; }]
+          ]
+          period = 300
+          stat   = &quot;Average&quot;
+          region = &quot;eu-west-1&quot;
+          title  = &quot;ECS Utilization&quot;
+        }
+      },
+      {
+        type = &quot;metric&quot;
+        properties = {
+          metrics = [
+            [&quot;AWS/RDS&quot;, &quot;CPUUtilization&quot;, { stat = &quot;Average&quot;, label = &quot;RDS CPU&quot; }],
+            [&quot;AWS/RDS&quot;, &quot;DatabaseConnections&quot;, { stat = &quot;Sum&quot;, label = &quot;Connections&quot; }]
+          ]
+          period = 300
+          stat   = &quot;Average&quot;
+          region = &quot;eu-west-1&quot;
+          title  = &quot;RDS Performance&quot;
+        }
+      },
+      {
+        type = &quot;metric&quot;
+        properties = {
+          metrics = [
+            [&quot;AWS/ApplicationELB&quot;, &quot;TargetResponseTime&quot;, { stat = &quot;Average&quot;, label = &quot;Response Time&quot; }],
+            [&quot;AWS/ApplicationELB&quot;, &quot;RequestCount&quot;, { stat = &quot;Sum&quot;, label = &quot;Requests&quot; }]
+          ]
+          period = 300
+          region = &quot;eu-west-1&quot;
+          title  = &quot;API Performance&quot;
+        }
+      }
+    ]
+  })
+}</code></pre>
 <h2 id="maintenance">Maintenance</h2>
-
 <h3 id="weekly-tasks">Weekly Tasks</h3>
 <ul>
 <li>Review CloudWatch alarms and logs</li>
 <li>Check for security updates</li>
 <li>Review cost reports</li>
 </ul>
-
 <h3 id="monthly-tasks">Monthly Tasks</h3>
 <ul>
 <li>Review and optimize auto-scaling thresholds</li>
@@ -1248,7 +1282,6 @@
 <li>Review IAM policies and access logs</li>
 <li>Backup validation (test restore)</li>
 </ul>
-
 <h3 id="quarterly-tasks">Quarterly Tasks</h3>
 <ul>
 <li>Disaster recovery drill (failover to secondary region)</li>
@@ -1256,48 +1289,44 @@
 <li>Cost optimization review</li>
 <li>Capacity planning review</li>
 </ul>
-
 <h2 id="troubleshooting">Troubleshooting</h2>
-
 <h3 id="common-issues">Common Issues</h3>
-
-<strong>Issue 1: High Database CPU</strong>
-<pre><code class="language-bash">&lt;h1 id=&quot;check-slow-queries&quot;&gt;Check slow queries&lt;/h1&gt;
-<p>aws rds describe-db-log-files --db-instance-identifier map-postgresql</p>
-
-<p>&lt;h1 id=&quot;download-slow-query-log&quot;&gt;Download slow query log&lt;/h1&gt;</p>
-<p>aws rds download-db-log-file-portion \</p>
-<p>  --db-instance-identifier map-postgresql \</p>
-<p>  --log-file-name slowquery/postgres.log \</p>
-<p>  --output text</code></pre></p>
-
-<p><strong>Solution:</strong> Add indexes, optimize queries, or upgrade instance class</p>
-
-<strong>Issue 2: ECS Tasks Failing Health Checks</strong>
-<pre><code class="language-bash">&lt;h1 id=&quot;check-ecs-task-logs&quot;&gt;Check ECS task logs&lt;/h1&gt;
-<p>aws logs tail /ecs/map-api-server --follow</p>
-
-<p>&lt;h1 id=&quot;check-target-group-health&quot;&gt;Check target group health&lt;/h1&gt;</p>
-<p>aws elbv2 describe-target-health \</p>
-<p>  --target-group-arn &lt;target-group-arn&gt;</code></pre></p>
-
-<p><strong>Solution:</strong> Check application logs for errors, verify security group rules</p>
-
-<strong>Issue 3: High Response Times</strong>
-<pre><code class="language-bash">&lt;h1 id=&quot;check-alb-metrics&quot;&gt;Check ALB metrics&lt;/h1&gt;
-<p>aws cloudwatch get-metric-statistics \</p>
-<p>  --namespace AWS/ApplicationELB \</p>
-<p>  --metric-name TargetResponseTime \</p>
-<p>  --dimensions Name=LoadBalancer,Value=&lt;alb-arn-suffix&gt; \</p>
-<p>  --start-time 2025-12-01T00:00:00Z \</p>
-<p>  --end-time 2025-12-01T23:59:59Z \</p>
-<p>  --period 300 \</p>
-<p>  --statistics Average</code></pre></p>
-
-<p><strong>Solution:</strong> Scale up ECS tasks, optimize database queries, increase Redis cache TTL</p>
-
+<p><strong>Issue 1: High Database CPU</strong></p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check slow queries</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> rds describe-db-log-files <span class="at">--db-instance-identifier</span> map-postgresql</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Download slow query log</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> rds download-db-log-file-portion <span class="dt">\</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--db-instance-identifier</span> map-postgresql <span class="dt">\</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--log-file-name</span> slowquery/postgres.log <span class="dt">\</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> text</span></code></pre></div>
+<p><strong>Solution:</strong> Add indexes, optimize queries, or upgrade
+instance class</p>
+<p><strong>Issue 2: ECS Tasks Failing Health Checks</strong></p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check ECS task logs</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> logs tail /ecs/map-api-server <span class="at">--follow</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check target group health</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> elbv2 describe-target-health <span class="dt">\</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--target-group-arn</span> <span class="op">&lt;</span>target-group-arn<span class="op">&gt;</span></span></code></pre></div>
+<p><strong>Solution:</strong> Check application logs for errors, verify
+security group rules</p>
+<p><strong>Issue 3: High Response Times</strong></p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check ALB metrics</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> cloudwatch get-metric-statistics <span class="dt">\</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--namespace</span> AWS/ApplicationELB <span class="dt">\</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metric-name</span> TargetResponseTime <span class="dt">\</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dimensions</span> Name=LoadBalancer,Value=<span class="op">&lt;</span>alb-arn-suffix<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--start-time</span> 2025-12-01T00:00:00Z <span class="dt">\</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--end-time</span> 2025-12-01T23:59:59Z <span class="dt">\</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--period</span> 300 <span class="dt">\</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--statistics</span> Average</span></code></pre></div>
+<p><strong>Solution:</strong> Scale up ECS tasks, optimize database
+queries, increase Redis cache TTL</p>
 <h2 id="conclusion">Conclusion</h2>
-
 <p>This AWS deployment provides:</p>
 <ul>
 <li>✅ Fully managed, highly available infrastructure</li>
@@ -1307,25 +1336,22 @@
 <li>✅ Security best practices (encryption, IAM, WAF)</li>
 <li>✅ Cost-optimized architecture</li>
 </ul>
-
-<p><strong>Total Deployment Time:</strong> 2-4 hours (automated with Terraform)</p>
-
-<p><strong>Estimated Monthly Cost:</strong> $500-$2,500 (depending on scale)</p>
-
-<p>---</p>
-
-<strong>Next Steps:</strong>
-<ul>
+<p><strong>Total Deployment Time:</strong> 2-4 hours (automated with
+Terraform)</p>
+<p><strong>Estimated Monthly Cost:</strong> <span
+class="math inline">500−</span>2,500 (depending on scale)</p>
+<hr />
+<p><strong>Next Steps:</strong></p>
+<ol type="1">
 <li>Clone Terraform repository</li>
 <li>Update variables.tf with your settings</li>
 <li>Run <code>terraform apply</code></li>
 <li>Deploy Docker image</li>
 <li>Test API endpoints</li>
 <li>Onboard first downstream CP</li>
-</ul>
-
-<p><strong>Support:</strong> For questions, contact nick.holland@8x8.com</p>
-
+</ol>
+<p><strong>Support:</strong> For questions, contact <a
+href="mailto:nick.holland@8x8.com">nick.holland@8x8.com</a></p>
     </main>
 
     <footer class="doc-footer">

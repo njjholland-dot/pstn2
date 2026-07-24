@@ -56,14 +56,14 @@ export class DirectQueryAuth {
       calledID,
       callReference,
       timestamp: this.messagingClient.getCurrentTimestamp(),
-      requestingCP: this.messagingClient['config'].cpId, // Access config through messaging client
+      requestingCP: this.messagingClient.getCpId(),
     };
 
     // Make request to originating CP
     const { response, portingChain } = await this.messagingClient.request<
       CallVerificationRequest,
       CallVerificationResponse
-    >('/verify-call', cpInfo.apiEndpoint, request);
+    >('/auth/verify', cpInfo.apiEndpoint, request);
 
     // Add porting chain to response if any porting occurred
     if (portingChain.length > 0) {

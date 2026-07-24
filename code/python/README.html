@@ -34,388 +34,381 @@
             </div>
         </nav>
     <main class="doc-container">
-        <h1 id="pstn2-python-sdk">PSTN2 Python SDK</h1>
-
-<p>Python implementation of the PSTN2 distributed telecommunications protocol.</p>
-
+<h1 id="pstn2-python-sdk">PSTN2 Python SDK</h1>
+<p>Python implementation of the PSTN2 distributed telecommunications
+protocol.</p>
+<blockquote>
+<p><strong>Status: reference API — not yet on PyPI.</strong> The
+<code>pstn2</code> package has not been published, so
+<code>pip install pstn2</code> will not work yet. The examples in
+<code>examples/</code> and the snippets below illustrate the
+<em>intended</em> SDK surface.</p>
+</blockquote>
 <h2 id="installation">Installation</h2>
-
-<pre><code class="language-bash">pip install pstn2
-<p>&lt;h1 id=&quot;or&quot;&gt;or&lt;/h1&gt;</p>
-<p>poetry add pstn2</p>
-<p>&lt;h1 id=&quot;or&quot;&gt;or&lt;/h1&gt;</p>
-<p>uv add pstn2</code></pre></p>
-
+<p>Once the SDK is published to PyPI, installation will be:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pstn2</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> add pstn2</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> add pstn2</span></code></pre></div>
 <h2 id="requirements">Requirements</h2>
-
 <ul>
 <li>Python 3.11 or later</li>
-<li>Dependencies: <code>httpx</code>, <code>cryptography</code>, <code>pydantic</code></li>
+<li>Dependencies: <code>httpx</code>, <code>cryptography</code>,
+<code>pydantic</code></li>
 </ul>
-
 <h2 id="quick-start">Quick Start</h2>
-
-<pre><code class="language-python">import asyncio
-<p>from pstn2.client import PSTN2Client, AuthenticationMode</p>
-
-<p>async def main():</p>
-<p>    client = PSTN2Client(</p>
-<p>        cp_id=&#039;CP1-UK-0001&#039;,</p>
-<p>        api_endpoint=&#039;https://api.yourcp.com/pstn2/v1&#039;,</p>
-<p>        private<em>key=os.environ[&#039;PSTN2</em>PRIVATE_KEY&#039;],</p>
-<p>        auth<em>mode=AuthenticationMode.DIRECT</em>QUERY,</p>
-<p>    )</p>
-
-<p>    # Verify an inbound call</p>
-<p>    verification = await client.auth.verify_call(</p>
-<p>        caller_id=&#039;+441234567890&#039;,</p>
-<p>        called_id=&#039;+447700900123&#039;,</p>
-<p>        call_reference=&#039;abc-123-def-456&#039;,</p>
-<p>    )</p>
-
-<p>    print(f&#039;Call verified: {verification.verified}&#039;)</p>
-
-<p>    await client.close()</p>
-
-<p>asyncio.run(main())</code></pre></p>
-
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client, AuthenticationMode</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> main():</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    client <span class="op">=</span> PSTN2Client(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        cp_id<span class="op">=</span><span class="st">&#39;CP1-UK-0001&#39;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        api_endpoint<span class="op">=</span><span class="st">&#39;https://api.yourcp.com/pstn2/v1&#39;</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        private_key<span class="op">=</span>os.environ[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>],</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        auth_mode<span class="op">=</span>AuthenticationMode.DIRECT_QUERY,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Verify an inbound call</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        call_reference<span class="op">=</span><span class="st">&#39;abc-123-def-456&#39;</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Call verified: </span><span class="sc">{</span>verification<span class="sc">.</span>verified<span class="sc">}</span><span class="ss">&#39;</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>asyncio.run(main())</span></code></pre></div>
 <h2 id="features">Features</h2>
-
 <ul>
-<li>✅ <strong>Authentication</strong>: Verify caller IDs using Direct Query or Token Pool</li>
-<li>✅ <strong>Direct Routing</strong>: Discover peer-to-peer routing paths</li>
-<li>✅ <strong>End-to-End Encryption</strong>: Per-call key exchange with Ed25519</li>
-<li>✅ <strong>Call Branding</strong>: Display verified caller information</li>
-<li>✅ <strong>Emergency Services</strong>: Real-time GPS location for 999/112/911 calls</li>
-<li>✅ <strong>Directory Service</strong>: Distributed number directory lookups</li>
+<li>✅ <strong>Authentication</strong>: Verify caller IDs using Direct
+Query or Token Pool</li>
+<li>✅ <strong>Direct Routing</strong>: Discover peer-to-peer routing
+paths</li>
+<li>✅ <strong>End-to-End Encryption</strong>: Per-call key exchange
+with Ed25519</li>
+<li>✅ <strong>Call Branding</strong>: Display verified caller
+information</li>
+<li>✅ <strong>Emergency Services</strong>: Real-time GPS location for
+999/112/911 calls</li>
+<li>✅ <strong>Directory Service</strong>: Distributed number directory
+lookups</li>
 <li>✅ <strong>Async/Await</strong>: Built on modern Python asyncio</li>
-<li>✅ <strong>Type Safety</strong>: Full type hints with Pydantic models</li>
+<li>✅ <strong>Type Safety</strong>: Full type hints with Pydantic
+models</li>
 </ul>
-
 <h2 id="project-setup">Project Setup</h2>
-
 <h3 id="using-pip">Using pip</h3>
-
-<pre><code class="language-bash">&lt;h1 id=&quot;create-virtual-environment&quot;&gt;Create virtual environment&lt;/h1&gt;
-<p>python -m venv venv</p>
-<p>source venv/bin/activate  # or <code>venv\Scripts\activate</code> on Windows</p>
-
-<p>&lt;h1 id=&quot;install-package&quot;&gt;Install package&lt;/h1&gt;</p>
-<p>pip install pstn2</code></pre></p>
-
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create virtual environment</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv venv</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate  <span class="co"># or `venv\Scripts\activate` on Windows</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install package</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pstn2</span></code></pre></div>
 <h3 id="using-poetry">Using Poetry</h3>
-
-<pre><code class="language-bash">&lt;h1 id=&quot;initialize-project&quot;&gt;Initialize project&lt;/h1&gt;
-<p>poetry new my-pstn2-app</p>
-<p>cd my-pstn2-app</p>
-
-<p>&lt;h1 id=&quot;add-dependency&quot;&gt;Add dependency&lt;/h1&gt;</p>
-<p>poetry add pstn2</p>
-
-<p>&lt;h1 id=&quot;activate-shell&quot;&gt;Activate shell&lt;/h1&gt;</p>
-<p>poetry shell</code></pre></p>
-
-<h3 id="using-uv-recommended-for-speed">Using uv (Recommended for speed)</h3>
-
-<pre><code class="language-bash">&lt;h1 id=&quot;create-project&quot;&gt;Create project&lt;/h1&gt;
-<p>uv init my-pstn2-app</p>
-<p>cd my-pstn2-app</p>
-
-<p>&lt;h1 id=&quot;add-dependency&quot;&gt;Add dependency&lt;/h1&gt;</p>
-<p>uv add pstn2</p>
-
-<p>&lt;h1 id=&quot;run-script&quot;&gt;Run script&lt;/h1&gt;</p>
-<p>uv run python main.py</code></pre></p>
-
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize project</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> new my-pstn2-app</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-pstn2-app</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add dependency</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> add pstn2</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate shell</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> shell</span></code></pre></div>
+<h3 id="using-uv-recommended-for-speed">Using uv (Recommended for
+speed)</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create project</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> init my-pstn2-app</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-pstn2-app</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add dependency</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> add pstn2</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Run script</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run python main.py</span></code></pre></div>
 <h2 id="running-examples">Running Examples</h2>
-
-<ul>
+<ol type="1">
 <li>Set environment variables:</li>
-</ul>
-<pre><code class="language-bash">export PSTN2<em>PRIVATE</em>KEY=&quot;your-private-key-here&quot;
-<p>export CP1<em>PRIVATE</em>KEY=&quot;your-cp1-key-here&quot;</p>
-<p>export PSAP<em>PRIVATE</em>KEY=&quot;your-psap-key-here&quot;</p>
-<p>export TOKEN<em>POOL</em>JWT=&quot;your-jwt-token-here&quot;</code></pre></p>
-
-<ul>
+</ol>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSTN2_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-private-key-here&quot;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CP1_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-cp1-key-here&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSAP_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-psap-key-here&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">TOKEN_POOL_JWT</span><span class="op">=</span><span class="st">&quot;your-jwt-token-here&quot;</span></span></code></pre></div>
+<ol start="2" type="1">
 <li>Run an example:</li>
-</ul>
-<pre><code class="language-bash">python examples/01<em>basic</em>authentication.py
-<p>python examples/02<em>direct</em>routing.py</p>
-<p>python examples/03<em>token</em>pool.py</p>
-<p>python examples/04<em>emergency</em>services.py</p>
-<p>python examples/05<em>complete</em>call_flow.py</code></pre></p>
-
+</ol>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/01_basic_authentication.py</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/02_direct_routing.py</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/03_token_pool.py</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/04_emergency_services.py</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/05_complete_call_flow.py</span></code></pre></div>
 <h2 id="sdk-api-reference">SDK API Reference</h2>
-
 <h3 id="pstn2client">PSTN2Client</h3>
-
-<pre><code class="language-python">from pstn2.client import PSTN2Client, AuthenticationMode
-
-<p>client = PSTN2Client(</p>
-<p>    cp_id=&#039;CP1-UK-0001&#039;,</p>
-<p>    api_endpoint=&#039;https://api.yourcp.com/pstn2/v1&#039;,</p>
-<p>    private<em>key=os.environ[&#039;PSTN2</em>PRIVATE_KEY&#039;],</p>
-<p>    auth<em>mode=AuthenticationMode.DIRECT</em>QUERY,</p>
-<p>    timeout=2.0,  # seconds</p>
-<p>    retries=3,</p>
-<p>    log_level=&#039;info&#039;,</p>
-<p>)</code></pre></p>
-
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client, AuthenticationMode</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    cp_id<span class="op">=</span><span class="st">&#39;CP1-UK-0001&#39;</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    api_endpoint<span class="op">=</span><span class="st">&#39;https://api.yourcp.com/pstn2/v1&#39;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    private_key<span class="op">=</span>os.environ[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>],</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    auth_mode<span class="op">=</span>AuthenticationMode.DIRECT_QUERY,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="fl">2.0</span>,  <span class="co"># seconds</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    retries<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    log_level<span class="op">=</span><span class="st">&#39;info&#39;</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <h3 id="authentication-module">Authentication Module</h3>
-
-<pre><code class="language-python">&lt;h1 id=&quot;verify-call-direct-query&quot;&gt;Verify call (Direct Query)&lt;/h1&gt;
-<p>verification = await client.auth.verify_call(</p>
-<p>    caller_id=&#039;+441234567890&#039;,</p>
-<p>    called_id=&#039;+447700900123&#039;,</p>
-<p>    call_reference=&#039;abc-123-def-456&#039;,</p>
-<p>)</p>
-
-<p>&lt;h1 id=&quot;create-token-token-pool&quot;&gt;Create token (Token Pool)&lt;/h1&gt;</p>
-<p>token = await client.auth.create_token(</p>
-<p>    caller_id=&#039;+441234567890&#039;,</p>
-<p>    called_id=&#039;+447700900123&#039;,</p>
-<p>    call_reference=&#039;token-call-123&#039;,</p>
-<p>    ttl=30,  # seconds</p>
-<p>)</p>
-
-<p>&lt;h1 id=&quot;verify-token&quot;&gt;Verify token&lt;/h1&gt;</p>
-<p>verification = await client.auth.verify<em>token(token.token</em>id)</code></pre></p>
-
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify call (Direct Query)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;abc-123-def-456&#39;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Create token (Token Pool)</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>token <span class="op">=</span> <span class="cf">await</span> client.auth.create_token(</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;token-call-123&#39;</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    ttl<span class="op">=</span><span class="dv">30</span>,  <span class="co"># seconds</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify token</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_token(token.token_id)</span></code></pre></div>
 <h3 id="routing-module">Routing Module</h3>
-
-<pre><code class="language-python">from pstn2.types import MediaCapabilities, CallBranding
-
-<p>routing = await client.routing.request_routing(</p>
-<p>    destination_number=&#039;+447700900123&#039;,</p>
-<p>    caller_id=&#039;+441234567890&#039;,</p>
-<p>    call_reference=&#039;xyz-789-abc-012&#039;,</p>
-<p>    media_capabilities=MediaCapabilities(</p>
-<p>        codecs=[&#039;opus&#039;, &#039;g722&#039;, &#039;pcmu&#039;],</p>
-<p>        encryption=[&#039;srtp-aes256&#039;, &#039;srtp-aes128&#039;],</p>
-<p>        video=False,</p>
-<p>        max_bandwidth=128000,</p>
-<p>    ),</p>
-<p>    branding=CallBranding(</p>
-<p>        display_name=&#039;ACME Support&#039;,</p>
-<p>        logo=&#039;https://cdn.acme.com/logo.png&#039;,</p>
-<p>        background_color=&#039;#0066cc&#039;,</p>
-<p>        call_purpose=&#039;Account Security Alert&#039;,</p>
-<p>    ),</p>
-<p>)</code></pre></p>
-
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.types <span class="im">import</span> MediaCapabilities, CallBranding</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>routing <span class="op">=</span> <span class="cf">await</span> client.routing.request_routing(</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    destination_number<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;xyz-789-abc-012&#39;</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    media_capabilities<span class="op">=</span>MediaCapabilities(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        codecs<span class="op">=</span>[<span class="st">&#39;opus&#39;</span>, <span class="st">&#39;g722&#39;</span>, <span class="st">&#39;pcmu&#39;</span>],</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        encryption<span class="op">=</span>[<span class="st">&#39;srtp-aes256&#39;</span>, <span class="st">&#39;srtp-aes128&#39;</span>],</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        video<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        max_bandwidth<span class="op">=</span><span class="dv">128000</span>,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    branding<span class="op">=</span>CallBranding(</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        display_name<span class="op">=</span><span class="st">&#39;ACME Support&#39;</span>,</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>        logo<span class="op">=</span><span class="st">&#39;https://cdn.acme.com/logo.png&#39;</span>,</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        background_color<span class="op">=</span><span class="st">&#39;#0066cc&#39;</span>,</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        call_purpose<span class="op">=</span><span class="st">&#39;Account Security Alert&#39;</span>,</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <h3 id="directory-module">Directory Module</h3>
-
-<pre><code class="language-python">&lt;h1 id=&quot;lookup-number&quot;&gt;Lookup number&lt;/h1&gt;
-<p>cp_info = await client.directory.lookup(&#039;+441234567890&#039;)</p>
-<p>print(f&#039;Hosted by: {cp<em>info.cp</em>id}&#039;)</p>
-
-<p>&lt;h1 id=&quot;reverse-lookup&quot;&gt;Reverse lookup&lt;/h1&gt;</p>
-<p>ranges = await client.directory.reverse(&#039;CP1-UK-0001&#039;)</code></pre></p>
-
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Lookup number</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>cp_info <span class="op">=</span> <span class="cf">await</span> client.directory.lookup(<span class="st">&#39;+441234567890&#39;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&#39;Hosted by: </span><span class="sc">{</span>cp_info<span class="sc">.</span>cp_id<span class="sc">}</span><span class="ss">&#39;</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reverse lookup</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>ranges <span class="op">=</span> <span class="cf">await</span> client.directory.reverse(<span class="st">&#39;CP1-UK-0001&#39;</span>)</span></code></pre></div>
 <h3 id="emergency-module">Emergency Module</h3>
-
-<pre><code class="language-python">&lt;h1 id=&quot;get-caller-location-psap-only&quot;&gt;Get caller location (PSAP only)&lt;/h1&gt;
-<p>location = await client.emergency.get_location(</p>
-<p>    caller_id=&#039;+441234567890&#039;,</p>
-<p>    call_reference=&#039;emergency-456-789&#039;,</p>
-<p>    psap_id=&#039;UK-999-LONDON-CENTRAL&#039;,</p>
-<p>)</p>
-
-<p>print(f&#039;GPS: {location.location.latitude}, {location.location.longitude}&#039;)</p>
-<p>print(f&#039;Accuracy: {location.location.accuracy}m&#039;)</code></pre></p>
-
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get caller location (PSAP only)</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>location <span class="op">=</span> <span class="cf">await</span> client.emergency.get_location(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;emergency-456-789&#39;</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    psap_id<span class="op">=</span><span class="st">&#39;UK-999-LONDON-CENTRAL&#39;</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&#39;GPS: </span><span class="sc">{</span>location<span class="sc">.</span>location<span class="sc">.</span>latitude<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>location<span class="sc">.</span>location<span class="sc">.</span>longitude<span class="sc">}</span><span class="ss">&#39;</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&#39;Accuracy: </span><span class="sc">{</span>location<span class="sc">.</span>location<span class="sc">.</span>accuracy<span class="sc">}</span><span class="ss">m&#39;</span>)</span></code></pre></div>
 <h2 id="type-safety-with-pydantic">Type Safety with Pydantic</h2>
-
 <p>All SDK models use Pydantic for validation:</p>
-
-<pre><code class="language-python">from pstn2.types import (
-<p>    VerifyCallRequest,</p>
-<p>    VerifyCallResponse,</p>
-<p>    MediaCapabilities,</p>
-<p>    CallBranding,</p>
-<p>)</p>
-
-<p>&lt;h1 id=&quot;type-safe-requests&quot;&gt;Type-safe requests&lt;/h1&gt;</p>
-<p>request = VerifyCallRequest(</p>
-<p>    caller_id=&#039;+441234567890&#039;,</p>
-<p>    called_id=&#039;+447700900123&#039;,</p>
-<p>    call_reference=&#039;abc-123&#039;,</p>
-<p>)</p>
-
-<p>&lt;h1 id=&quot;ide-auto-completion-for-responses&quot;&gt;IDE auto-completion for responses&lt;/h1&gt;</p>
-<p>response: VerifyCallResponse = await client.auth.verify_call(**request.dict())</p>
-<p>print(response.verified)</p>
-<p>print(response.trust_level)</code></pre></p>
-
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.types <span class="im">import</span> (</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    VerifyCallRequest,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    VerifyCallResponse,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    MediaCapabilities,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    CallBranding,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Type-safe requests</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>request <span class="op">=</span> VerifyCallRequest(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;abc-123&#39;</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># IDE auto-completion for responses</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>response: VerifyCallResponse <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(<span class="op">**</span>request.<span class="bu">dict</span>())</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(response.verified)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(response.trust_level)</span></code></pre></div>
 <h2 id="error-handling">Error Handling</h2>
-
-<pre><code class="language-python">from pstn2.exceptions import (
-<p>    PSTN2Error,</p>
-<p>    AuthenticationError,</p>
-<p>    RoutingError,</p>
-<p>    NetworkError,</p>
-<p>)</p>
-
-<p>try:</p>
-<p>    verification = await client.auth.verify_call(...)</p>
-<p>except AuthenticationError as e:</p>
-<p>    print(f&#039;Authentication failed: {e}&#039;)</p>
-<p>except NetworkError as e:</p>
-<p>    print(f&#039;Network error: {e}&#039;)</p>
-<p>except PSTN2Error as e:</p>
-<p>    print(f&#039;PSTN2 error: {e}&#039;)</code></pre></p>
-
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.exceptions <span class="im">import</span> (</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    PSTN2Error,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    AuthenticationError,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    RoutingError,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    NetworkError,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> AuthenticationError <span class="im">as</span> e:</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Authentication failed: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&#39;</span>)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> NetworkError <span class="im">as</span> e:</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Network error: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&#39;</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> PSTN2Error <span class="im">as</span> e:</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;PSTN2 error: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&#39;</span>)</span></code></pre></div>
 <h2 id="best-practices">Best Practices</h2>
-
 <h3 id="1-use-environment-variables">1. Use Environment Variables</h3>
-
-<pre><code class="language-python">import os
-
-<p>&lt;h1 id=&quot;good&quot;&gt;✅ Good&lt;/h1&gt;</p>
-<p>private<em>key = os.environ[&#039;PSTN2</em>PRIVATE_KEY&#039;]</p>
-
-<p>&lt;h1 id=&quot;bad&quot;&gt;❌ Bad&lt;/h1&gt;</p>
-<p>private_key = &#039;hardcoded-key&#039;</code></pre></p>
-
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ✅ Good</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>private_key <span class="op">=</span> os.environ[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>]</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ❌ Bad</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>private_key <span class="op">=</span> <span class="st">&#39;hardcoded-key&#39;</span></span></code></pre></div>
 <h3 id="2-always-close-clients">2. Always Close Clients</h3>
-
-<pre><code class="language-python">client = PSTN2Client(...)
-
-<p>try:</p>
-<p>    result = await client.auth.verify_call(...)</p>
-<p>finally:</p>
-<p>    await client.close()</code></pre></p>
-
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(...)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="cf">finally</span>:</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span></code></pre></div>
 <p>Or use context manager:</p>
-
-<pre><code class="language-python">async with PSTN2Client(...) as client:
-<p>    result = await client.auth.verify_call(...)</code></pre></p>
-
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="cf">with</span> PSTN2Client(...) <span class="im">as</span> client:</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span></code></pre></div>
 <h3 id="3-handle-errors-gracefully">3. Handle Errors Gracefully</h3>
-
-<pre><code class="language-python">try:
-<p>    routing = await client.routing.request_routing(...)</p>
-<p>    if routing.accepted:</p>
-<p>        # Use PSTN2</p>
-<p>        pass</p>
-<p>    else:</p>
-<p>        # Fall back to PSTN</p>
-<p>        pass</p>
-<p>except Exception as e:</p>
-<p>    # Always provide fallback</p>
-<p>    print(f&#039;Error: {e}, falling back to PSTN&#039;)</code></pre></p>
-
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    routing <span class="op">=</span> <span class="cf">await</span> client.routing.request_routing(...)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> routing.accepted:</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use PSTN2</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Fall back to PSTN</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Always provide fallback</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Error: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">, falling back to PSTN&#39;</span>)</span></code></pre></div>
 <h2 id="integration-examples">Integration Examples</h2>
-
 <h3 id="fastapi-integration">FastAPI Integration</h3>
-
-<pre><code class="language-python">from fastapi import FastAPI, HTTPException
-<p>from pstn2.client import PSTN2Client</p>
-
-<p>app = FastAPI()</p>
-<p>client = PSTN2Client(...)</p>
-
-<p>@app.post(&#039;/api/verify-call&#039;)</p>
-<p>async def verify_call(</p>
-<p>    caller_id: str,</p>
-<p>    called_id: str,</p>
-<p>    call_reference: str,</p>
-<p>):</p>
-<p>    try:</p>
-<p>        verification = await client.auth.verify_call(</p>
-<p>            caller<em>id=caller</em>id,</p>
-<p>            called<em>id=called</em>id,</p>
-<p>            call<em>reference=call</em>reference,</p>
-<p>        )</p>
-<p>        return {&#039;success&#039;: True, &#039;verification&#039;: verification}</p>
-<p>    except Exception as e:</p>
-<p>        raise HTTPException(status_code=500, detail=str(e))</p>
-
-<p>@app.on_event(&#039;shutdown&#039;)</p>
-<p>async def shutdown():</p>
-<p>    await client.close()</code></pre></p>
-
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> FastAPI, HTTPException</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>app <span class="op">=</span> FastAPI()</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(...)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">@app.post</span>(<span class="st">&#39;/api/calls/verify&#39;</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> verify_call(</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    caller_id: <span class="bu">str</span>,</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    called_id: <span class="bu">str</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    call_reference: <span class="bu">str</span>,</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>            caller_id<span class="op">=</span>caller_id,</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>            called_id<span class="op">=</span>called_id,</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>            call_reference<span class="op">=</span>call_reference,</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {<span class="st">&#39;success&#39;</span>: <span class="va">True</span>, <span class="st">&#39;verification&#39;</span>: verification}</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> HTTPException(status_code<span class="op">=</span><span class="dv">500</span>, detail<span class="op">=</span><span class="bu">str</span>(e))</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="at">@app.on_event</span>(<span class="st">&#39;shutdown&#39;</span>)</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> shutdown():</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span></code></pre></div>
 <h3 id="django-integration">Django Integration</h3>
-
-<pre><code class="language-python">&lt;h1 id=&quot;in-your-django-app&quot;&gt;In your Django app&lt;/h1&gt;
-<p>from pstn2.client import PSTN2Client</p>
-<p>from django.conf import settings</p>
-
-<p>client = PSTN2Client(</p>
-<p>    cp<em>id=settings.PSTN2</em>CP_ID,</p>
-<p>    api<em>endpoint=settings.PSTN2</em>API_ENDPOINT,</p>
-<p>    private<em>key=settings.PSTN2</em>PRIVATE_KEY,</p>
-<p>    auth<em>mode=settings.PSTN2</em>AUTH_MODE,</p>
-<p>)</p>
-
-<p>&lt;h1 id=&quot;in-your-view&quot;&gt;In your view&lt;/h1&gt;</p>
-<p>async def verify<em>call</em>view(request):</p>
-<p>    verification = await client.auth.verify_call(...)</p>
-<p>    return JsonResponse({&#039;verified&#039;: verification.verified})</code></pre></p>
-
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In your Django app</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> django.conf <span class="im">import</span> settings</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    cp_id<span class="op">=</span>settings.PSTN2_CP_ID,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    api_endpoint<span class="op">=</span>settings.PSTN2_API_ENDPOINT,</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    private_key<span class="op">=</span>settings.PSTN2_PRIVATE_KEY,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    auth_mode<span class="op">=</span>settings.PSTN2_AUTH_MODE,</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="co"># In your view</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> verify_call_view(request):</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> JsonResponse({<span class="st">&#39;verified&#39;</span>: verification.verified})</span></code></pre></div>
 <h2 id="testing">Testing</h2>
-
 <h3 id="unit-tests-with-pytest">Unit Tests with pytest</h3>
-
-<pre><code class="language-python">import pytest
-<p>from pstn2.client import PSTN2Client, AuthenticationMode</p>
-
-<p>@pytest.fixture</p>
-<p>async def client():</p>
-<p>    client = PSTN2Client(</p>
-<p>        cp_id=&#039;TEST-CP-001&#039;,</p>
-<p>        api_endpoint=&#039;https://test.example.com&#039;,</p>
-<p>        private_key=&#039;test-key&#039;,</p>
-<p>        auth<em>mode=AuthenticationMode.DIRECT</em>QUERY,</p>
-<p>    )</p>
-<p>    yield client</p>
-<p>    await client.close()</p>
-
-<p>@pytest.mark.asyncio</p>
-<p>async def test<em>verify</em>call(client):</p>
-<p>    result = await client.auth.verify_call(</p>
-<p>        caller_id=&#039;+441234567890&#039;,</p>
-<p>        called_id=&#039;+447700900123&#039;,</p>
-<p>        call_reference=&#039;test-123&#039;,</p>
-<p>    )</p>
-<p>    assert result.verified is True</code></pre></p>
-
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pytest</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client, AuthenticationMode</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">@pytest.fixture</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> client():</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    client <span class="op">=</span> PSTN2Client(</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>        cp_id<span class="op">=</span><span class="st">&#39;TEST-CP-001&#39;</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        api_endpoint<span class="op">=</span><span class="st">&#39;https://test.example.com&#39;</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>        private_key<span class="op">=</span><span class="st">&#39;test-key&#39;</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        auth_mode<span class="op">=</span>AuthenticationMode.DIRECT_QUERY,</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">yield</span> client</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="at">@pytest.mark.asyncio</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> test_verify_call(client):</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>        caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>        called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>        call_reference<span class="op">=</span><span class="st">&#39;test-123&#39;</span>,</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> result.verified <span class="kw">is</span> <span class="va">True</span></span></code></pre></div>
 <h2 id="performance-tips">Performance Tips</h2>
-
-<ul>
-<li><strong>Reuse Client Instances</strong>: Create one client and reuse it across requests</li>
-<li><strong>Connection Pooling</strong>: httpx automatically pools connections</li>
-<li><strong>Async All the Way</strong>: Use async/await throughout your application</li>
-<li><strong>Cache Directory Results</strong>: Store CP lookups with TTL</li>
-</ul>
-
+<ol type="1">
+<li><strong>Reuse Client Instances</strong>: Create one client and reuse
+it across requests</li>
+<li><strong>Connection Pooling</strong>: httpx automatically pools
+connections</li>
+<li><strong>Async All the Way</strong>: Use async/await throughout your
+application</li>
+<li><strong>Cache Directory Results</strong>: Store CP lookups with
+TTL</li>
+</ol>
 <h2 id="examples">Examples</h2>
-
-<p>See the <code>examples/</code> directory for complete working examples:</p>
-
+<p>See the <code>examples/</code> directory for complete working
+examples:</p>
 <ul>
-<li><code>01<em>basic</em>authentication.py</code> - Basic authentication flow</li>
-<li><code>02<em>direct</em>routing.py</code> - Direct routing with media negotiation</li>
-<li><code>03<em>token</em>pool.py</code> - Token Pool authentication</li>
-<li><code>04<em>emergency</em>services.py</code> - Emergency location services</li>
-<li><code>05<em>complete</em>call_flow.py</code> - End-to-end call scenario</li>
+<li><code>01_basic_authentication.py</code> - Basic authentication
+flow</li>
+<li><code>02_direct_routing.py</code> - Direct routing with media
+negotiation</li>
+<li><code>03_token_pool.py</code> - Token Pool authentication</li>
+<li><code>04_emergency_services.py</code> - Emergency location
+services</li>
+<li><code>05_complete_call_flow.py</code> - End-to-end call
+scenario</li>
 </ul>
-
-<p>See <a href="../EXAMPLES.md">EXAMPLES.md</a> for detailed documentation.</p>
-
+<p>See <a href="../EXAMPLES.md">EXAMPLES.md</a> for detailed
+documentation.</p>
 <h2 id="further-reading">Further Reading</h2>
-
 <ul>
-<li><a href="../../SPECIFICATION.md">SPECIFICATION.md</a> - PSTN2 protocol specification</li>
-<li><a href="../../API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> - REST API documentation</li>
-<li><a href="../../IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> - Implementation patterns</li>
+<li><a href="../../docs/SPECIFICATION.md">SPECIFICATION.md</a> - PSTN2
+protocol specification</li>
+<li><a
+href="../../docs/API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> -
+REST API documentation</li>
+<li><a
+href="../../docs/IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> -
+Implementation patterns</li>
 </ul>
-
 <h2 id="license">License</h2>
-
 <p>See main project LICENSE file.</p>
-
     </main>
 
     <footer class="doc-footer">

@@ -5,7 +5,9 @@
  * PSTN2 authentication (Option 1: Direct Query).
  */
 
-import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+// In your application, import from the published package instead:
+//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+import { PSTN2Client, AuthenticationMode } from '../src';
 
 async function main() {
   // Initialize PSTN2 client

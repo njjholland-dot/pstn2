@@ -13,11 +13,9 @@ const logger = getLogger();
 export class HttpClient {
   private client: AxiosInstance;
   private timeout: number;
-  private retries: number;
 
   constructor(timeout: number = 2000, retries: number = 3) {
     this.timeout = timeout;
-    this.retries = retries;
 
     this.client = axios.create({
       timeout,

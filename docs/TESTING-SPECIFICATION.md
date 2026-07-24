@@ -267,7 +267,7 @@ Then:
 Given: +441234567890 ported from CP1 to CP2
 When: CP3 tries to verify with CP1
 Then:
-  - CP1 returns 301 with currentHolder: CP2
+  - CP1 returns 200 with ported: true and newRcpid: CP2
   - Client automatically retries with CP2
   - Verification succeeds
   - portingChain: ['CP1-UK-0001', 'CP1-UK-0002']
@@ -449,7 +449,7 @@ Invalid Signature:
 
 Replay Attack:
   Same signed request sent twice
-  Expected: First succeeds, second rejected (timestamp too old)
+  Expected: First succeeds, second rejected (duplicate messageId)
 
 Signature Tampering:
   Valid signature, modified payload
@@ -866,4 +866,4 @@ export default function() {
 
 **Document Status:** Normative Specification
 **Compliance Required:** Yes for certification
-**Feedback:** https://github.com/pstn2/pstn2/issues
+**Feedback:** https://github.com/8x8/pstn2/issues (repository access is currently limited while the project incubates; contact nick.holland@8x8.com)

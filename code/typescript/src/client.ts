@@ -4,11 +4,11 @@
  */
 
 import { MessagingClient } from './messaging';
-import { AuthenticationModule } from './auth';
-import { RoutingModule } from './routing';
+import { AuthenticationModule, VerifyCallParams } from './auth';
+import { RoutingModule, RequestRoutingParams } from './routing';
 import { EncryptionModule } from './encryption';
 import { BrandingModule } from './branding';
-import { EmergencyModule } from './emergency';
+import { EmergencyModule, GetLocationParams } from './emergency';
 import { DirectoryModule } from './directory';
 import { PSTN2Config, PhoneNumber } from './types';
 import { getLogger } from './utils/logger';
@@ -30,7 +30,13 @@ export class PSTN2Client {
   constructor(config: PSTN2Config) {
     // Derive public key if not provided
     if (!config.publicKey && config.privateKey) {
-      config.publicKey = derivePublicKey(config.privateKey);
+      try {
+        config.publicKey = derivePublicKey(config.privateKey);
+      } catch (error) {
+        logger.warn('Could not derive public key from private key', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
     }
 
     this.config = config;
@@ -45,7 +51,8 @@ export class PSTN2Client {
       authMode: config.authMode,
     });
 
-    // Initialize directory first (needed by other modules)
+    // Initialize directory first (needed by other modules).
+    // cacheTTL is configured in SECONDS; modules convert internally.
     this.directory = new DirectoryModule(config.cacheTTL);
 
     // Initialize messaging client
@@ -71,60 +78,22 @@ export class PSTN2Client {
   /**
    * Verify an inbound call
    */
-  async verifyCall(params: {
-    callerID: PhoneNumber;
-    calledID: PhoneNumber;
-    callReference: string;
-    tokenId?: string;
-  }) {
-    return await this.auth.verifyCall(
-      params.callerID,
-      params.calledID,
-      params.callReference,
-      params.tokenId
-    );
+  async verifyCall(params: VerifyCallParams) {
+    return await this.auth.verifyCall(params);
   }
 
   /**
    * Request direct routing for outbound call
    */
-  async requestRouting(params: {
-    destinationNumber: PhoneNumber;
-    callerID: PhoneNumber;
-    callReference?: string;
-    mediaCapabilities: {
-      codecs: string[];
-      encryption: string[];
-      video?: boolean;
-    };
-    connectionDetails: {
-      fqdn: string;
-      port: number;
-      publicKey?: string;
-    };
-    branding?: {
-      displayName?: string;
-      logo?: string;
-      callPurpose?: string;
-      backgroundColor?: string;
-    };
-  }) {
+  async requestRouting(params: RequestRoutingParams) {
     return await this.routing.requestRouting(params);
   }
 
   /**
    * Get emergency location
    */
-  async getEmergencyLocation(params: {
-    callerID: PhoneNumber;
-    callReference: string;
-    psapID: string;
-  }) {
-    return await this.emergency.getLocation(
-      params.callerID,
-      params.callReference,
-      params.psapID
-    );
+  async getEmergencyLocation(params: GetLocationParams) {
+    return await this.emergency.getLocation(params);
   }
 
   /**
@@ -155,5 +124,18 @@ export class PSTN2Client {
       directory: directoryStats,
       encryption: this.encryption.getEncryptionInfo(),
     };
+  }
+
+  /**
+   * Close the client: clear caches and ephemeral key material.
+   * Cache-cleanup timers are unref()ed, so nothing here keeps the
+   * process alive; close() releases held state promptly.
+   */
+  async close(): Promise<void> {
+    logger.info('Closing PSTN2 Client', { cpId: this.config.cpId });
+
+    this.directory.clearCache();
+    this.branding.clearCache();
+    this.encryption.clearAllEphemeralKeys();
   }
 }

@@ -1,6 +1,10 @@
 /**
  * Authentication Option 2: Token Pool
  * CPs create short-lived tokens in shared pool, recipients verify from pool
+ *
+ * Endpoints (per API-SPECIFICATION.yaml):
+ *   POST /auth/tokens            - create token
+ *   GET  /auth/tokens/{tokenId}  - verify token
  */
 
 import { HttpClient } from '../messaging';
@@ -12,10 +16,19 @@ import {
   CallReference,
   BrandingInfo,
 } from '../types';
+import { generateUUID } from '../utils/crypto';
 import { getLogger } from '../utils/logger';
-import { TokenExpiredError, PSTN2Error, ErrorCode } from '../errors';
+import { PSTN2Error, ErrorCode } from '../errors';
 
 const logger = getLogger();
+
+export interface TokenPoolCreateParams {
+  callerID: PhoneNumber;
+  calledID: PhoneNumber;
+  callReference?: CallReference;
+  ttl?: number;
+  branding?: BrandingInfo;
+}
 
 export class TokenPoolAuth {
   private httpClient: HttpClient;
@@ -33,13 +46,9 @@ export class TokenPoolAuth {
   /**
    * Create token before placing a call
    */
-  async createToken(
-    callerID: PhoneNumber,
-    calledID: PhoneNumber,
-    callReference?: CallReference,
-    branding?: BrandingInfo,
-    ttl: number = 30
-  ): Promise<TokenCreateResponse> {
+  async createToken(params: TokenPoolCreateParams): Promise<TokenCreateResponse> {
+    const { callerID, calledID, callReference, branding, ttl = 30 } = params;
+
     logger.info('Creating token in pool', {
       callerID,
       calledID,
@@ -48,9 +57,12 @@ export class TokenPoolAuth {
     });
 
     const request: TokenCreateRequest = {
+      messageId: generateUUID(),
+      version: '1.0',
+      timestamp: new Date().toISOString(),
       callerID,
       calledID,
-      cpID: this.cpId,
+      originatingCP: this.cpId,
       callReference,
       ttl,
       branding,
@@ -63,7 +75,7 @@ export class TokenPoolAuth {
 
     try {
       const response = await this.httpClient.post<TokenCreateResponse>(
-        `${this.tokenPoolEndpoint}/tokens`,
+        `${this.tokenPoolEndpoint}/auth/tokens`,
         request,
         headers
       );
@@ -94,20 +106,24 @@ export class TokenPoolAuth {
 
     try {
       const response = await this.httpClient.get<TokenData>(
-        `${this.tokenPoolEndpoint}/tokens/${tokenId}`,
+        `${this.tokenPoolEndpoint}/auth/tokens/${tokenId}`,
         headers
       );
 
       logger.info('Token verified successfully', {
         tokenId,
-        cpID: response.data.cpID,
+        originatingCP: response.data.originatingCP,
         callerID: response.data.callerID,
       });
 
       return response.data;
     } catch (error) {
       if (error instanceof PSTN2Error) {
-        if (error.code === ErrorCode.TokenExpired || error.code === ErrorCode.TokenNotFound) {
+        if (
+          error.code === ErrorCode.TokenExpired ||
+          error.code === ErrorCode.TokenNotFound ||
+          error.code === ErrorCode.CallNotFound
+        ) {
           logger.warn('Token not found or expired', { tokenId });
           return null;
         }

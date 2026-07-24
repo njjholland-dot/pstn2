@@ -282,8 +282,7 @@ save 300 10
 save 60 10000
 appendonly yes
 
-# Replication
-replicaof <replica-will-set-this>
+# Replication (auth used by replicas connecting to this primary)
 masterauth secure_redis_password
 EOF
 
@@ -320,7 +319,7 @@ global
 
     # SSL/TLS settings
     ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
-    ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+    ssl-default-bind-options ssl-min-ver TLSv1.3 no-tls-tickets
 
 defaults
     log     global

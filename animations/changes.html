@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's Changed | PSTN2</title>
+    <meta name="description" content="Change log for pstn2.org — site updates, documentation corrections, code improvements, and presentation fixes.">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <style>
+        :root {
+            --primary-orange: #E25F07;
+            --dark-orange: #C24F00;
+            --accent-orange: #F76707;
+            --text-dark: #2d2d2d;
+            --text-mid: #555;
+            --bg-light: #faf7f4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-dark);
+            background: var(--bg-light);
+            line-height: 1.65;
+        }
+        header.page-header {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+            color: white;
+            padding: 40px 20px 50px;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        header.page-header .container { padding: 0; max-width: 900px; margin: 0 auto; padding: 0 20px; }
+        .back-link {
+            color: rgba(255,255,255,0.95);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 18px;
+        }
+        .back-link:hover { text-decoration: underline; }
+        h1 { font-size: 2.4em; margin-bottom: 8px; text-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .header-sub { font-size: 1.1em; opacity: 0.95; }
+        main { padding: 40px 0 60px; }
+        article.release {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+            padding: 34px 38px;
+            margin: 0 20px 30px;
+        }
+        @media (min-width: 940px) { article.release { margin: 0 auto 30px; max-width: 900px; } }
+        .release h2 {
+            color: var(--dark-orange);
+            font-size: 1.6em;
+            margin-bottom: 4px;
+        }
+        .release time { color: var(--text-mid); font-weight: 600; }
+        .release .summary { margin: 14px 0 6px; }
+        .release h3 {
+            margin: 26px 0 10px;
+            font-size: 1.15em;
+            color: var(--text-dark);
+            border-bottom: 2px solid #f0e4da;
+            padding-bottom: 6px;
+        }
+        .release ul { margin: 0 0 6px 22px; }
+        .release li { margin-bottom: 7px; }
+        .release li strong { color: var(--dark-orange); }
+        .badge {
+            display: inline-block;
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 999px;
+            vertical-align: middle;
+            margin-left: 8px;
+            background: #fdeee2;
+            color: var(--dark-orange);
+        }
+        footer.page-footer {
+            text-align: center;
+            color: var(--text-mid);
+            padding: 20px;
+            font-size: 0.95em;
+        }
+        footer.page-footer a { color: var(--dark-orange); }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="container">
+            <a href="/index.html" class="back-link">← Back to Home</a>
+            <h1>What's Changed</h1>
+            <p class="header-sub">Updates to the PSTN2 website, documentation, presentations, and sample code.</p>
+        </div>
+    </header>
+
+    <main>
+        <article class="release">
+            <h2>Full site review and update <span class="badge">LATEST</span></h2>
+            <time datetime="2026-07-24">24 July 2026</time>
+            <p class="summary">
+                A top-to-bottom review of every page, presentation, specification, and code sample —
+                with fixes applied across the whole site. The presentation player is now reliable in
+                every mode, the protocol documents are internally consistent, and the TypeScript SDK
+                compiles and follows the specification.
+            </p>
+
+            <h3>🎬 Presentations &amp; player</h3>
+            <ul>
+                <li><strong>Autoplay with audio fixed in five presentations</strong> (Authentication Options 1 &amp; 2, Direct Routing, Distributed Database, Emergency Services) — narration completion was never signalled, so Play appeared to do nothing.</li>
+                <li><strong>Play now starts narration immediately</strong> in every presentation, instead of waiting for a manual Next click.</li>
+                <li><strong>No more scene-skipping</strong> — pressing Next/Previous during playback used to advance two scenes at once; rapid clicking could cascade. A narration session guard now prevents it (this also fixed a dormant bug in the Law Enforcement deck that silently disabled its auto-advance).</li>
+                <li><strong>Law Enforcement Access no longer races through its scenes on load</strong> — it auto-started narration without a user gesture, which browsers block, causing the deck to flip through all 8 scenes on first visit. It now starts paused like the others.</li>
+                <li>Toggling audio mid-playback no longer stalls or double-advances the deck; overlapping narration timers cleared; keyboard navigation no longer exits the presentation from the last scene.</li>
+                <li><strong>End-to-End Scenario corrected:</strong> scene 4 narrated the authentication query backwards (CP1 querying itself) — the terminating provider now correctly queries the originating provider, with the diagram arrows to match; scene 8's timing claim clarified.</li>
+                <li>Unused animation library removed from all 10 presentation pages (faster loads); narration voice selection made reliable.</li>
+            </ul>
+
+            <h3>🏠 Landing page</h3>
+            <ul>
+                <li>Corrected facts: Solution Overview is 10 scenes (was listed as 12); there are 10 animations (was "9"); UK emergency number 999 used consistently; cost-saving claims aligned to "up to 80%" to match the deep-dive figures.</li>
+                <li>Copy fixes in the problem cards; consistent "Real-time 999" phrasing.</li>
+                <li>Footer now lists all 10 presentations, and previously broken links (test environment, bare code directories, "All Presentations") now point to real destinations.</li>
+                <li>Law Enforcement Access recategorised under "Complete Walkthrough &amp; Use Cases".</li>
+                <li>Added: page metadata for search/link previews, a site favicon, an accessible name for the architecture diagram, and improved text contrast in the hero and quick-links.</li>
+                <li>This changes page, linked from the header and footer.</li>
+            </ul>
+
+            <h3>📚 Documentation</h3>
+            <ul>
+                <li><strong>Protocol specification made internally consistent:</strong> one token format everywhere (TK- + 16 alphanumeric characters); call references are proper UUIDs in every example; rate-limit figures reconciled; number-porting flow redesigned from a misused HTTP 301 to a clean 200 response with re-query guidance.</li>
+                <li><strong>Cryptography description corrected:</strong> Ed25519 is signature-only — media encryption keys now correctly come from the DTLS-SRTP handshake (X25519 inside DTLS 1.3, RFC 9147), with the Ed25519 identity key authenticating the certificate fingerprint.</li>
+                <li><strong>Replay protection added</strong> to the security considerations (message-ID cache over the timestamp window), closing a gap the testing specification assumed but the protocol never defined.</li>
+                <li><strong>OpenAPI specification fixes:</strong> signature made a required body field (bogus header scheme removed), 400 responses added, ETag/If-None-Match documented for the directory, version field added to all request schemas, invalid format identifiers replaced.</li>
+                <li>MAP guides: PostgreSQL-valid schema DDL, TLS 1.3 minimum in the on-prem load-balancer config, Redis primary/replica config corrected, AWS guide reconciled with what its steps actually deploy, invalid example provider IDs fixed.</li>
+                <li>Emergency-location retention statement aligned across documents (max 24 hours after call end).</li>
+                <li>Broken cross-references repaired throughout; repository links point to the project's GitHub home; the missing Testing Specification HTML page now exists; in-page table-of-contents links now work in all HTML documents.</li>
+            </ul>
+
+            <h3>💻 Sample code &amp; TypeScript SDK</h3>
+            <ul>
+                <li><strong>Real Ed25519 signatures implemented.</strong> The TypeScript SDK previously used a symmetric HMAC construction that could never verify across parties (and RSA key generation the spec doesn't call for). Signing and verification now use genuine Ed25519 keys, matching what the specification — and the examples' own output — always claimed.</li>
+                <li><strong>The SDK now compiles cleanly and follows the specification:</strong> endpoint paths (<code>/auth/verify</code>, <code>/routing/request</code>, <code>/emergency/location</code>, <code>/directory/all</code>…), protocol headers (<code>X-PSTN2-*</code>), message envelope fields (messageId, version, timestamp, signature), and response field names all match the protocol documents. Previously the TypeScript SDK diverged from the spec that the Python and Go examples followed.</li>
+                <li><strong>All five numbered TypeScript examples now type-check and run</strong> — they were written against an API surface the SDK didn't have. The SDK gained <code>client.close()</code>, token verification, and options-object call signatures; a directory-caching bug that stored provider IDs where endpoint URLs belonged is fixed.</li>
+                <li>Reliability fixes learners would otherwise copy: routing rejections are returned (not thrown) so the documented <code>if (routing.accepted)</code> pattern works; emergency-location failures are surfaced to the caller instead of silently returning nothing; cache timers no longer keep short scripts alive; ported-call retries no longer drop caller options; cache TTL configuration is consistently in seconds.</li>
+                <li>Go examples restructured so each builds as its own program, with a module definition.</li>
+                <li><strong>Honest install instructions:</strong> the READMEs no longer direct you to package registries where these SDKs aren't published yet — they explain what's runnable from this site today and show the intended published-package usage alongside.</li>
+                <li>Documentation pages for the code samples regenerated to match, with working cross-links to the specifications.</li>
+            </ul>
+
+            <h3>🔧 Site infrastructure</h3>
+            <ul>
+                <li>Project source is now version-controlled on GitHub with a single reproducible deployment script.</li>
+                <li>Documentation HTML pages are regenerated from their Markdown sources by a build script, so the two can no longer drift apart.</li>
+            </ul>
+        </article>
+
+        <article class="release">
+            <h2>Law Enforcement Access &amp; MAP deployment guides</h2>
+            <time datetime="2026-01-28">28 January 2026</time>
+            <ul>
+                <li>New presentation: Law Enforcement Access (8 scenes).</li>
+                <li>New documentation: MAP Overview, Multi-Tenant Design, AWS Deployment, and On-Premises Deployment guides.</li>
+                <li>Updated homepage with documentation quick links and HTML views of all documents.</li>
+            </ul>
+        </article>
+
+        <article class="release">
+            <h2>Initial launch — PSTN2 v1.0</h2>
+            <time datetime="2025-11-30">30 November 2025</time>
+            <ul>
+                <li>9 animated presentations with narration.</li>
+                <li>Protocol specification, OpenAPI definition, implementation guide, and testing specification.</li>
+                <li>15 sample implementations across TypeScript, Python, and Go.</li>
+                <li>Complete project download and test-harness archives.</li>
+            </ul>
+        </article>
+    </main>
+
+    <footer class="page-footer">
+        <p>© 2025–2026 PSTN2 Project · A project initiated by <a href="https://commscouncil.uk/" target="_blank" rel="noopener">Comms Council UK</a> · <a href="/index.html">Home</a></p>
+    </footer>
+</body>
+</html>

@@ -64,9 +64,11 @@ cp -Rp "$REPO_DIR/animations/src/."      "$STAGE_DIR/src/"
 for f in README QUICKSTART DELIVERY_COMPLETE TESTING_CHECKLIST; do
     cp -p "$REPO_DIR/animations/$f".* "$STAGE_DIR/animations/" 2>/dev/null || true
 done
-cp -Rp "$REPO_DIR/code/." "$STAGE_DIR/code/"
+rsync -a --exclude='node_modules' --exclude='dist' "$REPO_DIR/code/" "$STAGE_DIR/code/"
 cp -Rp "$REPO_DIR/docs/." "$STAGE_DIR/docs/"
 cp -p  "$REPO_DIR/Claude.md" "$REPO_DIR/DOWNLOAD-README.md" "$STAGE_DIR/"
+cp -p  "$REPO_DIR/animations/favicon."* "$STAGE_DIR/" 2>/dev/null || true
+[ -f "$REPO_DIR/animations/changes.html" ] && cp -p "$REPO_DIR/animations/changes.html" "$STAGE_DIR/changes.html"
 
 # Never publish deploy tooling or local junk
 rm -f "$STAGE_DIR/code/deploy.sh"

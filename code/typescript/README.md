@@ -4,9 +4,16 @@ Official TypeScript implementation of the PSTN2 distributed telecommunications p
 
 ## Installation
 
+Not yet published to npm. To use the library today, clone the repository and
+build it locally:
+
 ```bash
-npm install @pstn2/core
+git clone https://github.com/pstn2/pstn2.git
+cd pstn2/code/typescript
+npm install && npm run build
 ```
+
+Once published, installation will be `npm install @pstn2/core`.
 
 ## Quick Start
 
@@ -44,12 +51,13 @@ const routing = await client.routing.requestRouting({
 });
 
 if (routing.accepted) {
-  // Establish direct media connection
-  const media = await client.media.connect({
-    fqdn: routing.connectionDetails.fqdn,
-    port: routing.connectionDetails.port,
-    publicKey: routing.connectionDetails.publicKey,
-  });
+  // Establish your direct media connection (via your media stack /
+  // DTLS-SRTP) using the returned connection details
+  console.log('Connect to:', routing.connectionDetails.fqdn, routing.connectionDetails.port);
+  console.log('Peer public key:', routing.connectionDetails.publicKey);
+} else {
+  // Fall back to traditional PSTN routing
+  console.log('Routing rejected:', routing.rejectReason);
 }
 ```
 
@@ -118,7 +126,8 @@ interface PSTN2Config {
 
   // Caching
   cacheDirectory?: boolean;        // Cache other CPs' directories
-  cacheTTL?: number;               // Cache TTL in seconds (default: 3600)
+  cacheTTL?: number;               // Cache TTL in seconds
+                                   // (default: 86400 directory, 3600 branding)
 
   // Network
   timeout?: number;                // Request timeout ms (default: 2000)
@@ -133,6 +142,19 @@ interface PSTN2Config {
 ```
 
 ## Examples
+
+Runnable examples live in `examples/`. The numbered examples can be run with:
+
+```bash
+npm run example:01   # Basic authentication
+npm run example:02   # Direct routing
+npm run example:03   # Token pool
+npm run example:04   # Emergency services
+npm run example:05   # Complete call flow
+```
+
+`examples/basic-usage.ts` and `examples/token-pool.ts` are minimal
+quick-start examples. Type-check everything with `npm run typecheck:examples`.
 
 ### Verify Inbound Call with Porting Chain
 
@@ -203,31 +225,27 @@ const location = await client.emergency.getLocation({
 
 console.log('Location:', location.location.latitude, location.location.longitude);
 console.log('Accuracy:', location.location.accuracy, 'meters');
-console.log('Address:', location.address.street, location.address.postcode);
+console.log('Address:', location.address?.street, location.address?.postcode);
 ```
 
 ### Directory Service (for eventual consistency)
 
 ```typescript
-// Publish your directory
-await client.directory.publish({
-  ranges: [
-    {
-      numberRange: '+4471234567XX',
-      status: 'active',
-      apiEndpoint: 'https://api.yourcp.com/pstn2/v1',
-    },
-  ],
-});
-
-// Pull other CPs' directories
-const allCPs = await client.directory.pullAll();
-console.log(`Cached ${allCPs.length} CP directories`);
+// Pull other CPs' directories (GET {endpoint}/directory/all) into the cache
+await client.syncDirectory([
+  'https://api.cp2.example.com/pstn2/v1',
+  'https://api.cp3.example.com/pstn2/v1',
+]);
+// or per-CP: await client.directory.pullFromCP('https://api.cp2.example.com/pstn2/v1');
 
 // Query cached directory
 const cp = await client.directory.lookup('+441234567890');
 console.log('Number hosted by:', cp.cpId);
 console.log('API endpoint:', cp.apiEndpoint);
+console.log('Routing endpoint:', cp.endpoints.routing);
+
+// Inspect the cache
+console.log(client.directory.getCacheStats());
 ```
 
 ### Token Pool Operations
@@ -246,7 +264,7 @@ console.log('Include token in INVITE:', token.tokenId);
 // Recipient verifies token
 const tokenData = await client.auth.verifyToken(token.tokenId);
 if (tokenData) {
-  console.log('Call from:', tokenData.cpId);
+  console.log('Call from:', tokenData.originatingCP);
   console.log('Caller ID:', tokenData.callerID);
 }
 ```
@@ -330,18 +348,8 @@ npm run docs
 
 MIT - See LICENSE file
 
-## Contributing
-
-Contributions welcome! Please see [CONTRIBUTING.md](../../CONTRIBUTING.md)
-
 ## Support
 
 - Documentation: https://pstn2.org/docs
 - GitHub Issues: https://github.com/pstn2/pstn2/issues
 - Email: nick.holland@8x8.com
-
-## Related Packages
-
-- [@pstn2/cli](../cli) - Command line tools
-- [@pstn2/server](../server) - API server implementation
-- [@pstn2/mock](../mock) - Mock CP for testing

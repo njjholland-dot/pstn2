@@ -62,13 +62,21 @@ async function basicExamples() {
       },
     });
 
-    console.log('Routing result:', {
-      accepted: routing.accepted,
-      destinationCP: routing.destinationCP,
-      fqdn: routing.connectionDetails?.fqdn,
-      port: routing.connectionDetails?.port,
-      codecs: routing.mediaCapabilities?.codecs,
-    });
+    if (routing.accepted) {
+      console.log('Routing result:', {
+        accepted: routing.accepted,
+        destinationCP: routing.destinationCP,
+        fqdn: routing.connectionDetails.fqdn,
+        port: routing.connectionDetails.port,
+        codecs: routing.agreedCapabilities.codecs,
+      });
+    } else {
+      console.log('Routing rejected:', {
+        accepted: routing.accepted,
+        rejectReason: routing.rejectReason,
+      });
+      console.log('Falling back to traditional PSTN');
+    }
   } catch (error) {
     console.error('Routing failed:', error);
   }

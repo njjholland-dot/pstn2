@@ -71,6 +71,13 @@ This guide provides step-by-step instructions for deploying a MAP (Managed Acces
 └───────────────────────────────────────────────────────────────────┘
 ```
 
+> **Note — CDN & API Gateway:** The diagram above shows CloudFront (CDN + WAF)
+> and API Gateway as optional edge layers. The reference deployment described
+> in the steps below terminates at Route 53 → ALB → ECS, with WAF attached
+> directly to the ALB (Step 10). The CloudFront and API Gateway rows in the
+> cost table are optional extensions (global edge caching, managed API
+> throttling/keys) and are not required for a functional MAP deployment.
+
 ## AWS Services Used
 
 | Service | Purpose | Pricing Estimate (Month) |
@@ -445,6 +452,20 @@ docker push <account-id>.dkr.ecr.eu-west-1.amazonaws.com/map-api-server:latest
 
 ```hcl
 # terraform/ecs.tf
+
+# ECR repository for the API server image (referenced by the task definition
+# below; equivalent to the `aws ecr create-repository` CLI call in Step 5)
+resource "aws_ecr_repository" "map_api" {
+  name = "map-api-server"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "MAP API Server Repository"
+  }
+}
 
 resource "aws_ecs_cluster" "map_cluster" {
   name = "map-cluster"
@@ -1146,7 +1167,7 @@ export default function () {
     caller_id: '+441234567890',
     called_id: '+447700900123',
     call_reference: `call-${__VU}-${__ITER}`,
-    originating_cp: 'CP3-UK-0007',
+    originating_cp: 'CP1-UK-0007',
   });
 
   const params = {

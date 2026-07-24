@@ -4,6 +4,9 @@
 
 import { ErrorCode } from './types';
 
+// Re-export so consumers can import ErrorCode alongside the error classes
+export { ErrorCode } from './types';
+
 /**
  * Base PSTN2 error class
  */

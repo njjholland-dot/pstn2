@@ -89,7 +89,7 @@ PSTN2 is a distributed telecommunications protocol designed to provide:
 - **HTTPS**: RESTful API over HTTPS
 - **Timeouts**: 2 seconds default, configurable per CP
 - **Retry Logic**: Exponential backoff (100ms, 200ms, 400ms)
-- **Rate Limiting**: Minimum 1000 requests/second per CP
+- **Rate Limiting**: Minimum 100 requests/second per CP per endpoint (see §11.2)
 
 ---
 
@@ -205,7 +205,7 @@ Direct real-time query to originating CP.
   "requestingCP": "CP1-UK-0002",
   "callerID": "+441234567890",
   "calledID": "+447700900123",
-  "callReference": "abc-123-def-456",
+  "callReference": "0d1f2a3b-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
   "signature": "base64-signature"
 }
 ```
@@ -214,7 +214,7 @@ Direct real-time query to originating CP.
 ```json
 {
   "verified": true,
-  "callReference": "abc-123-def-456",
+  "callReference": "0d1f2a3b-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
   "callerName": "John Smith",
   "callerOrg": "ACME Corp",
   "callPurpose": "Account verification",
@@ -234,7 +234,7 @@ Direct real-time query to originating CP.
 ```json
 {
   "verified": false,
-  "callReference": "abc-123-def-456",
+  "callReference": "0d1f2a3b-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
   "error": "call_not_found",
   "message": "No matching call found",
   "timestamp": "2025-11-30T21:30:00.050Z"
@@ -245,18 +245,20 @@ Direct real-time query to originating CP.
 
 If number is ported, originating CP MUST return porting information:
 
-**Response (301 Moved Permanently):**
+**Response (200 OK):**
 ```json
 {
   "verified": false,
   "ported": true,
-  "currentHolder": "CP1-UK-0003",
+  "newRcpid": "CP1-UK-0003",
   "portedAt": "2025-10-15T10:00:00.000Z",
-  "callReference": "abc-123-def-456"
+  "callReference": "0d1f2a3b-4c5d-4e6f-8a7b-9c0d1e2f3a4b"
 }
 ```
 
-Client MUST automatically retry with new CP. Maximum 5 hops.
+A ported response is a successful (HTTP 200) response, not an error. On receiving
+`"ported": true`, the client MUST re-query the directory for the new range holder
+identified by `newRcpid` and retry the verification against that CP. Maximum 5 hops.
 
 ### 5.2 Option 2: Token Pool
 
@@ -274,7 +276,7 @@ Shared token repository for reduced query load.
   "originatingCP": "CP1-UK-0001",
   "callerID": "+441234567890",
   "calledID": "+447700900123",
-  "callReference": "abc-123",
+  "callReference": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "ttl": 30,
   "signature": "base64"
 }
@@ -283,9 +285,9 @@ Shared token repository for reduced query load.
 **Response (201 Created):**
 ```json
 {
-  "tokenId": "TK-abc123def456",
+  "tokenId": "TK-abc123XYZ789defG",
   "expiresAt": "2025-11-30T21:30:30.000Z",
-  "callReference": "abc-123"
+  "callReference": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
 }
 ```
 
@@ -296,11 +298,11 @@ Shared token repository for reduced query load.
 **Response (200 OK):**
 ```json
 {
-  "tokenId": "TK-abc123def456",
+  "tokenId": "TK-abc123XYZ789defG",
   "originatingCP": "CP1-UK-0001",
   "callerID": "+441234567890",
   "calledID": "+447700900123",
-  "callReference": "abc-123",
+  "callReference": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "verified": true,
   "branding": {...},
   "expiresAt": "2025-11-30T21:30:30.000Z"
@@ -310,9 +312,10 @@ Shared token repository for reduced query load.
 #### 5.2.3 Token Format
 
 - **Prefix**: `TK-`
-- **Length**: 16 characters (after prefix)
-- **Charset**: Base58 (excludes confusing characters)
-- **Example**: `TK-abc123XYZ789def`
+- **Length**: Exactly 16 characters (after prefix)
+- **Charset**: Alphanumeric `[A-Za-z0-9]`
+- **Pattern**: `^TK-[A-Za-z0-9]{16}$`
+- **Example**: `TK-abc123XYZ789defG`
 
 ---
 
@@ -332,7 +335,7 @@ Direct peer-to-peer routing discovery.
   "requestingCP": "CP1-UK-0001",
   "callerID": "+441234567890",
   "destinationNumber": "+447700900123",
-  "callReference": "xyz-789",
+  "callReference": "9b2f8c44-1d3e-4f6a-8b5c-2e7d9a0f4c11",
   "mediaCapabilities": {
     "codecs": ["opus", "g722", "pcmu"],
     "encryption": ["srtp-aes256", "srtp-aes128"],
@@ -348,7 +351,7 @@ Direct peer-to-peer routing discovery.
 ```json
 {
   "accepted": true,
-  "callReference": "xyz-789",
+  "callReference": "9b2f8c44-1d3e-4f6a-8b5c-2e7d9a0f4c11",
   "connectionDetails": {
     "fqdn": "media.cp2.example.com",
     "ipv4": "203.0.113.42",
@@ -397,8 +400,11 @@ Direct peer-to-peer routing discovery.
 - `srtp-aes128`: SRTP with AES-128-GCM
 
 **Key Exchange:**
-- DTLS-SRTP (RFC 5764)
-- Public keys exchanged in routing request/response
+- DTLS-SRTP (RFC 5764), as extended to DTLS 1.3 (RFC 9147)
+- Media encryption keys are derived from the DTLS handshake (X25519 ECDHE within DTLS)
+- Ed25519 identity keys exchanged in the routing request/response authenticate the
+  peer's DTLS certificate fingerprint (Ed25519 is signature-only and is never used
+  for key agreement)
 
 ---
 
@@ -406,9 +412,14 @@ Direct peer-to-peer routing discovery.
 
 ### 7.1 Key Exchange
 
-Keys are exchanged during routing negotiation.
+Ed25519 is a signature-only algorithm and cannot perform key agreement. Media
+encryption keys are therefore NOT derived from the Ed25519 identity keys.
+Instead, session keys are established by the DTLS-SRTP handshake (RFC 5764)
+using X25519 ECDHE inside DTLS. The Ed25519 identity key exchanged during
+routing negotiation is used to authenticate the peer's DTLS certificate
+fingerprint, binding the media channel to the signaling identity.
 
-**Public Key Format:**
+**Identity Public Key Format:**
 ```json
 {
   "algorithm": "ed25519",
@@ -422,7 +433,8 @@ Keys are exchanged during routing negotiation.
 **Required:**
 - SRTP (RFC 3711)
 - DTLS 1.3 (RFC 9147)
-- Perfect Forward Secrecy
+- DTLS-SRTP (RFC 5764), applied as extended to DTLS 1.3
+- Perfect Forward Secrecy (via X25519 ECDHE in the DTLS handshake)
 
 **Key Derivation:**
 - Use HKDF-SHA256
@@ -451,7 +463,7 @@ Keys are exchanged during routing negotiation.
   "timestamp": "ISO-8601",
   "requestingPSAP": "UK-999-LONDON-01",
   "callerID": "+441234567890",
-  "callReference": "emergency-456",
+  "callReference": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "signature": "base64"
 }
 ```
@@ -459,7 +471,7 @@ Keys are exchanged during routing negotiation.
 **Response (200 OK):**
 ```json
 {
-  "callReference": "emergency-456",
+  "callReference": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "location": {
     "latitude": 51.5074,
     "longitude": -0.1278,
@@ -474,7 +486,7 @@ Keys are exchanged during routing negotiation.
     "country": "GB"
   },
   "additionalInfo": {
-    "cellTowerId": "310-410-12345-67890",
+    "cellTowerId": "234-10-12345-67890",
     "wifiAccessPoints": ["AA:BB:CC:DD:EE:FF"],
     "lastUpdated": "2025-11-30T21:30:00.000Z"
   },
@@ -628,6 +640,11 @@ PSAPs MUST be authenticated using:
 - `401 Unauthorized`
 - `404 Not Found`
 
+**Ported Numbers:**
+A `200 OK` response with `"ported": true` is not an error and is not a retry of
+the same request. The client MUST re-query the directory and send a new request
+to the range holder identified by `newRcpid` (see §5.1.2). Maximum 5 hops.
+
 ---
 
 ## 11. Security Considerations
@@ -658,7 +675,15 @@ valid = Ed25519.verify(publicKey, signature, payload)
 - Sliding window for burst protection
 - Return 429 with `Retry-After` header
 
-### 11.3 DDoS Protection
+### 11.3 Replay Protection
+
+Timestamp validation alone (±30 seconds, see §3.2) does not prevent replay of a
+captured message within the acceptance window. Receivers MUST keep a cache of
+seen `messageId` values covering at least the timestamp-acceptance window
+(±30 seconds) and MUST reject any request whose `messageId` has already been
+seen with `401 Unauthorized` and error code `REPLAY_DETECTED`.
+
+### 11.4 DDoS Protection
 
 **Required:**
 - Request size limits (max 100KB)
@@ -671,7 +696,7 @@ valid = Ed25519.verify(publicKey, signature, payload)
 - Anycast DNS
 - Health checks and failover
 
-### 11.4 Privacy
+### 11.5 Privacy
 
 **Minimize Data Sharing:**
 - Only share data necessary for call setup
@@ -825,5 +850,5 @@ Total time: ~800ms (vs 5-8 seconds traditional PSTN)
 ---
 
 **Document Status:** Living Specification
-**Feedback:** https://github.com/pstn2/pstn2/issues
+**Feedback:** https://github.com/8x8/pstn2/issues (repository access is currently limited while the project incubates; contact nick.holland@8x8.com)
 **Website:** https://pstn2.org

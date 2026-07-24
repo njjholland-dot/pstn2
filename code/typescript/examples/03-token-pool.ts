@@ -5,7 +5,9 @@
  * which creates a shared token before placing the call.
  */
 
-import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+// In your application, import from the published package instead:
+//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+import { PSTN2Client, AuthenticationMode } from '../src';
 
 async function main() {
   // Initialize client with Token Pool mode
@@ -15,7 +17,7 @@ async function main() {
     privateKey: process.env.PSTN2_PRIVATE_KEY!,
     authMode: AuthenticationMode.TokenPool,
     tokenPoolEndpoint: 'https://tokenpool.pstn2.org',
-    tokenPoolAuth: process.env.TOKEN_POOL_JWT,
+    tokenPoolAuth: process.env.TOKEN_POOL_JWT!,
   });
 
   console.log('Token Pool Authentication Example');

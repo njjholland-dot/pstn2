@@ -5,7 +5,9 @@
  * for an outbound call, including media capability negotiation.
  */
 
-import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+// In your application, import from the published package instead:
+//   import { PSTN2Client, AuthenticationMode, ConnectionDetails } from '@pstn2/core';
+import { PSTN2Client, AuthenticationMode, ConnectionDetails } from '../src';
 
 async function main() {
   const client = new PSTN2Client({
@@ -68,7 +70,7 @@ async function main() {
 
     } else {
       console.log('✗ Routing rejected');
-      console.log('Reason:', routing.reason);
+      console.log('Reason:', routing.rejectReason);
       console.log('Falling back to traditional PSTN');
     }
   } catch (error) {
@@ -79,9 +81,9 @@ async function main() {
   await client.close();
 }
 
-async function simulateMediaConnection(details: any) {
+async function simulateMediaConnection(details: ConnectionDetails) {
   console.log('');
-  console.log('Establishing media connection...');
+  console.log(`Establishing media connection to ${details.fqdn}:${details.port}...`);
   console.log('  1. Performing DTLS handshake');
   console.log('  2. Exchanging SRTP keys');
   console.log('  3. Setting up Opus codec');

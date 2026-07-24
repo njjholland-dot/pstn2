@@ -1,5 +1,6 @@
 /**
  * Core type definitions for PSTN2
+ * Aligned with docs/API-SPECIFICATION.yaml (OpenAPI 3.0.3, version 1.0)
  */
 
 /**
@@ -36,15 +37,25 @@ export enum AuthenticationMode {
 }
 
 /**
- * Call verification request
+ * Common message envelope fields (SPECIFICATION.md section 4.1).
+ * All inter-CP messages carry these; the `signature` field in the JSON
+ * body is the canonical location for the Ed25519 signature.
  */
-export interface CallVerificationRequest {
+export interface MessageEnvelope {
+  messageId?: string;
+  version?: string;
+  timestamp?: Timestamp;
+  signature?: Base64String;
+}
+
+/**
+ * Call verification request (POST /auth/verify)
+ */
+export interface CallVerificationRequest extends MessageEnvelope {
   callerID: PhoneNumber;
   calledID: PhoneNumber;
   callReference: CallReference;
-  timestamp: Timestamp;
   requestingCP: RCPID;
-  signature?: Base64String;
 }
 
 /**
@@ -58,6 +69,7 @@ export interface CallVerificationResponse {
   callPurpose?: string;
   branding?: BrandingInfo;
   trustLevel?: 'low' | 'medium' | 'high' | 'verified';
+  timestamp?: Timestamp;
   signature?: Base64String;
   portingChain?: RCPID[]; // Added by client during resolution
 }
@@ -89,35 +101,58 @@ export interface MediaCapabilities {
 export interface ConnectionDetails {
   fqdn: string;
   port: number;
+  ipv4?: string;
+  ipv6?: string;
   publicKey?: Base64String;
   protocol?: 'udp' | 'tcp' | 'tls';
 }
 
 /**
- * Routing request
+ * Routing request (POST /routing/request)
  */
-export interface RoutingRequest {
+export interface RoutingRequest extends MessageEnvelope {
   destinationNumber: PhoneNumber;
   callerID: PhoneNumber;
   callReference: CallReference;
-  originCP: RCPID;
+  requestingCP: RCPID;
   mediaCapabilities: MediaCapabilities;
-  connectionDetails: ConnectionDetails;
-  timestamp?: Timestamp;
+  publicKey?: Base64String;
+  connectionDetails?: ConnectionDetails;
   branding?: BrandingInfo;
+}
+
+/**
+ * Routing response - accepted.
+ * Discriminated on `accepted` so callers can narrow with `if (routing.accepted)`.
+ */
+export interface RoutingResponseAccepted {
+  accepted: true;
+  callReference: CallReference;
+  connectionDetails: ConnectionDetails;
+  agreedCapabilities: MediaCapabilities;
+  destinationCP?: RCPID;
+  timestamp?: Timestamp;
+  signature?: Base64String;
+}
+
+/**
+ * Routing response - rejected.
+ * The SDK does NOT throw on rejection; callers inspect `accepted`/`rejectReason`.
+ */
+export interface RoutingResponseRejected {
+  accepted: false;
+  callReference: CallReference;
+  rejectReason?: string;
+  fallbackToTraditional?: boolean;
+  retryAfter?: number;
+  timestamp?: Timestamp;
+  signature?: Base64String;
 }
 
 /**
  * Routing response
  */
-export interface RoutingResponse {
-  accepted: boolean;
-  destinationCP?: RCPID;
-  connectionDetails?: ConnectionDetails;
-  mediaCapabilities?: MediaCapabilities;
-  callReference: CallReference;
-  rejectReason?: string;
-}
+export type RoutingResponse = RoutingResponseAccepted | RoutingResponseRejected;
 
 /**
  * Number porting information
@@ -133,14 +168,12 @@ export interface PortingResponse {
 }
 
 /**
- * Emergency location request
+ * Emergency location request (POST /emergency/location)
  */
-export interface EmergencyLocationRequest {
+export interface EmergencyLocationRequest extends MessageEnvelope {
   callerID: PhoneNumber;
   callReference: CallReference;
-  psapID: string;
-  timestamp?: Timestamp;
-  requestType?: 'location' | 'callback';
+  requestingPSAP: string;
 }
 
 /**
@@ -149,10 +182,10 @@ export interface EmergencyLocationRequest {
 export interface LocationData {
   latitude: number;
   longitude: number;
-  accuracy?: number;
+  accuracy: number;
   altitude?: number;
   altitudeAccuracy?: number;
-  source?: 'gps' | 'cell' | 'wifi' | 'ip';
+  source?: 'gps' | 'cell' | 'wifi' | 'user' | 'billing';
   timestamp?: Timestamp;
 }
 
@@ -167,52 +200,73 @@ export interface AddressData {
 }
 
 /**
- * Device information
+ * Additional emergency location context
  */
-export interface DeviceInfo {
-  type?: 'mobile' | 'landline' | 'voip';
-  battery?: number;
-  networkType?: string;
+export interface EmergencyAdditionalInfo {
+  cellTowerId?: string;
+  wifiAccessPoints?: string[];
+  lastUpdated?: Timestamp;
 }
 
 /**
  * Emergency location response
  */
 export interface EmergencyLocationResponse {
-  location?: LocationData;
-  address?: AddressData;
-  deviceInfo?: DeviceInfo;
   callReference: CallReference;
+  location: LocationData;
+  address?: AddressData;
+  additionalInfo?: EmergencyAdditionalInfo;
+  timestamp?: Timestamp;
+  signature?: Base64String;
 }
 
 /**
- * Directory entry
+ * A number range held by a CP
+ */
+export interface NumberRange {
+  numberRange: string;
+  status: 'active' | 'ported' | 'reserved' | 'deactivated';
+  portedTo?: RCPID;
+  portedAt?: Timestamp;
+}
+
+/**
+ * Per-service API endpoints published by a CP
+ */
+export interface DirectoryEndpoints {
+  auth?: string;
+  routing?: string;
+  emergency?: string;
+}
+
+/**
+ * Directory entry (one per CP, GET /directory/all)
  */
 export interface DirectoryEntry {
-  numberRange: string;
-  status: 'active' | 'ported' | 'reserved' | 'disconnected';
-  portedTo?: RCPID;
-  portDate?: string;
-  apiEndpoint?: string;
+  cpId: RCPID;
+  ranges: NumberRange[];
+  endpoints: DirectoryEndpoints;
   publicKey?: Base64String;
+  lastUpdated?: Timestamp;
+  version?: number;
 }
 
 /**
- * Directory response
+ * Directory response (GET /directory/all)
  */
 export interface DirectoryResponse {
-  cpID: RCPID;
-  lastUpdate: Timestamp;
   entries: DirectoryEntry[];
+  lastModified?: Timestamp;
+  version?: number;
 }
 
 /**
- * Token create request
+ * Token create request (POST /auth/tokens)
  */
-export interface TokenCreateRequest {
+export interface TokenCreateRequest extends MessageEnvelope {
   callerID: PhoneNumber;
   calledID: PhoneNumber;
-  cpID: RCPID;
+  originatingCP: RCPID;
   callReference?: CallReference;
   ttl?: number;
   branding?: BrandingInfo;
@@ -224,18 +278,21 @@ export interface TokenCreateRequest {
 export interface TokenCreateResponse {
   tokenId: string;
   expiresAt: Timestamp;
+  callReference: CallReference;
 }
 
 /**
- * Token data
+ * Token data (GET /auth/tokens/{tokenId})
  */
 export interface TokenData {
+  tokenId?: string;
   callerID: PhoneNumber;
   calledID: PhoneNumber;
-  cpID: RCPID;
+  originatingCP: RCPID;
   callReference?: CallReference;
+  verified?: boolean;
   branding?: BrandingInfo;
-  createdAt: Timestamp;
+  expiresAt?: Timestamp;
 }
 
 /**
@@ -298,14 +355,14 @@ export interface PSTN2Config {
 
   // Caching
   cacheDirectory?: boolean;
-  cacheTTL?: number; // seconds
+  cacheTTL?: number; // seconds (default: 86400 for directory, 3600 for branding)
 
   // Network
   timeout?: number; // milliseconds
   retries?: number;
 
   // Fallback
-  fallbackToTraditional?: boolean;
+  fallbackToTraditional?: boolean; // default: true
 
   // Logging
   logLevel?: 'error' | 'warn' | 'info' | 'debug';

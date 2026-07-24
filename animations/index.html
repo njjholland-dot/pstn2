@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PSTN2 - Next Generation Phone Network</title>
+    <meta name="description" content="PSTN2 — a distributed, cryptographically authenticated next-generation phone network. Animated presentations, protocol specifications, and sample code from Comms Council UK.">
+    <meta property="og:title" content="PSTN2 — Next Generation Phone Network">
+    <meta property="og:description" content="PSTN2 — a distributed, cryptographically authenticated next-generation phone network. Animated presentations, protocol specifications, and sample code from Comms Council UK.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pstn2.org/">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
     <style>
         * {
             margin: 0;
@@ -40,6 +47,12 @@
             margin: 0 auto;
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .whats-changed-pill:hover {
+            background: #C24F00;
+            color: #fff !important;
         }
 
         .logo-link {
@@ -99,6 +112,7 @@
             margin: 0 auto 40px;
             opacity: 0.9;
             line-height: 1.8;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
         }
 
         .hero-features {
@@ -123,6 +137,7 @@
             padding-left: 25px;
             position: relative;
             opacity: 0.95;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
         }
 
         .hero-features-list li::before {
@@ -700,6 +715,9 @@
             <a href="https://commscouncil.uk/" class="logo-link" target="_blank" rel="noopener">
                 <img src="https://commscouncil.uk/wp-content/uploads/comms-council-uk-logo-01.svg" alt="Comms Council UK" class="logo">
             </a>
+            <a href="/changes.html" class="whats-changed-pill" style="margin-left: auto; display: inline-block; padding: 8px 18px; border: 2px solid #C24F00; border-radius: 999px; color: #C24F00; text-decoration: none; font-weight: 600; font-size: 0.95em; white-space: nowrap;">
+                🆕 Site updated 24 July 2026 — What's changed →
+            </a>
         </div>
     </header>
 
@@ -721,7 +739,7 @@
                 <ul class="hero-features-list">
                     <li>Routing</li>
                     <li>Porting</li>
-                    <li>Realtime 999</li>
+                    <li>Real-time 999</li>
                 </ul>
             </div>
             <p class="subtitle">
@@ -744,7 +762,7 @@
                 <p class="stat-description">Authentication reduces identification fraud and provides tracing</p>
             </div>
             <div class="stat-box">
-                <div class="stat-value">90%+</div>
+                <div class="stat-value">Up to 80%</div>
                 <div class="stat-label">Cost Reduction</div>
                 <p class="stat-description">Eliminating transit providers and intermediaries</p>
             </div>
@@ -760,7 +778,7 @@
     <section class="problem">
         <div class="section-content">
             <h2 class="section-title">The Problem with Current PSTN</h2>
-            <p class="section-subtitle">Today's all-IP PSTN not only has critical vulnerabilities, but has also not yet become the defacto person to person signalling solution for all-IP communications.</p>
+            <p class="section-subtitle">Today's all-IP PSTN has critical vulnerabilities — and it has still not become the de facto person-to-person signalling solution for all-IP communications.</p>
 
             <div class="problem-grid">
                 <div class="problem-card">
@@ -793,7 +811,7 @@
                 <div class="problem-card">
                     <h3>📋 Lack of standards</h3>
                     <p>
-                        No standard way to communicate between industry participants meaning automation challenging and adding to industry costs.
+                        No standard way to communicate between industry participants makes automation challenging and adds to industry costs.
                     </p>
                 </div>
                 <div class="problem-card">
@@ -840,7 +858,7 @@
                     <div class="feature-icon">🚑</div>
                     <h3>Enhanced Emergency Services</h3>
                     <p>
-                        Accurate location data sent directly to emergency services with every 911 call,
+                        Accurate location data sent directly to emergency services with every 999 call,
                         saving lives through faster, more precise response.
                     </p>
                 </div>
@@ -894,8 +912,8 @@
                             <div class="presentation-number">2</div>
                             <h4 class="presentation-title">Solution Overview</h4>
                             <div class="presentation-meta">
-                                <span class="meta-item">📊 12 scenes</span>
-                                <span class="meta-item">⏱️ ~12 min</span>
+                                <span class="meta-item">📊 10 scenes</span>
+                                <span class="meta-item">⏱️ ~10 min</span>
                             </div>
                             <p class="presentation-description">
                                 Introduces PSTN2 architecture with distributed messaging, cryptographic authentication,
@@ -1011,7 +1029,7 @@
 
             <!-- Complete Walkthrough -->
             <div class="category-section">
-                <h3 class="category-header">Complete Walkthrough</h3>
+                <h3 class="category-header">Complete Walkthrough &amp; Use Cases</h3>
                 <div class="presentation-grid">
                     <div class="presentation-card">
                         <div class="presentation-content">
@@ -1056,7 +1074,8 @@
             <p class="section-subtitle">How Communication Providers connect to both legacy PSTN and modern PSTN2 networks</p>
 
             <div class="architecture-diagram">
-                <svg id="mainArchitectureDiagram" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+                <svg id="mainArchitectureDiagram" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="archTitle">
+                    <title id="archTitle">PSTN2 architecture: a Communication Provider bridging the legacy PSTN and the PSTN2 network</title>
                     <!-- Definitions for gradients and filters -->
                     <defs>
                         <!-- Gradients -->
@@ -1222,14 +1241,14 @@
                             <text x="70" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#10b981">⚡ Direct Routing</text>
                             <text x="70" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Peer-to-Peer</text>
                             <text x="70" y="50" text-anchor="middle" font-size="10" fill="#1a202c">No Transit Fees</text>
-                            <text x="70" y="64" text-anchor="middle" font-size="9" fill="#4a5568">90%+ Cost Savings</text>
+                            <text x="70" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Up to 80% Cost Savings</text>
                         </g>
                         <path d="M 540 600 L 580 550" stroke="#10b981" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
 
-                        <!-- Realtime 999 (below CP, moved inward) -->
+                        <!-- Real-time 999 (below CP, moved inward) -->
                         <g transform="translate(790, 600)">
                             <rect x="0" y="0" width="140" height="70" rx="8" fill="white" stroke="#dc2626" stroke-width="2" filter="url(#shadow)"/>
-                            <text x="70" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#dc2626">🚑 Realtime 999</text>
+                            <text x="70" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#dc2626">🚑 Real-time 999</text>
                             <text x="70" y="38" text-anchor="middle" font-size="10" fill="#1a202c">GPS Location</text>
                             <text x="70" y="50" text-anchor="middle" font-size="10" fill="#1a202c">Instant Transfer</text>
                             <text x="70" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Life-Saving Accuracy</text>
@@ -1300,7 +1319,7 @@
                     <div class="arch-feature-card">
                         <div class="arch-feature-icon">⚡</div>
                         <h3>Direct Routing</h3>
-                        <p>Peer-to-peer connections eliminate transit providers, reducing costs by 90%+ and improving call quality.</p>
+                        <p>Peer-to-peer connections eliminate transit providers, reducing costs by up to 80% and improving call quality.</p>
                     </div>
                     <div class="arch-feature-card">
                         <div class="arch-feature-icon">🔄</div>
@@ -1309,7 +1328,7 @@
                     </div>
                     <div class="arch-feature-card">
                         <div class="arch-feature-icon">🚑</div>
-                        <h3>Realtime 999</h3>
+                        <h3>Real-time 999</h3>
                         <p>GPS location data transmitted instantly with emergency calls for life-saving location accuracy.</p>
                     </div>
                 </div>
@@ -1421,7 +1440,7 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>All 9 animations + website source</li>
+                            <li>All 10 animations + website source</li>
                             <li>15 code examples (TypeScript/Python/Go)</li>
                             <li>Complete documentation & specs</li>
                             <li>Claude.md AI guidance file</li>
@@ -1472,14 +1491,14 @@
             <div style="margin-top: 60px; text-align: center; padding: 40px; background: rgba(251, 146, 60, 0.05); border-radius: 12px; border: 2px solid rgba(251, 146, 60, 0.2);">
                 <h3 style="font-size: 1.8em; margin-bottom: 20px; color: var(--primary-orange);">Quick Links to Code & Documentation</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
-                    <a href="/docs/EXAMPLES.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">📖 Examples Guide</a>
-                    <a href="/docs/SPECIFICATION.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">📋 Protocol Spec</a>
-                    <a href="/docs/API-SPECIFICATION.yaml" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🔌 API Reference</a>
-                    <a href="/docs/IMPLEMENTATION-GUIDE.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🛠️ Implementation Guide</a>
-                    <a href="/docs/MAP-OVERVIEW.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🏢 MAP Overview</a>
-                    <a href="/docs/MAP-MULTITENANT-DESIGN.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🏗️ Multi-Tenant Design</a>
-                    <a href="/docs/MAP-DEPLOYMENT-AWS.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">☁️ AWS Deployment</a>
-                    <a href="/docs/MAP-DEPLOYMENT-ONPREM.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🖥️ On-Premises Deployment</a>
+                    <a href="/docs/EXAMPLES.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">📖 Examples Guide</a>
+                    <a href="/docs/SPECIFICATION.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">📋 Protocol Spec</a>
+                    <a href="/docs/API-SPECIFICATION.yaml" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🔌 API Reference</a>
+                    <a href="/docs/IMPLEMENTATION-GUIDE.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🛠️ Implementation Guide</a>
+                    <a href="/docs/MAP-OVERVIEW.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🏢 MAP Overview</a>
+                    <a href="/docs/MAP-MULTITENANT-DESIGN.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🏗️ Multi-Tenant Design</a>
+                    <a href="/docs/MAP-DEPLOYMENT-AWS.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">☁️ AWS Deployment</a>
+                    <a href="/docs/MAP-DEPLOYMENT-ONPREM.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: #C24F00; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🖥️ On-Premises Deployment</a>
                 </div>
             </div>
         </div>
@@ -1500,20 +1519,24 @@
                 <ul class="footer-links">
                     <li><a href="src/problem-statement/index.html">Problem Statement</a></li>
                     <li><a href="src/solution-overview/index.html">Solution Overview</a></li>
-                    <li><a href="src/authentication-option1/index.html">Authentication</a></li>
+                    <li><a href="src/authentication-option1/index.html">Authentication (Direct Query)</a></li>
+                    <li><a href="src/authentication-option2/index.html">Authentication Option 2</a></li>
                     <li><a href="src/direct-routing/index.html">Direct Routing</a></li>
                     <li><a href="src/emergency-services/index.html">Emergency Services</a></li>
+                    <li><a href="src/distributed-database/index.html">Distributed Database</a></li>
+                    <li><a href="src/map-architecture/index.html">MAP Architecture</a></li>
+                    <li><a href="src/end-to-end-scenario/index.html">End-to-End Scenario</a></li>
                     <li><a href="src/law-enforcement/index.html">Law Enforcement Access</a></li>
-                    <li><a href="animations/index.html">All Presentations</a></li>
+                    <li><a href="#presentations">All Presentations</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3>Code Samples</h3>
                 <ul class="footer-links">
-                    <li><a href="code/typescript/">TypeScript Implementation</a></li>
-                    <li><a href="code/python/">Python Implementation</a></li>
-                    <li><a href="code/go/">Go Implementation</a></li>
-                    <li><a href="test-environment/">Test Environment</a></li>
+                    <li><a href="/code/typescript/README.html">TypeScript Implementation</a></li>
+                    <li><a href="/code/python/README.html">Python Implementation</a></li>
+                    <li><a href="/code/go/README.html">Go Implementation</a></li>
+                    <li><a href="/pstn2-test-harness.zip">Test Harness (ZIP download)</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -1527,7 +1550,8 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© 2025 PSTN2 Project. Built to eliminate fraud and save lives. A project initiated by <a href="https://commscouncil.uk/" target="_blank" rel="noopener" style="color: var(--primary-orange); text-decoration: underline;">Comms Council UK</a></p>
+            <p>© 2025–2026 PSTN2 Project. Built to eliminate fraud and save lives. A project initiated by <a href="https://commscouncil.uk/" target="_blank" rel="noopener" style="color: var(--primary-orange); text-decoration: underline;">Comms Council UK</a></p>
+            <p style="margin-top: 8px;">Last updated: <time datetime="2026-07-24">24 July 2026</time> · <a href="/changes.html" style="color: var(--primary-orange); text-decoration: underline;">See what's changed</a></p>
             <p style="margin-top: 20px;">
                 <a href="/forum/" style="display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">💬 Join the Community Forum</a>
             </p>

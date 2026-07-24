@@ -22,21 +22,22 @@ async function tokenPoolExample() {
 
   // Originating CP: Create token before placing call
   console.log('Step 1: Creating token...');
-  const token = await client.auth.createToken(
-    '+441234567890', // callerID
-    '+447700900123', // calledID
-    client.generateCallReference(),
-    {
+  const token = await client.auth.createToken({
+    callerID: '+441234567890',
+    calledID: '+447700900123',
+    callReference: client.generateCallReference(),
+    ttl: 30, // TTL in seconds
+    branding: {
       displayName: 'ACME Corp',
       callPurpose: 'Account Alert',
       logo: 'https://cdn.acme.com/logo.png',
     },
-    30 // TTL in seconds
-  );
+  });
 
   console.log('Token created:', {
     tokenId: token.tokenId,
     expiresAt: token.expiresAt,
+    callReference: token.callReference,
   });
   console.log('');
 

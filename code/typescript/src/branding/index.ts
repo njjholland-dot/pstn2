@@ -1,6 +1,11 @@
 /**
  * Branding module
  * Handles call branding and purpose signaling
+ *
+ * NOTE: The standalone /branding endpoint used here is an EXTENSION beyond
+ * the core PSTN2 specification. The spec carries branding inline in
+ * verification, token, and routing payloads (BrandingInfo); this module
+ * additionally supports fetching branding on demand from CPs that expose it.
  */
 
 import { MessagingClient } from '../messaging';
@@ -9,14 +14,19 @@ import { getLogger } from '../utils/logger';
 
 const logger = getLogger();
 
+const DEFAULT_CACHE_TTL_SECONDS = 3600; // 1 hour
+
 export class BrandingModule {
   private messagingClient: MessagingClient;
   private brandingCache: Map<string, BrandingInfo & { timestamp: number }> = new Map();
-  private cacheTTL: number;
+  private cacheTTL: number; // milliseconds (internal)
 
-  constructor(messagingClient: MessagingClient, cacheTTL: number = 3600000) {
+  /**
+   * @param cacheTTLSeconds - Cache TTL in seconds (default 3600 = 1 hour)
+   */
+  constructor(messagingClient: MessagingClient, cacheTTLSeconds: number = DEFAULT_CACHE_TTL_SECONDS) {
     this.messagingClient = messagingClient;
-    this.cacheTTL = cacheTTL; // Default 1 hour
+    this.cacheTTL = cacheTTLSeconds * 1000;
   }
 
   /**
@@ -40,6 +50,7 @@ export class BrandingModule {
     });
 
     try {
+      // /branding is an extension endpoint, not part of the core spec
       const response = await this.messagingClient.request<
         { callerID: PhoneNumber; callReference: CallReference },
         { branding: BrandingInfo; callReference: CallReference }
@@ -72,10 +83,11 @@ export class BrandingModule {
       timestamp: Date.now(),
     });
 
-    // Auto-cleanup after TTL
-    setTimeout(() => {
+    // Auto-cleanup after TTL; unref so the timer never keeps the process alive
+    const timer = setTimeout(() => {
       this.brandingCache.delete(callerID);
     }, this.cacheTTL);
+    timer.unref();
   }
 
   /**

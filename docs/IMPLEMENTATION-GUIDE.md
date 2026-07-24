@@ -54,7 +54,9 @@
 
 ```bash
 # Clone reference implementations
-git clone https://github.com/pstn2/pstn2.git
+# (repository access is currently limited while the project incubates;
+#  contact nick.holland@8x8.com)
+git clone https://github.com/8x8/pstn2.git
 cd pstn2/code
 
 # TypeScript
@@ -226,7 +228,7 @@ async function resolvePortingChain(
       return { cpId: currentCP.cpId, endpoint: currentCP.endpoint, chain };
     }
 
-    currentCP = await directory.lookup(phoneNumber, portingInfo.currentHolder);
+    currentCP = await directory.lookup(phoneNumber, portingInfo.newRcpid);
   }
 
   throw new Error('Porting chain too long (possible loop)');
@@ -389,7 +391,7 @@ export class PSTN2Client {
 }
 ```
 
-### 3.4 Testing Strategy
+### 3.4 TypeScript Testing Strategy
 
 ```typescript
 // src/client.test.ts
@@ -563,8 +565,8 @@ class AuthenticationMode(str, Enum):
     TOKEN_POOL = 'token_pool'
 
 class PSTN2Config(BaseModel):
-    cp_id: str = Field(..., regex=r'^CP[12]-[A-Z]{2}-\d{4}$')
-    api_endpoint: str = Field(..., regex=r'^https://')
+    cp_id: str = Field(..., pattern=r'^CP[12]-[A-Z]{2}-\d{4}$')
+    api_endpoint: str = Field(..., pattern=r'^https://')
     private_key: str
     auth_mode: AuthenticationMode
     timeout: Optional[float] = 2.0
@@ -588,7 +590,6 @@ go mod init github.com/yourorg/pstn2
 # Install dependencies
 go get github.com/go-chi/chi/v5
 go get github.com/go-redis/redis/v9
-go get golang.org/x/crypto/ed25519
 go get github.com/stretchr/testify
 ```
 
@@ -1189,5 +1190,7 @@ config := pstn2.Config{
 ---
 
 **Document Status:** Living Guide
-**Contributions:** https://github.com/pstn2/pstn2/pulls
-**Questions:** https://github.com/pstn2/pstn2/discussions
+**Contributions:** https://github.com/8x8/pstn2/pulls
+**Questions:** https://github.com/8x8/pstn2/discussions
+
+(Repository access is currently limited while the project incubates; contact nick.holland@8x8.com)

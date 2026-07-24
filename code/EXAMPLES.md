@@ -22,7 +22,9 @@ code/
 │       ├── 02-direct-routing.ts
 │       ├── 03-token-pool.ts
 │       ├── 04-emergency-services.ts
-│       └── 05-complete-call-flow.ts
+│       ├── 05-complete-call-flow.ts
+│       ├── basic-usage.ts        # minimal quick-start example
+│       └── token-pool.ts         # minimal token pool quick-start
 ├── python/
 │   └── examples/
 │       ├── 01_basic_authentication.py
@@ -31,13 +33,17 @@ code/
 │       ├── 04_emergency_services.py
 │       └── 05_complete_call_flow.py
 └── go/
-    └── examples/
-        ├── 01-basic-authentication.go
-        ├── 02-direct-routing.go
-        ├── 03-token-pool.go
-        ├── 04-emergency-services.go
-        └── 05-complete-call-flow.go
+    └── examples/                 # one main package per example
+        ├── 01-basic-authentication/main.go
+        ├── 02-direct-routing/main.go
+        ├── 03-token-pool/main.go
+        ├── 04-emergency-services/main.go
+        └── 05-complete-call-flow/main.go
 ```
+
+The TypeScript `basic-usage.ts` and `token-pool.ts` files are the minimal
+quick-start examples - start there if you just want to see the client API
+in a few lines.
 
 ## Prerequisites
 
@@ -310,7 +316,7 @@ Features Enabled:
    python examples/01_basic_authentication.py
 
    # Go
-   go run examples/01-basic-authentication.go
+   go run ./examples/01-basic-authentication
    ```
 
 ## Common Patterns
@@ -388,7 +394,7 @@ For testing examples without a real PSTN2 account, you can:
 2. **Run a Local Test Server**: Set up a local PSTN2-compatible API server
 3. **Use Test Credentials**: Some PSTN2 providers offer sandbox environments
 
-See [TESTING-SPECIFICATION.md](../TESTING-SPECIFICATION.md) for more details.
+See [TESTING-SPECIFICATION.md](../docs/TESTING-SPECIFICATION.md) for more details.
 
 ## Integration Patterns
 
@@ -479,10 +485,10 @@ Common issues and solutions:
 
 ## Further Reading
 
-- [SPECIFICATION.md](../SPECIFICATION.md) - Complete PSTN2 protocol specification
-- [API-SPECIFICATION.yaml](../API-SPECIFICATION.yaml) - REST API documentation
-- [IMPLEMENTATION-GUIDE.md](../IMPLEMENTATION-GUIDE.md) - Implementation patterns and best practices
-- [TESTING-SPECIFICATION.md](../TESTING-SPECIFICATION.md) - Testing strategies and certification
+- [SPECIFICATION.md](../docs/SPECIFICATION.md) - Complete PSTN2 protocol specification
+- [API-SPECIFICATION.yaml](../docs/API-SPECIFICATION.yaml) - REST API documentation
+- [IMPLEMENTATION-GUIDE.md](../docs/IMPLEMENTATION-GUIDE.md) - Implementation patterns and best practices
+- [TESTING-SPECIFICATION.md](../docs/TESTING-SPECIFICATION.md) - Testing strategies and certification
 
 ## Support
 

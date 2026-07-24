@@ -1,6 +1,6 @@
 /**
  * Routing module
- * Handles direct routing discovery between CPs
+ * Handles direct routing discovery between CPs (POST /routing/request)
  */
 
 import { MessagingClient } from '../messaging';
@@ -15,9 +15,22 @@ import {
   PSTN2Config,
 } from '../types';
 import { getLogger } from '../utils/logger';
-import { CallRejectedError } from '../errors';
 
 const logger = getLogger();
+
+/**
+ * Routing result including any porting chain traversed
+ */
+export type RoutingResult = RoutingResponse & { portingChain?: string[] };
+
+export interface RequestRoutingParams {
+  destinationNumber: PhoneNumber;
+  callerID: PhoneNumber;
+  callReference?: CallReference;
+  mediaCapabilities: MediaCapabilities;
+  connectionDetails?: ConnectionDetails;
+  branding?: BrandingInfo;
+}
 
 export class RoutingModule {
   private messagingClient: MessagingClient;
@@ -35,16 +48,13 @@ export class RoutingModule {
   }
 
   /**
-   * Request direct routing to destination number
+   * Request direct routing to destination number.
+   *
+   * Does NOT throw when the destination CP rejects the call: the response
+   * is returned with `accepted: false` and a `rejectReason`, so callers can
+   * fall back to traditional PSTN with a simple if/else.
    */
-  async requestRouting(params: {
-    destinationNumber: PhoneNumber;
-    callerID: PhoneNumber;
-    callReference?: CallReference;
-    mediaCapabilities: MediaCapabilities;
-    connectionDetails: ConnectionDetails;
-    branding?: BrandingInfo;
-  }): Promise<RoutingResponse & { portingChain?: string[] }> {
+  async requestRouting(params: RequestRoutingParams): Promise<RoutingResult> {
     const callReference = params.callReference || this.messagingClient.generateCallReference();
 
     logger.info('Requesting direct routing', {
@@ -67,8 +77,9 @@ export class RoutingModule {
       destinationNumber: params.destinationNumber,
       callerID: params.callerID,
       callReference,
-      originCP: this.config.cpId,
+      requestingCP: this.config.cpId,
       mediaCapabilities: params.mediaCapabilities,
+      publicKey: this.config.publicKey,
       connectionDetails: params.connectionDetails,
       branding: params.branding,
       timestamp: this.messagingClient.getCurrentTimestamp(),
@@ -78,28 +89,29 @@ export class RoutingModule {
     const { response, portingChain } = await this.messagingClient.request<
       RoutingRequest,
       RoutingResponse
-    >('/request-routing', cpInfo.apiEndpoint, request);
+    >('/routing/request', cpInfo.apiEndpoint, request);
 
-    // Check if call was accepted
-    if (!response.accepted) {
-      throw new CallRejectedError(response.rejectReason, {
+    if (response.accepted) {
+      logger.info('Routing request accepted', {
         callReference,
-        destinationNumber: params.destinationNumber,
+        destinationCP: response.destinationCP,
+        fqdn: response.connectionDetails?.fqdn,
+        port: response.connectionDetails?.port,
+      });
+    } else {
+      logger.info('Routing request rejected', {
+        callReference,
+        rejectReason: response.rejectReason,
       });
     }
 
-    logger.info('Routing request accepted', {
-      callReference,
-      destinationCP: response.destinationCP,
-      fqdn: response.connectionDetails?.fqdn,
-      port: response.connectionDetails?.port,
-    });
-
-    // Return response with porting chain if any
-    return {
+    // Return response with porting chain if any (rejections are returned,
+    // not thrown - see CallRejectedError which is kept only for compat)
+    const result: RoutingResult = {
       ...response,
       portingChain: portingChain.length > 0 ? portingChain : undefined,
     };
+    return result;
   }
 
   /**
@@ -119,7 +131,7 @@ export class RoutingModule {
       destinationNumber: request.destinationNumber,
       callerID: request.callerID,
       callReference: request.callReference,
-      originCP: request.originCP,
+      requestingCP: request.requestingCP,
     });
 
     // Check if we host this number
@@ -155,7 +167,7 @@ export class RoutingModule {
     const connectionDetails = await options.getConnectionDetails();
 
     // Negotiate media capabilities
-    const mediaCapabilities = options.selectMediaCapabilities(request.mediaCapabilities);
+    const agreedCapabilities = options.selectMediaCapabilities(request.mediaCapabilities);
 
     logger.info('Routing request accepted', {
       callReference: request.callReference,
@@ -167,7 +179,7 @@ export class RoutingModule {
       accepted: true,
       destinationCP: this.config.cpId,
       connectionDetails,
-      mediaCapabilities,
+      agreedCapabilities,
       callReference: request.callReference,
     };
   }

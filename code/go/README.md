@@ -2,7 +2,17 @@
 
 High-performance Go implementation of the PSTN2 distributed telecommunications protocol.
 
+> **Status: reference API — not yet published.** The Go SDK
+> (`github.com/pstn2/pstn2-go/pkg/...`) has not been published and its
+> `pkg/` sources are not included in this repository yet, so
+> `go get github.com/pstn2/pstn2-go` will not work and the examples will
+> not compile. The `examples/` directories and the snippets below
+> illustrate the *intended* SDK surface. A `go.mod` is provided so the
+> module layout is ready for when the SDK lands.
+
 ## Installation
+
+Once the SDK is published, installation will be:
 
 ```bash
 go get github.com/pstn2/pstn2-go
@@ -101,13 +111,14 @@ export PSAP_PRIVATE_KEY="your-psap-key-here"
 export TOKEN_POOL_JWT="your-jwt-token-here"
 ```
 
-2. Run an example:
+2. Run an example (each example is its own `main` package; note that these
+   will only compile once the SDK `pkg/` sources are published):
 ```bash
-go run examples/01-basic-authentication.go
-go run examples/02-direct-routing.go
-go run examples/03-token-pool.go
-go run examples/04-emergency-services.go
-go run examples/05-complete-call-flow.go
+go run ./examples/01-basic-authentication
+go run ./examples/02-direct-routing
+go run ./examples/03-token-pool
+go run ./examples/04-emergency-services
+go run ./examples/05-complete-call-flow
 ```
 
 ## SDK API Reference
@@ -323,7 +334,7 @@ func main() {
     }
     defer pstn2Client.Close()
 
-    http.HandleFunc("/api/verify-call", verifyCallHandler)
+    http.HandleFunc("/api/calls/verify", verifyCallHandler)
     http.ListenAndServe(":8080", nil)
 }
 
@@ -450,21 +461,21 @@ func BenchmarkVerifyCall(b *testing.B) {
 
 ## Examples
 
-See the `examples/` directory for complete working examples:
+See the `examples/` directory for complete examples of the intended SDK surface:
 
-- `01-basic-authentication.go` - Basic authentication flow
-- `02-direct-routing.go` - Direct routing with media negotiation
-- `03-token-pool.go` - Token Pool authentication
-- `04-emergency-services.go` - Emergency location services
-- `05-complete-call-flow.go` - End-to-end call scenario
+- `01-basic-authentication/` - Basic authentication flow
+- `02-direct-routing/` - Direct routing with media negotiation
+- `03-token-pool/` - Token Pool authentication
+- `04-emergency-services/` - Emergency location services
+- `05-complete-call-flow/` - End-to-end call scenario
 
 See [EXAMPLES.md](../EXAMPLES.md) for detailed documentation.
 
 ## Further Reading
 
-- [SPECIFICATION.md](../../SPECIFICATION.md) - PSTN2 protocol specification
-- [API-SPECIFICATION.yaml](../../API-SPECIFICATION.yaml) - REST API documentation
-- [IMPLEMENTATION-GUIDE.md](../../IMPLEMENTATION-GUIDE.md) - Implementation patterns
+- [SPECIFICATION.md](../../docs/SPECIFICATION.md) - PSTN2 protocol specification
+- [API-SPECIFICATION.yaml](../../docs/API-SPECIFICATION.yaml) - REST API documentation
+- [IMPLEMENTATION-GUIDE.md](../../docs/IMPLEMENTATION-GUIDE.md) - Implementation patterns
 
 ## License
 

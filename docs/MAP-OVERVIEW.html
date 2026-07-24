@@ -18,15 +18,17 @@
                 <a href="#two-types-of-maps">Two Types of MAPs</a>
                 <a href="#business-models">Business Models</a>
                 <a href="#key-differentiators">Key Differentiators</a>
-                <a href="#value-proposition-for-downstream-cps">Value Proposition for Downstream CPs</a>
+                <a href="#value-proposition-for-downstream-cps">Value Proposition for
+Downstream CPs</a>
                 <a href="#technical-architecture">Technical Architecture</a>
                 <a href="#deployment-models">Deployment Models</a>
-                <a href="#revenue-pricing-models">Revenue & Pricing Models</a>
+                <a href="#revenue--pricing-models">Revenue &amp; Pricing Models</a>
                 <a href="#getting-started">Getting Started</a>
                 <a href="#success-metrics">Success Metrics</a>
                 <a href="#risk-mitigation">Risk Mitigation</a>
                 <a href="#competitive-advantages">Competitive Advantages</a>
-                <a href="#customer-success-stories-projected-">Customer Success Stories (Projected)</a>
+                <a href="#customer-success-stories-projected">Customer Success Stories
+(Projected)</a>
                 <a href="#roadmap">Roadmap</a>
                 <a href="#conclusion">Conclusion</a>
                 <a href="#next-steps">Next Steps</a>
@@ -34,25 +36,23 @@
             </div>
         </nav>
     <main class="doc-container">
-        <h1 id="map-managed-access-provider-overview">MAP (Managed Access Provider) Overview</h1>
-
-<p><strong>Version:</strong> 1.0</p>
-<p><strong>Date:</strong> 2025-12-01</p>
-<p><strong>Status:</strong> Complete Specification</p>
-
+<h1 id="map-managed-access-provider-overview">MAP (Managed Access
+Provider) Overview</h1>
+<p><strong>Version:</strong> 1.0 <strong>Date:</strong> 2025-12-01
+<strong>Status:</strong> Complete Specification</p>
 <h2 id="executive-summary">Executive Summary</h2>
-
-<p>A <strong>Managed Access Provider (MAP)</strong> enables smaller Communication Providers (CPs) to participate in PSTN2 without requiring deep technical expertise or significant infrastructure investment. MAPs act as intermediaries, handling complex PSTN2 operations on behalf of multiple downstream CPs.</p>
-
+<p>A <strong>Managed Access Provider (MAP)</strong> enables smaller
+Communication Providers (CPs) to participate in PSTN2 without requiring
+deep technical expertise or significant infrastructure investment. MAPs
+act as intermediaries, handling complex PSTN2 operations on behalf of
+multiple downstream CPs.</p>
 <h2 id="two-types-of-maps">Two Types of MAPs</h2>
-
 <h3 id="1-pure-pstn2-map">1. Pure PSTN2 MAP</h3>
-
-<p><strong>Purpose:</strong> Provide PSTN2-only services to downstream CPs</p>
-
-<strong>Services Provided:</strong>
+<p><strong>Purpose:</strong> Provide PSTN2-only services to downstream
+CPs</p>
+<p><strong>Services Provided:</strong></p>
 <ul>
-<li>PSTN2 authentication (Direct Query & Token Pool)</li>
+<li>PSTN2 authentication (Direct Query &amp; Token Pool)</li>
 <li>Directory service access and synchronization</li>
 <li>Emergency services location handling</li>
 <li>Direct routing coordination</li>
@@ -60,28 +60,24 @@
 <li>Cryptographic key management</li>
 <li>Protocol compliance and certification</li>
 </ul>
-
-<strong>Target Customers:</strong>
+<p><strong>Target Customers:</strong></p>
 <ul>
 <li>Small VoIP providers wanting PSTN2 features</li>
 <li>New market entrants</li>
 <li>OTT providers adding telephony</li>
 <li>International carriers expanding to new markets</li>
 </ul>
-
-<strong>Infrastructure Requirements:</strong>
+<p><strong>Infrastructure Requirements:</strong></p>
 <ul>
 <li>PSTN2 protocol implementation</li>
 <li>Multi-tenant architecture</li>
 <li>API endpoints for downstream CPs</li>
 <li>Monitoring and billing systems</li>
 </ul>
-
 <h3 id="2-full-service-map">2. Full Service MAP</h3>
-
-<p><strong>Purpose:</strong> Bridge both PSTN and PSTN2 for downstream CPs</p>
-
-<strong>Services Provided:</strong>
+<p><strong>Purpose:</strong> Bridge both PSTN and PSTN2 for downstream
+CPs</p>
+<p><strong>Services Provided:</strong></p>
 <ul>
 <li><strong>All Pure PSTN2 MAP services</strong>, plus:</li>
 <li>Legacy PSTN connectivity (wholesale termination/origination)</li>
@@ -92,16 +88,14 @@
 <li>Billing for both PSTN and PSTN2 calls</li>
 <li>24/7 operations and support</li>
 </ul>
-
-<strong>Target Customers:</strong>
+<p><strong>Target Customers:</strong></p>
 <ul>
 <li>Existing PSTN wholesalers adding PSTN2</li>
 <li>Traditional carriers modernizing services</li>
 <li>Resellers wanting complete voice solutions</li>
 <li>CPs needing seamless legacy/modern transition</li>
 </ul>
-
-<strong>Infrastructure Requirements:</strong>
+<p><strong>Infrastructure Requirements:</strong></p>
 <ul>
 <li>PSTN2 + legacy PSTN infrastructure</li>
 <li>SIP switching platform</li>
@@ -109,75 +103,114 @@
 <li>Complete billing and provisioning systems</li>
 <li>Regulatory compliance (E.164 numbers, emergency services)</li>
 </ul>
-
 <h2 id="business-models">Business Models</h2>
-
 <h3 id="pure-pstn2-map">Pure PSTN2 MAP</h3>
 <ul>
-<li><strong>Revenue:</strong> Per-call fees, monthly subscription, or hybrid</li>
+<li><strong>Revenue:</strong> Per-call fees, monthly subscription, or
+hybrid</li>
 <li><strong>Costs:</strong> Infrastructure, bandwidth, support</li>
 <li><strong>Margins:</strong> Higher (no PSTN transit costs)</li>
 <li><strong>Complexity:</strong> Lower operational overhead</li>
 <li><strong>Time to Market:</strong> Faster (PSTN2 only)</li>
 </ul>
-
 <h3 id="full-service-map">Full Service MAP</h3>
 <ul>
-<li><strong>Revenue:</strong> Per-minute rates (PSTN), per-call fees (PSTN2), monthly commitments</li>
-<li><strong>Costs:</strong> PSTN transit, infrastructure, regulatory compliance, 24/7 NOC</li>
-<li><strong>Margins:</strong> Lower on PSTN (competitive), higher on PSTN2</li>
+<li><strong>Revenue:</strong> Per-minute rates (PSTN), per-call fees
+(PSTN2), monthly commitments</li>
+<li><strong>Costs:</strong> PSTN transit, infrastructure, regulatory
+compliance, 24/7 NOC</li>
+<li><strong>Margins:</strong> Lower on PSTN (competitive), higher on
+PSTN2</li>
 <li><strong>Complexity:</strong> Higher (dual-network operations)</li>
-<li><strong>Time to Market:</strong> Longer (requires PSTN interconnects)</li>
+<li><strong>Time to Market:</strong> Longer (requires PSTN
+interconnects)</li>
 </ul>
-
 <h2 id="key-differentiators">Key Differentiators</h2>
-
-<p>| Feature | Pure PSTN2 MAP | Full Service MAP |</p>
-<p>|---------|----------------|------------------|</p>
-<p>| <strong>PSTN2 Support</strong> | ✓ Complete | ✓ Complete |</p>
-<p>| <strong>Legacy PSTN</strong> | ✗ None | ✓ Complete |</p>
-<p>| <strong>Number Provisioning</strong> | Via downstream CP | ✓ Direct provisioning |</p>
-<p>| <strong>Emergency Services</strong> | PSTN2 only (GPS) | Both PSTN & PSTN2 |</p>
-<p>| <strong>Call Routing</strong> | PSTN2 only | Automatic PSTN/PSTN2 |</p>
-<p>| <strong>Infrastructure Cost</strong> | Lower | Higher |</p>
-<p>| <strong>Regulatory Burden</strong> | Minimal | Full compliance required |</p>
-<p>| <strong>Customer Type</strong> | Tech-savvy VoIP | Traditional carriers |</p>
-
-<h2 id="value-proposition-for-downstream-cps">Value Proposition for Downstream CPs</h2>
-
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Pure PSTN2 MAP</th>
+<th>Full Service MAP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PSTN2 Support</strong></td>
+<td>✓ Complete</td>
+<td>✓ Complete</td>
+</tr>
+<tr>
+<td><strong>Legacy PSTN</strong></td>
+<td>✗ None</td>
+<td>✓ Complete</td>
+</tr>
+<tr>
+<td><strong>Number Provisioning</strong></td>
+<td>Via downstream CP</td>
+<td>✓ Direct provisioning</td>
+</tr>
+<tr>
+<td><strong>Emergency Services</strong></td>
+<td>PSTN2 only (GPS)</td>
+<td>Both PSTN &amp; PSTN2</td>
+</tr>
+<tr>
+<td><strong>Call Routing</strong></td>
+<td>PSTN2 only</td>
+<td>Automatic PSTN/PSTN2</td>
+</tr>
+<tr>
+<td><strong>Infrastructure Cost</strong></td>
+<td>Lower</td>
+<td>Higher</td>
+</tr>
+<tr>
+<td><strong>Regulatory Burden</strong></td>
+<td>Minimal</td>
+<td>Full compliance required</td>
+</tr>
+<tr>
+<td><strong>Customer Type</strong></td>
+<td>Tech-savvy VoIP</td>
+<td>Traditional carriers</td>
+</tr>
+</tbody>
+</table>
+<h2 id="value-proposition-for-downstream-cps">Value Proposition for
+Downstream CPs</h2>
 <h3 id="why-use-a-map">Why Use a MAP?</h3>
-
-<strong>For Small CPs:</strong>
-<ul>
-<li><strong>Lower Barrier to Entry</strong> - No need for deep PSTN2 expertise</li>
-<li><strong>Reduced Infrastructure</strong> - No need to operate PSTN2 servers</li>
+<p><strong>For Small CPs:</strong></p>
+<ol type="1">
+<li><strong>Lower Barrier to Entry</strong> - No need for deep PSTN2
+expertise</li>
+<li><strong>Reduced Infrastructure</strong> - No need to operate PSTN2
+servers</li>
 <li><strong>Faster Time to Market</strong> - Days instead of months</li>
 <li><strong>Lower Costs</strong> - Shared infrastructure costs</li>
-<li><strong>Support & Expertise</strong> - 24/7 technical support included</li>
-<li><strong>Compliance</strong> - MAP handles protocol certification</li>
-</ul>
-
-<strong>For Full Service MAP Customers:</strong>
-<ul>
-<li><strong>Single Vendor</strong> - One partner for PSTN + PSTN2</li>
-<li><strong>Seamless Transition</strong> - Gradual PSTN2 adoption</li>
-<li><strong>Complete Solution</strong> - Number management, billing, support</li>
-</ul>
-
+<li><strong>Support &amp; Expertise</strong> - 24/7 technical support
+included</li>
+<li><strong>Compliance</strong> - MAP handles protocol
+certification</li>
+</ol>
+<p><strong>For Full Service MAP Customers:</strong> 7. <strong>Single
+Vendor</strong> - One partner for PSTN + PSTN2 8. <strong>Seamless
+Transition</strong> - Gradual PSTN2 adoption 9. <strong>Complete
+Solution</strong> - Number management, billing, support</p>
 <h2 id="technical-architecture">Technical Architecture</h2>
-
 <h3 id="multi-tenant-design">Multi-Tenant Design</h3>
-
-<strong>Core Principles:</strong>
-<ul>
-<li><strong>Isolation</strong> - Each CP's data and credentials isolated</li>
-<li><strong>Scalability</strong> - Add CPs without infrastructure changes</li>
-<li><strong>Performance</strong> - Sub-2-second authentication targets</li>
+<p><strong>Core Principles:</strong></p>
+<ol type="1">
+<li><strong>Isolation</strong> - Each CP's data and credentials
+isolated</li>
+<li><strong>Scalability</strong> - Add CPs without infrastructure
+changes</li>
+<li><strong>Performance</strong> - Sub-500ms authentication targets
+(p95)</li>
 <li><strong>Reliability</strong> - 99.99% uptime SLA</li>
 <li><strong>Security</strong> - End-to-end encryption, audit logs</li>
-</ul>
-
-<strong>Shared Resources:</strong>
+</ol>
+<p><strong>Shared Resources:</strong></p>
 <ul>
 <li>PSTN2 directory service synchronization</li>
 <li>Emergency services location database</li>
@@ -185,8 +218,7 @@
 <li>Authentication server infrastructure</li>
 <li>Direct routing coordinator</li>
 </ul>
-
-<strong>Per-CP Resources:</strong>
+<p><strong>Per-CP Resources:</strong></p>
 <ul>
 <li>Unique CP identifier (CPID)</li>
 <li>Ed25519 key pair management</li>
@@ -194,12 +226,9 @@
 <li>Billing and usage tracking</li>
 <li>Configuration and policies</li>
 </ul>
-
 <h2 id="deployment-models">Deployment Models</h2>
-
-<h3 id="1-cloud-hosted-aws-azure-gcp">1. Cloud-Hosted (AWS/Azure/GCP)</h3>
-
-<strong>Advantages:</strong>
+<h3 id="1-cloud-hosted-awsazuregcp">1. Cloud-Hosted (AWS/Azure/GCP)</h3>
+<p><strong>Advantages:</strong></p>
 <ul>
 <li>Rapid deployment</li>
 <li>Global availability</li>
@@ -207,18 +236,15 @@
 <li>Lower capital expenditure</li>
 <li>Managed services (databases, monitoring)</li>
 </ul>
-
-<strong>Best For:</strong>
+<p><strong>Best For:</strong></p>
 <ul>
 <li>Pure PSTN2 MAPs</li>
 <li>Startups and new entrants</li>
 <li>Global operations</li>
 <li>Rapid scaling scenarios</li>
 </ul>
-
 <h3 id="2-on-premises-infrastructure">2. On-Premises Infrastructure</h3>
-
-<strong>Advantages:</strong>
+<p><strong>Advantages:</strong></p>
 <ul>
 <li>Full control</li>
 <li>Data sovereignty</li>
@@ -226,245 +252,220 @@
 <li>Custom hardware optimization</li>
 <li>No cloud vendor lock-in</li>
 </ul>
-
-<strong>Best For:</strong>
+<p><strong>Best For:</strong></p>
 <ul>
 <li>Full Service MAPs</li>
 <li>Established carriers</li>
 <li>High-volume operations</li>
 <li>Regulatory requirements (data residency)</li>
 </ul>
-
 <h3 id="3-hybrid-model">3. Hybrid Model</h3>
-
-<strong>Advantages:</strong>
+<p><strong>Advantages:</strong></p>
 <ul>
 <li>Best of both worlds</li>
 <li>Critical services on-prem, elasticity in cloud</li>
 <li>Disaster recovery built-in</li>
 <li>Geographic distribution</li>
 </ul>
-
-<strong>Best For:</strong>
+<p><strong>Best For:</strong></p>
 <ul>
 <li>Large-scale operations</li>
 <li>Multi-region deployments</li>
 <li>Gradual cloud adoption</li>
 </ul>
-
-<h2 id="revenue-pricing-models">Revenue & Pricing Models</h2>
-
+<h2 id="revenue--pricing-models">Revenue &amp; Pricing Models</h2>
 <h3 id="pure-pstn2-map-pricing">Pure PSTN2 MAP Pricing</h3>
-
-<strong>Option 1: Per-Call</strong>
+<p><strong>Option 1: Per-Call</strong></p>
 <ul>
-<li>Authentication: $0.0001-$0.0005 per call</li>
+<li>Authentication: <span class="math inline">0.0001−</span>0.0005 per
+call</li>
 <li>Emergency location: $0.001 per 999 call</li>
 <li>Directory lookup: $0.00001 per query</li>
 </ul>
-
-<strong>Option 2: Monthly Subscription</strong>
+<p><strong>Option 2: Monthly Subscription</strong></p>
 <ul>
 <li>Tier 1: Up to 10,000 calls/month - $100/month</li>
 <li>Tier 2: Up to 100,000 calls/month - $500/month</li>
 <li>Tier 3: Up to 1M calls/month - $2,000/month</li>
 <li>Enterprise: Custom pricing</li>
 </ul>
-
-<strong>Option 3: Hybrid</strong>
+<p><strong>Option 3: Hybrid</strong></p>
 <ul>
 <li>Base fee: $50/month</li>
 <li>Overage: $0.0002 per call above included amount</li>
 </ul>
-
 <h3 id="full-service-map-pricing">Full Service MAP Pricing</h3>
-
-<strong>PSTN Minutes:</strong>
+<p><strong>PSTN Minutes:</strong></p>
 <ul>
-<li>Inbound: $0.003-$0.015 per minute (varies by region)</li>
-<li>Outbound: $0.005-$0.025 per minute (varies by destination)</li>
+<li>Inbound: <span class="math inline">0.003−</span>0.015 per minute
+(varies by region)</li>
+<li>Outbound: <span class="math inline">0.005−</span>0.025 per minute
+(varies by destination)</li>
 <li>Emergency: $0.05 per call (flat rate)</li>
 </ul>
-
-<strong>PSTN2 Features:</strong>
+<p><strong>PSTN2 Features:</strong></p>
 <ul>
 <li>Authentication: Included in per-minute rate</li>
 <li>Direct routing: $0.0001 per call setup</li>
 <li>Enhanced features: +10% premium on base rates</li>
 </ul>
-
-<strong>Monthly Minimums:</strong>
+<p><strong>Monthly Minimums:</strong></p>
 <ul>
 <li>Small CP: $500/month</li>
 <li>Medium CP: $2,500/month</li>
 <li>Large CP: $10,000/month</li>
 </ul>
-
 <h2 id="getting-started">Getting Started</h2>
-
 <h3 id="for-pure-pstn2-map">For Pure PSTN2 MAP</h3>
-
+<ol type="1">
+<li><p><strong>Review Technical Specifications</strong></p>
 <ul>
-<li><strong>Review Technical Specifications</strong></li>
-</ul>
-<p>   - Read SPECIFICATION.md</p>
-<p>   - Review API-SPECIFICATION.yaml</p>
-<p>   - Study MAP-ARCHITECTURE.md</p>
-
+<li>Read SPECIFICATION.md</li>
+<li>Review API-SPECIFICATION.yaml</li>
+<li>Study MAP-MULTITENANT-DESIGN.md</li>
+</ul></li>
+<li><p><strong>Choose Deployment Model</strong></p>
 <ul>
-<li><strong>Choose Deployment Model</strong></li>
-</ul>
-<p>   - Cloud (AWS/Azure/GCP) or On-Premises</p>
-<p>   - Review MAP-DEPLOYMENT-AWS.md or MAP-DEPLOYMENT-ONPREM.md</p>
-
+<li>Cloud (AWS/Azure/GCP) or On-Premises</li>
+<li>Review MAP-DEPLOYMENT-AWS.md or MAP-DEPLOYMENT-ONPREM.md</li>
+</ul></li>
+<li><p><strong>Implement Multi-Tenant Architecture</strong></p>
 <ul>
-<li><strong>Implement Multi-Tenant Architecture</strong></li>
-</ul>
-<p>   - Review MAP-MULTITENANT-DESIGN.md</p>
-<p>   - Deploy reference implementation</p>
-<p>   - Test with sample downstream CP</p>
-
+<li>Review MAP-MULTITENANT-DESIGN.md</li>
+<li>Deploy reference implementation</li>
+<li>Test with sample downstream CP</li>
+</ul></li>
+<li><p><strong>Obtain PSTN2 Certification</strong></p>
 <ul>
-<li><strong>Obtain PSTN2 Certification</strong></li>
-</ul>
-<p>   - Run certification test suite</p>
-<p>   - Submit to PSTN2 consortium</p>
-<p>   - Receive official CPID</p>
-
+<li>Run certification test suite</li>
+<li>Submit to PSTN2 consortium</li>
+<li>Receive official CPID</li>
+</ul></li>
+<li><p><strong>Onboard First Customer</strong></p>
 <ul>
-<li><strong>Onboard First Customer</strong></li>
-</ul>
-<p>   - Provision CP credentials</p>
-<p>   - Configure API access</p>
-<p>   - Provide documentation and support</p>
-
+<li>Provision CP credentials</li>
+<li>Configure API access</li>
+<li>Provide documentation and support</li>
+</ul></li>
+</ol>
 <h3 id="for-full-service-map">For Full Service MAP</h3>
-
+<ol type="1">
+<li><p><strong>Complete Pure PSTN2 MAP Setup</strong> (above)</p></li>
+<li><p><strong>Establish PSTN Connectivity</strong></p>
 <ul>
-<li><strong>Complete Pure PSTN2 MAP Setup</strong> (above)</li>
-</ul>
-
+<li>Interconnect with legacy carriers</li>
+<li>Obtain SIP trunking capacity</li>
+<li>Configure SBC (Session Border Controller)</li>
+</ul></li>
+<li><p><strong>Implement Hybrid Routing</strong></p>
 <ul>
-<li><strong>Establish PSTN Connectivity</strong></li>
-</ul>
-<p>   - Interconnect with legacy carriers</p>
-<p>   - Obtain SIP trunking capacity</p>
-<p>   - Configure SBC (Session Border Controller)</p>
-
+<li>Deploy intelligent call router</li>
+<li>Configure PSTN/PSTN2 decision logic</li>
+<li>Test failover scenarios</li>
+</ul></li>
+<li><p><strong>Regulatory Compliance</strong></p>
 <ul>
-<li><strong>Implement Hybrid Routing</strong></li>
-</ul>
-<p>   - Deploy intelligent call router</p>
-<p>   - Configure PSTN/PSTN2 decision logic</p>
-<p>   - Test failover scenarios</p>
-
+<li>Emergency services compliance (911/999)</li>
+<li>Number portability participation</li>
+<li>Lawful intercept capabilities (if required)</li>
+<li>Data retention policies</li>
+</ul></li>
+<li><p><strong>Billing &amp; Operations</strong></p>
 <ul>
-<li><strong>Regulatory Compliance</strong></li>
-</ul>
-<p>   - Emergency services compliance (911/999)</p>
-<p>   - Number portability participation</p>
-<p>   - Lawful intercept capabilities (if required)</p>
-<p>   - Data retention policies</p>
-
-<ul>
-<li><strong>Billing & Operations</strong></li>
-</ul>
-<p>   - Implement CDR (Call Detail Record) system</p>
-<p>   - Configure rating engine</p>
-<p>   - Set up 24/7 NOC monitoring</p>
-<p>   - Customer portal and support system</p>
-
+<li>Implement CDR (Call Detail Record) system</li>
+<li>Configure rating engine</li>
+<li>Set up 24/7 NOC monitoring</li>
+<li>Customer portal and support system</li>
+</ul></li>
+</ol>
 <h2 id="success-metrics">Success Metrics</h2>
-
 <h3 id="pure-pstn2-map-kpis">Pure PSTN2 MAP KPIs</h3>
-
 <ul>
-<li><strong>Authentication Success Rate:</strong> >99.9%</li>
-<li><strong>Response Time:</strong> <500ms (p95)</li>
-<li><strong>Uptime:</strong> >99.99%</li>
+<li><strong>Authentication Success Rate:</strong> &gt;99.9%</li>
+<li><strong>Response Time:</strong> &lt;500ms (p95)</li>
+<li><strong>Uptime:</strong> &gt;99.99%</li>
 <li><strong>Downstream CPs:</strong> Growth rate</li>
 <li><strong>Revenue per CP:</strong> Monthly average</li>
-<li><strong>Support Tickets:</strong> <1% of total calls</li>
+<li><strong>Support Tickets:</strong> &lt;1% of total calls</li>
 </ul>
-
 <h3 id="full-service-map-kpis">Full Service MAP KPIs</h3>
-
 <ul>
-<li><strong>Call Completion Rate:</strong> >98%</li>
-<li><strong>Audio Quality (MOS):</strong> >4.0</li>
+<li><strong>Call Completion Rate:</strong> &gt;98%</li>
+<li><strong>Audio Quality (MOS):</strong> &gt;4.0</li>
 <li><strong>PSTN2 Adoption Rate:</strong> % of calls using PSTN2</li>
-<li><strong>Cost per Minute:</strong> Trend (should decrease as PSTN2 grows)</li>
-<li><strong>Customer Churn:</strong> <5% annually</li>
-<li><strong>Net Promoter Score:</strong> >50</li>
+<li><strong>Cost per Minute:</strong> Trend (should decrease as PSTN2
+grows)</li>
+<li><strong>Customer Churn:</strong> &lt;5% annually</li>
+<li><strong>Net Promoter Score:</strong> &gt;50</li>
 </ul>
-
 <h2 id="risk-mitigation">Risk Mitigation</h2>
-
 <h3 id="technical-risks">Technical Risks</h3>
-
-<ul>
-<li><strong>Scalability:</strong> Use auto-scaling cloud infrastructure</li>
-<li><strong>Single Point of Failure:</strong> Multi-region deployment</li>
-<li><strong>Security Breach:</strong> Regular audits, penetration testing</li>
-<li><strong>Protocol Changes:</strong> Automated testing, version management</li>
-</ul>
-
+<ol type="1">
+<li><strong>Scalability:</strong> Use auto-scaling cloud
+infrastructure</li>
+<li><strong>Single Point of Failure:</strong> Multi-region
+deployment</li>
+<li><strong>Security Breach:</strong> Regular audits, penetration
+testing</li>
+<li><strong>Protocol Changes:</strong> Automated testing, version
+management</li>
+</ol>
 <h3 id="business-risks">Business Risks</h3>
-
-<ul>
-<li><strong>Competition:</strong> Differentiate with support quality and features</li>
-<li><strong>Price Pressure:</strong> Efficient operations, automation</li>
-<li><strong>Regulatory Changes:</strong> Legal counsel, industry participation</li>
-<li><strong>Customer Concentration:</strong> Diversify customer base</li>
-</ul>
-
+<ol type="1">
+<li><strong>Competition:</strong> Differentiate with support quality and
+features</li>
+<li><strong>Price Pressure:</strong> Efficient operations,
+automation</li>
+<li><strong>Regulatory Changes:</strong> Legal counsel, industry
+participation</li>
+<li><strong>Customer Concentration:</strong> Diversify customer
+base</li>
+</ol>
 <h2 id="competitive-advantages">Competitive Advantages</h2>
-
-<h3 id="pure-pstn2-map">Pure PSTN2 MAP</h3>
-
-<ul>
-<li><strong>Specialization</strong> - Focus only on PSTN2 excellence</li>
+<h3 id="pure-pstn2-map-1">Pure PSTN2 MAP</h3>
+<ol type="1">
+<li><strong>Specialization</strong> - Focus only on PSTN2
+excellence</li>
 <li><strong>Lower Prices</strong> - No PSTN overhead costs</li>
 <li><strong>Innovation</strong> - Faster feature deployment</li>
 <li><strong>Simplicity</strong> - Easy onboarding and management</li>
-</ul>
-
-<h3 id="full-service-map">Full Service MAP</h3>
-
-<ul>
+</ol>
+<h3 id="full-service-map-1">Full Service MAP</h3>
+<ol type="1">
 <li><strong>One-Stop Shop</strong> - Complete voice solution</li>
-<li><strong>Gradual Transition</strong> - Help CPs migrate at their pace</li>
-<li><strong>Existing Relationships</strong> - Leverage current customer base</li>
-<li><strong>Proven Operations</strong> - Established carrier credibility</li>
-</ul>
-
-<h2 id="customer-success-stories-projected">Customer Success Stories (Projected)</h2>
-
-<h3 id="case-study-1-pure-pstn2-map-cloudvoice-map">Case Study 1: Pure PSTN2 MAP - "CloudVoice MAP"</h3>
-
-<p><strong>Background:</strong> Tech startup targeting small VoIP providers</p>
-<p><strong>Launch:</strong> 6 months to production</p>
-<p><strong>Customers:</strong> 50 downstream CPs after 12 months</p>
-<p><strong>Revenue:</strong> $125K MRR (Monthly Recurring Revenue)</p>
-<p><strong>Growth:</strong> 20% month-over-month</p>
-
-<strong>Key Success Factors:</strong>
+<li><strong>Gradual Transition</strong> - Help CPs migrate at their
+pace</li>
+<li><strong>Existing Relationships</strong> - Leverage current customer
+base</li>
+<li><strong>Proven Operations</strong> - Established carrier
+credibility</li>
+</ol>
+<h2 id="customer-success-stories-projected">Customer Success Stories
+(Projected)</h2>
+<h3 id="case-study-1-pure-pstn2-map---cloudvoice-map">Case Study 1: Pure
+PSTN2 MAP - "CloudVoice MAP"</h3>
+<p><strong>Background:</strong> Tech startup targeting small VoIP
+providers <strong>Launch:</strong> 6 months to production
+<strong>Customers:</strong> 50 downstream CPs after 12 months
+<strong>Revenue:</strong> $125K MRR (Monthly Recurring Revenue)
+<strong>Growth:</strong> 20% month-over-month</p>
+<p><strong>Key Success Factors:</strong></p>
 <ul>
 <li>Simple API integration (2-day onboarding)</li>
-<li>Transparent pricing ($100-$500/month tiers)</li>
+<li>Transparent pricing (<span class="math inline">100−</span>500/month
+tiers)</li>
 <li>Excellent documentation and support</li>
 <li>99.99% uptime SLA</li>
 </ul>
-
-<h3 id="case-study-2-full-service-map-telcowholesale">Case Study 2: Full Service MAP - "TelcoWholesale+"</h3>
-
-<p><strong>Background:</strong> Existing PSTN wholesaler adding PSTN2</p>
-<p><strong>Launch:</strong> 12 months to production</p>
-<p><strong>Customers:</strong> 200 existing CPs, 75% adopted PSTN2</p>
-<p><strong>Revenue:</strong> $2M MRR (mix of PSTN + PSTN2)</p>
-<p><strong>Cost Savings:</strong> 40% reduction in transit costs from PSTN2 direct routing</p>
-
-<strong>Key Success Factors:</strong>
+<h3 id="case-study-2-full-service-map---telcowholesale">Case Study 2:
+Full Service MAP - "TelcoWholesale+"</h3>
+<p><strong>Background:</strong> Existing PSTN wholesaler adding PSTN2
+<strong>Launch:</strong> 12 months to production
+<strong>Customers:</strong> 200 existing CPs, 75% adopted PSTN2
+<strong>Revenue:</strong> $2M MRR (mix of PSTN + PSTN2) <strong>Cost
+Savings:</strong> 40% reduction in transit costs from PSTN2 direct
+routing</p>
+<p><strong>Key Success Factors:</strong></p>
 <ul>
 <li>Seamless integration with existing services</li>
 <li>No customer migration required</li>
@@ -472,9 +473,7 @@
 <li>Reduced rates passed to customers</li>
 <li>24/7 white-glove support</li>
 </ul>
-
 <h2 id="roadmap">Roadmap</h2>
-
 <h3 id="year-1-mvp">Year 1 (MVP)</h3>
 <ul>
 <li>✓ Pure PSTN2 MAP implementation</li>
@@ -483,7 +482,6 @@
 <li>✓ Basic authentication and routing</li>
 <li>✓ Onboard first 10 downstream CPs</li>
 </ul>
-
 <h3 id="year-2-scale">Year 2 (Scale)</h3>
 <ul>
 <li>Full Service MAP implementation</li>
@@ -492,7 +490,6 @@
 <li>Advanced features (call recording, analytics)</li>
 <li>Onboard 100+ CPs</li>
 </ul>
-
 <h3 id="year-3-enterprise">Year 3 (Enterprise)</h3>
 <ul>
 <li>White-label MAP platform</li>
@@ -501,46 +498,43 @@
 <li>Global directory synchronization</li>
 <li>1,000+ downstream CPs</li>
 </ul>
-
 <h2 id="conclusion">Conclusion</h2>
-
-<p>Becoming a MAP represents a significant business opportunity in the PSTN2 ecosystem. Whether as a <strong>Pure PSTN2 MAP</strong> focusing on modern VoIP providers, or a <strong>Full Service MAP</strong> bridging legacy and modern networks, MAPs play a crucial role in democratizing access to next-generation telecommunications.</p>
-
-<strong>Key Takeaways:</strong>
-
-<ul>
+<p>Becoming a MAP represents a significant business opportunity in the
+PSTN2 ecosystem. Whether as a <strong>Pure PSTN2 MAP</strong> focusing
+on modern VoIP providers, or a <strong>Full Service MAP</strong>
+bridging legacy and modern networks, MAPs play a crucial role in
+democratizing access to next-generation telecommunications.</p>
+<p><strong>Key Takeaways:</strong></p>
+<ol type="1">
 <li><strong>Two distinct MAP types</strong> serve different markets</li>
 <li><strong>Lower barrier to entry</strong> for Pure PSTN2 MAP</li>
 <li><strong>Higher revenue potential</strong> for Full Service MAP</li>
-<li><strong>Multi-tenant architecture</strong> is essential for both</li>
-<li><strong>Cloud or on-premises</strong> deployment options available</li>
+<li><strong>Multi-tenant architecture</strong> is essential for
+both</li>
+<li><strong>Cloud or on-premises</strong> deployment options
+available</li>
 <li><strong>Comprehensive documentation</strong> and code provided</li>
-</ul>
-
+</ol>
 <h2 id="next-steps">Next Steps</h2>
-
+<ol type="1">
+<li>Read <strong>MAP-MULTITENANT-DESIGN.md</strong> for the technical
+deep-dive and architecture patterns</li>
+<li>Choose deployment model:
 <ul>
-<li>Read <strong>MAP-ARCHITECTURE.md</strong> for technical deep-dive</li>
-<li>Review <strong>MAP-MULTITENANT-DESIGN.md</strong> for architecture patterns</li>
-<li>Choose deployment model:</li>
-</ul>
-<p>   - <strong>AWS:</strong> Read MAP-DEPLOYMENT-AWS.md</p>
-<p>   - <strong>On-Premises:</strong> Read MAP-DEPLOYMENT-ONPREM.md</p>
-<ul>
-<li>Review reference implementations in <code>/code/map/</code></li>
+<li><strong>AWS:</strong> Read MAP-DEPLOYMENT-AWS.md</li>
+<li><strong>On-Premises:</strong> Read MAP-DEPLOYMENT-ONPREM.md</li>
+</ul></li>
+<li>Review reference implementations at <a
+href="https://pstn2.org/code/">https://pstn2.org/code/</a></li>
 <li>Run certification test suite</li>
 <li>Join PSTN2 consortium and obtain CPID</li>
-</ul>
-
-<p>---</p>
-
-<p><strong>Document Version:</strong> 1.0</p>
-<p><strong>Last Updated:</strong> 2025-12-01</p>
-<p><strong>Maintained By:</strong> PSTN2 Project</p>
-<p><strong>License:</strong> Public Domain / CC0</p>
-
-<p>For questions or support, contact: nick.holland@8x8.com</p>
-
+</ol>
+<hr />
+<p><strong>Document Version:</strong> 1.0 <strong>Last Updated:</strong>
+2025-12-01 <strong>Maintained By:</strong> PSTN2 Project
+<strong>License:</strong> Public Domain / CC0</p>
+<p>For questions or support, contact: <a
+href="mailto:nick.holland@8x8.com">nick.holland@8x8.com</a></p>
     </main>
 
     <footer class="doc-footer">

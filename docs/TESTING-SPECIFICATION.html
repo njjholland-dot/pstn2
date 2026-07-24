@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 Testing Specification | PSTN2</title>
+    <link rel="stylesheet" href="../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        <h1>PSTN2 Testing Specification</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#table-of-contents">Table of Contents</a>
+                <a href="#1-testing-philosophy">1. Testing Philosophy</a>
+                <a href="#2-test-levels">2. Test Levels</a>
+                <a href="#3-test-scenarios">3. Test Scenarios</a>
+                <a href="#4-performance-testing">4. Performance Testing</a>
+                <a href="#5-security-testing">5. Security Testing</a>
+                <a href="#6-interoperability-testing">6. Interoperability Testing</a>
+                <a href="#7-test-environment">7. Test Environment</a>
+                <a href="#8-certification-process">8. Certification Process</a>
+                <a href="#appendix-a-test-report-template">Appendix A: Test Report
+Template</a>
+                <a href="#appendix-b-load-test-script-k6">Appendix B: Load Test Script
+(k6)</a>
+                <a href="TESTING-SPECIFICATION.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+<h1 id="pstn2-testing-specification">PSTN2 Testing Specification</h1>
+<p><strong>Version:</strong> 1.0 <strong>Last Updated:</strong>
+2025-11-30 <strong>Status:</strong> Normative</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#1-testing-philosophy">Testing Philosophy</a></li>
+<li><a href="#2-test-levels">Test Levels</a></li>
+<li><a href="#3-test-scenarios">Test Scenarios</a></li>
+<li><a href="#4-performance-testing">Performance Testing</a></li>
+<li><a href="#5-security-testing">Security Testing</a></li>
+<li><a href="#6-interoperability-testing">Interoperability
+Testing</a></li>
+<li><a href="#7-test-environment">Test Environment</a></li>
+<li><a href="#8-certification-process">Certification Process</a></li>
+</ol>
+<hr />
+<h2 id="1-testing-philosophy">1. Testing Philosophy</h2>
+<h3 id="11-goals">1.1 Goals</h3>
+<ul>
+<li><strong>Reliability</strong>: 99.9% uptime, &lt; 0.1% packet
+loss</li>
+<li><strong>Performance</strong>: &lt; 100ms authentication, &lt; 1s
+call setup</li>
+<li><strong>Interoperability</strong>: Works with all compliant
+implementations</li>
+<li><strong>Security</strong>: No vulnerabilities in OWASP Top 10</li>
+<li><strong>Fallback</strong>: Graceful degradation to traditional
+PSTN</li>
+</ul>
+<h3 id="12-test-coverage-requirements">1.2 Test Coverage
+Requirements</h3>
+<p><strong>Minimum Coverage:</strong></p>
+<ul>
+<li>Unit tests: &gt; 80% code coverage</li>
+<li>Integration tests: All API endpoints</li>
+<li>End-to-end tests: All major user journeys</li>
+<li>Load tests: 100% of expected peak load</li>
+<li>Security tests: All OWASP Top 10</li>
+</ul>
+<h3 id="13-test-automation">1.3 Test Automation</h3>
+<ul>
+<li><strong>CI/CD Integration</strong>: All tests run on every
+commit</li>
+<li><strong>Nightly Builds</strong>: Full test suite + extended
+scenarios</li>
+<li><strong>Weekly Load Tests</strong>: Sustained load testing</li>
+<li><strong>Monthly Security Scans</strong>: Automated vulnerability
+scanning</li>
+</ul>
+<hr />
+<h2 id="2-test-levels">2. Test Levels</h2>
+<h3 id="21-unit-tests">2.1 Unit Tests</h3>
+<p>Test individual functions/methods in isolation.</p>
+<p><strong>Example Test Cases:</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Phone number validation</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(<span class="st">&#39;PhoneNumber.validate&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;should accept valid E.164 numbers&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">validatePhoneNumber</span>(<span class="st">&#39;+441234567890&#39;</span>))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">validatePhoneNumber</span>(<span class="st">&#39;+12025551234&#39;</span>))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;should reject invalid numbers&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">validatePhoneNumber</span>(<span class="st">&#39;441234567890&#39;</span>))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">false</span>)<span class="op">;</span>  <span class="co">// No +</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">validatePhoneNumber</span>(<span class="st">&#39;+0123456789&#39;</span>))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">false</span>)<span class="op">;</span>   <span class="co">// Starts with 0</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">validatePhoneNumber</span>(<span class="st">&#39;+44&#39;</span>))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">false</span>)<span class="op">;</span>           <span class="co">// Too short</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co">// Signature generation</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(<span class="st">&#39;generateSignature&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> privateKey <span class="op">=</span> <span class="st">&#39;...base64...&#39;</span><span class="op">;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> payload <span class="op">=</span> { messageId<span class="op">:</span> <span class="st">&#39;123&#39;</span><span class="op">,</span> timestamp<span class="op">:</span> <span class="st">&#39;2025-11-30T21:00:00.000Z&#39;</span> }<span class="op">;</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;should generate valid signature&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> signature <span class="op">=</span> <span class="fu">generateSignature</span>(privateKey<span class="op">,</span> payload)<span class="op">;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(signature)<span class="op">.</span><span class="fu">toHaveLength</span>(<span class="dv">88</span>)<span class="op">;</span>  <span class="co">// Base64 Ed25519 signature length</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">verifySignature</span>(<span class="fu">getPublicKey</span>(privateKey)<span class="op">,</span> payload<span class="op">,</span> signature))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;should reject tampered payload&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> signature <span class="op">=</span> <span class="fu">generateSignature</span>(privateKey<span class="op">,</span> payload)<span class="op">;</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    payload<span class="op">.</span><span class="at">timestamp</span> <span class="op">=</span> <span class="st">&#39;2025-11-30T22:00:00.000Z&#39;</span><span class="op">;</span>  <span class="co">// Tamper</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(<span class="fu">verifySignature</span>(<span class="fu">getPublicKey</span>(privateKey)<span class="op">,</span> payload<span class="op">,</span> signature))<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">false</span>)<span class="op">;</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<h3 id="22-integration-tests">2.2 Integration Tests</h3>
+<p>Test interactions between modules.</p>
+<p><strong>Test Matrix:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Dependency</th>
+<th>Test Scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Auth</td>
+<td>Directory</td>
+<td>Lookup CP for verification</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>Messaging</td>
+<td>Send verification request</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>Directory</td>
+<td>Find destination CP</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>Encryption</td>
+<td>Exchange keys</td>
+</tr>
+<tr>
+<td>Emergency</td>
+<td>Directory</td>
+<td>Find PSAP endpoint</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(<span class="st">&#39;Authentication with Directory&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> auth<span class="op">:</span> AuthModule<span class="op">;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> directory<span class="op">:</span> DirectoryModule<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">beforeEach</span>(<span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    directory <span class="op">=</span> <span class="kw">new</span> <span class="fu">DirectoryModule</span>(config)<span class="op">;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> directory<span class="op">.</span><span class="fu">loadTestData</span>()<span class="op">;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    auth <span class="op">=</span> <span class="kw">new</span> <span class="fu">AuthModule</span>(config<span class="op">,</span> directory)<span class="op">;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;should follow porting chain&#39;</span><span class="op">,</span> <span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Number +441234567890 ported: CP1 → CP2 → CP3</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> result <span class="op">=</span> <span class="cf">await</span> auth<span class="op">.</span><span class="fu">verifyCall</span>({</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>      callerID<span class="op">:</span> <span class="st">&#39;+441234567890&#39;</span><span class="op">,</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      calledID<span class="op">:</span> <span class="st">&#39;+447700900123&#39;</span><span class="op">,</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      callReference<span class="op">:</span> <span class="st">&#39;test-123&#39;</span><span class="op">,</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(result<span class="op">.</span><span class="at">portingChain</span>)<span class="op">.</span><span class="fu">toEqual</span>([<span class="st">&#39;CP1-UK-0001&#39;</span><span class="op">,</span> <span class="st">&#39;CP1-UK-0002&#39;</span><span class="op">,</span> <span class="st">&#39;CP1-UK-0003&#39;</span>])<span class="op">;</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(result<span class="op">.</span><span class="at">verified</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<h3 id="23-end-to-end-tests">2.3 End-to-End Tests</h3>
+<p>Test complete user journeys across multiple CPs.</p>
+<p><strong>Journey Map:</strong></p>
+<pre><code>Alice (CP1) calls Bob (CP2):
+  1. Alice dials +447700900123
+  2. CP1 looks up Bob&#39;s CP in directory
+  3. CP1 sends auth verification to CP2
+  4. CP2 verifies and responds
+  5. CP1 requests routing from CP2
+  6. CP2 provides connection details
+  7. Media connection established
+  8. Bob&#39;s phone rings
+  9. Bob answers
+  10. Encrypted conversation
+  11. Call ends</code></pre>
+<p><strong>Test Code:</strong></p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(<span class="st">&#39;End-to-End Call Flow&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> cp1<span class="op">:</span> PSTN2Client<span class="op">;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> cp2<span class="op">:</span> PSTN2Client<span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">beforeAll</span>(<span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    cp1 <span class="op">=</span> <span class="cf">await</span> <span class="fu">startMockCP</span>(<span class="st">&#39;CP1-UK-0001&#39;</span><span class="op">,</span> <span class="dv">8001</span>)<span class="op">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    cp2 <span class="op">=</span> <span class="cf">await</span> <span class="fu">startMockCP</span>(<span class="st">&#39;CP1-UK-0002&#39;</span><span class="op">,</span> <span class="dv">8002</span>)<span class="op">;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">afterAll</span>(<span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> cp1<span class="op">.</span><span class="fu">close</span>()<span class="op">;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> cp2<span class="op">.</span><span class="fu">close</span>()<span class="op">;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;should complete call successfully&#39;</span><span class="op">,</span> <span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> callRef <span class="op">=</span> <span class="fu">generateUUID</span>()<span class="op">;</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">// CP1: Create call record</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> cp1<span class="op">.</span><span class="fu">createCallRecord</span>({</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>      callerID<span class="op">:</span> <span class="st">&#39;+441234567890&#39;</span><span class="op">,</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>      calledID<span class="op">:</span> <span class="st">&#39;+447700900123&#39;</span><span class="op">,</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>      callReference<span class="op">:</span> callRef<span class="op">,</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">// CP1: Verify with CP2</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> verification <span class="op">=</span> <span class="cf">await</span> cp1<span class="op">.</span><span class="at">auth</span><span class="op">.</span><span class="fu">verifyCall</span>({</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>      callerID<span class="op">:</span> <span class="st">&#39;+441234567890&#39;</span><span class="op">,</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>      calledID<span class="op">:</span> <span class="st">&#39;+447700900123&#39;</span><span class="op">,</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>      callReference<span class="op">:</span> callRef<span class="op">,</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(verification<span class="op">.</span><span class="at">verified</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    <span class="co">// CP1: Request routing from CP2</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> routing <span class="op">=</span> <span class="cf">await</span> cp1<span class="op">.</span><span class="at">routing</span><span class="op">.</span><span class="fu">requestRouting</span>({</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>      destinationNumber<span class="op">:</span> <span class="st">&#39;+447700900123&#39;</span><span class="op">,</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>      callerID<span class="op">:</span> <span class="st">&#39;+441234567890&#39;</span><span class="op">,</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>      callReference<span class="op">:</span> callRef<span class="op">,</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>      mediaCapabilities<span class="op">:</span> {</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>        codecs<span class="op">:</span> [<span class="st">&#39;opus&#39;</span>]<span class="op">,</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>        encryption<span class="op">:</span> [<span class="st">&#39;srtp-aes256&#39;</span>]<span class="op">,</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>      }<span class="op">,</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(routing<span class="op">.</span><span class="at">accepted</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="kw">true</span>)<span class="op">;</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(routing<span class="op">.</span><span class="at">connectionDetails</span>)<span class="op">.</span><span class="fu">toBeDefined</span>()<span class="op">;</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(routing<span class="op">.</span><span class="at">connectionDetails</span><span class="op">.</span><span class="at">fqdn</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="st">&#39;media.cp2.test.local&#39;</span>)<span class="op">;</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Verify keys exchanged</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(routing<span class="op">.</span><span class="at">connectionDetails</span><span class="op">.</span><span class="at">publicKey</span>)<span class="op">.</span><span class="fu">toBeDefined</span>()<span class="op">;</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+<hr />
+<h2 id="3-test-scenarios">3. Test Scenarios</h2>
+<h3 id="31-happy-path-scenarios">3.1 Happy Path Scenarios</h3>
+<h4 id="311-simple-call-no-porting">3.1.1 Simple Call (No Porting)</h4>
+<pre><code>Given: Alice (+441234567890 at CP1) calls Bob (+447700900123 at CP2)
+When: Call is placed
+Then:
+  - Directory lookup succeeds
+  - Authentication succeeds in &lt; 100ms
+  - Routing succeeds in &lt; 200ms
+  - Total call setup &lt; 1s
+  - Media connection established</code></pre>
+<h4 id="312-call-with-branding">3.1.2 Call with Branding</h4>
+<pre><code>Given: ACME Support (+441234567890) calls customer (+447700900123)
+And: ACME has branding configured
+When: Call is placed
+Then:
+  - Branding information included in verification response
+  - Customer sees &quot;ACME Support&quot; with logo
+  - Call purpose: &quot;Account Security Alert&quot;</code></pre>
+<h4 id="313-emergency-call">3.1.3 Emergency Call</h4>
+<pre><code>Given: User (+441234567890) dials 999
+When: PSAP queries location
+Then:
+  - GPS location returned with ±15m accuracy
+  - Address: &quot;10 Downing Street, London, SW1A 2AA&quot;
+  - Response time &lt; 100ms</code></pre>
+<h3 id="32-error-scenarios">3.2 Error Scenarios</h3>
+<h4 id="321-call-not-found-fraud">3.2.1 Call Not Found (Fraud)</h4>
+<pre><code>Given: Scammer spoofs caller ID +441234567890
+When: Recipient CP verifies call
+Then:
+  - Verification returns 404 Not Found
+  - verified: false
+  - Recipient can block/warn user</code></pre>
+<h4 id="322-number-ported">3.2.2 Number Ported</h4>
+<pre><code>Given: +441234567890 ported from CP1 to CP2
+When: CP3 tries to verify with CP1
+Then:
+  - CP1 returns 200 with ported: true and newRcpid: CP2
+  - Client automatically retries with CP2
+  - Verification succeeds
+  - portingChain: [&#39;CP1-UK-0001&#39;, &#39;CP1-UK-0002&#39;]</code></pre>
+<h4 id="323-cp-unavailable">3.2.3 CP Unavailable</h4>
+<pre><code>Given: CP2 is down for maintenance
+When: CP1 tries to verify call with CP2
+Then:
+  - Request times out after 2s
+  - Client retries 3 times with backoff
+  - Falls back to traditional PSTN
+  - User call still connects (via PSTN)</code></pre>
+<h4 id="324-invalid-signature">3.2.4 Invalid Signature</h4>
+<pre><code>Given: Attacker sends request with invalid signature
+When: CP receives request
+Then:
+  - Signature verification fails
+  - Returns 401 Unauthorized
+  - Request logged as potential attack
+  - No further processing</code></pre>
+<h3 id="33-edge-cases">3.3 Edge Cases</h3>
+<h4 id="331-porting-chain-loop">3.3.1 Porting Chain Loop</h4>
+<pre><code>Given: Misconfiguration causes porting loop
+  CP1 → CP2 → CP3 → CP1
+When: Client follows chain
+Then:
+  - Stops after 5 hops (max)
+  - Returns error: &quot;porting_chain_too_long&quot;
+  - Falls back to traditional PSTN</code></pre>
+<h4 id="332-clock-skew">3.3.2 Clock Skew</h4>
+<pre><code>Given: CP1 clock is 45 seconds ahead
+When: CP2 receives request with future timestamp
+Then:
+  - Timestamp validation fails
+  - Returns 400 Bad Request
+  - Error: &quot;timestamp_out_of_range&quot;
+  - CP1 should sync clock (NTP)</code></pre>
+<h4 id="333-concurrent-calls">3.3.3 Concurrent Calls</h4>
+<pre><code>Given: 1000 concurrent calls between CP1 and CP2
+When: All calls authenticate simultaneously
+Then:
+  - All verifications complete successfully
+  - 95th percentile latency &lt; 150ms
+  - No rate limit errors
+  - No connection pool exhaustion</code></pre>
+<hr />
+<h2 id="4-performance-testing">4. Performance Testing</h2>
+<h3 id="41-load-test-scenarios">4.1 Load Test Scenarios</h3>
+<h4 id="411-sustained-load">4.1.1 Sustained Load</h4>
+<p><strong>Target:</strong> 100 requests/second for 10 minutes</p>
+<pre><code>Scenario: Authentication Load
+  Ramp up: 0 → 100 RPS over 1 minute
+  Sustain: 100 RPS for 10 minutes
+  Ramp down: 100 → 0 RPS over 1 minute
+
+Success Criteria:
+  ✓ 0% error rate
+  ✓ p95 latency &lt; 100ms
+  ✓ p99 latency &lt; 200ms
+  ✓ CPU &lt; 70%
+  ✓ Memory &lt; 512MB</code></pre>
+<h4 id="412-spike-test">4.1.2 Spike Test</h4>
+<p><strong>Target:</strong> Sudden traffic spike (10x normal)</p>
+<pre><code>Scenario: Traffic Spike
+  Normal: 10 RPS for 2 minutes
+  Spike: 100 RPS for 1 minute
+  Normal: 10 RPS for 2 minutes
+
+Success Criteria:
+  ✓ No requests dropped
+  ✓ p95 latency &lt; 150ms during spike
+  ✓ Recovery time &lt; 10s
+  ✓ No memory leaks</code></pre>
+<h4 id="413-soak-test">4.1.3 Soak Test</h4>
+<p><strong>Target:</strong> 24-hour sustained load</p>
+<pre><code>Scenario: 24-Hour Soak
+  Load: 20 RPS for 24 hours
+  Total requests: ~1.7M
+
+Success Criteria:
+  ✓ 0% error rate
+  ✓ No memory leaks (steady memory usage)
+  ✓ No connection leaks
+  ✓ Consistent latency (no degradation)</code></pre>
+<h3 id="42-latency-requirements">4.2 Latency Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Target</th>
+<th>Maximum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Authentication (cache hit)</td>
+<td>50ms</td>
+<td>100ms</td>
+</tr>
+<tr>
+<td>Authentication (cache miss)</td>
+<td>80ms</td>
+<td>150ms</td>
+</tr>
+<tr>
+<td>Routing request</td>
+<td>100ms</td>
+<td>200ms</td>
+</tr>
+<tr>
+<td>Directory lookup (cache hit)</td>
+<td>10ms</td>
+<td>50ms</td>
+</tr>
+<tr>
+<td>Emergency location</td>
+<td>80ms</td>
+<td>150ms</td>
+</tr>
+<tr>
+<td><strong>Total call setup</strong></td>
+<td><strong>400ms</strong></td>
+<td><strong>1000ms</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-throughput-requirements">4.3 Throughput Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Minimum</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Auth requests/sec</td>
+<td>100</td>
+<td>500</td>
+</tr>
+<tr>
+<td>Routing requests/sec</td>
+<td>50</td>
+<td>200</td>
+</tr>
+<tr>
+<td>Concurrent calls</td>
+<td>1000</td>
+<td>5000</td>
+</tr>
+<tr>
+<td>Directory entries</td>
+<td>10K</td>
+<td>100K</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-security-testing">5. Security Testing</h2>
+<h3 id="51-owasp-top-10">5.1 OWASP Top 10</h3>
+<h4 id="511-injection">5.1.1 Injection</h4>
+<p><strong>Test Cases:</strong></p>
+<pre><code>SQL Injection:
+  Input: callerID = &quot;&#39;+DROP TABLE users--&quot;
+  Expected: Rejected with 400 Bad Request
+
+Command Injection:
+  Input: callReference = &quot;123; rm -rf /&quot;
+  Expected: Rejected with 400 Bad Request
+
+NoSQL Injection:
+  Input: { callerID: { &quot;$ne&quot;: null } }
+  Expected: Rejected with 400 Bad Request</code></pre>
+<h4 id="512-broken-authentication">5.1.2 Broken Authentication</h4>
+<p><strong>Test Cases:</strong></p>
+<pre><code>Missing Signature:
+  Request without signature field
+  Expected: 401 Unauthorized
+
+Invalid Signature:
+  Request with random signature
+  Expected: 401 Unauthorized
+
+Replay Attack:
+  Same signed request sent twice
+  Expected: First succeeds, second rejected (duplicate messageId)
+
+Signature Tampering:
+  Valid signature, modified payload
+  Expected: 401 Unauthorized</code></pre>
+<h4 id="513-sensitive-data-exposure">5.1.3 Sensitive Data Exposure</h4>
+<p><strong>Test Cases:</strong></p>
+<pre><code>TLS Enforcement:
+  HTTP request to API
+  Expected: Redirect to HTTPS or connection refused
+
+Log Inspection:
+  Check logs for private keys, passwords
+  Expected: No sensitive data in logs
+
+Error Messages:
+  Invalid request
+  Expected: Generic error, no stack traces in production</code></pre>
+<h3 id="52-penetration-testing">5.2 Penetration Testing</h3>
+<p><strong>Annual External Audit:</strong></p>
+<ul>
+<li>OWASP ZAP automated scan</li>
+<li>Manual penetration test by security firm</li>
+<li>Social engineering test (phishing simulation)</li>
+<li>Physical security audit (if applicable)</li>
+</ul>
+<p><strong>Quarterly Internal Scans:</strong></p>
+<ul>
+<li>Nessus vulnerability scan</li>
+<li>Dependency security check (Snyk, npm audit)</li>
+<li>Secret scanning (GitGuardian, TruffleHog)</li>
+</ul>
+<h3 id="53-fuzzing">5.3 Fuzzing</h3>
+<p><strong>Tools:</strong> AFL, LibFuzzer, go-fuzz</p>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Phone number parser</li>
+<li>RCPID validator</li>
+<li>JSON parser</li>
+<li>Signature verification</li>
+<li>Timestamp parser</li>
+</ul>
+<p><strong>Duration:</strong> 24-hour continuous fuzzing</p>
+<p><strong>Success Criteria:</strong></p>
+<ul>
+<li>No crashes</li>
+<li>No infinite loops</li>
+<li>No memory leaks</li>
+<li>All invalid inputs rejected gracefully</li>
+</ul>
+<hr />
+<h2 id="6-interoperability-testing">6. Interoperability Testing</h2>
+<h3 id="61-multi-vendor-testing">6.1 Multi-Vendor Testing</h3>
+<p><strong>Setup:</strong></p>
+<ul>
+<li>Implementation A (TypeScript)</li>
+<li>Implementation B (Python)</li>
+<li>Implementation C (Go)</li>
+</ul>
+<p><strong>Test Matrix:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Caller</th>
+<th>Recipient</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A → B</td>
+<td>Auth + Routing</td>
+<td>✓ Pass</td>
+</tr>
+<tr>
+<td>B → C</td>
+<td>Auth + Routing</td>
+<td>✓ Pass</td>
+</tr>
+<tr>
+<td>C → A</td>
+<td>Auth + Routing</td>
+<td>✓ Pass</td>
+</tr>
+<tr>
+<td>A → B → C</td>
+<td>Porting Chain</td>
+<td>✓ Pass</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-version-compatibility">6.2 Version Compatibility</h3>
+<p><strong>Test Scenarios:</strong></p>
+<pre><code>Old Client (v1.0) → New Server (v1.1):
+  Expected: Backwards compatible, all features work
+
+New Client (v1.1) → Old Server (v1.0):
+  Expected: Graceful degradation, core features work
+
+Mixed Versions (v1.0, v1.1, v2.0):
+  Expected: All communicate successfully</code></pre>
+<h3 id="63-conformance-testing">6.3 Conformance Testing</h3>
+<p><strong>Certification Suite:</strong></p>
+<ol type="1">
+<li>Run official test suite (100 test cases)</li>
+<li>Submit results to PSTN2 certification authority</li>
+<li>Receive compliance certificate if pass rate ≥ 95%</li>
+</ol>
+<p><strong>Test Categories:</strong></p>
+<ul>
+<li>Message format compliance (20 tests)</li>
+<li>Signature verification (15 tests)</li>
+<li>Error handling (20 tests)</li>
+<li>Performance (15 tests)</li>
+<li>Security (20 tests)</li>
+<li>Porting chain (10 tests)</li>
+</ul>
+<hr />
+<h2 id="7-test-environment">7. Test Environment</h2>
+<h3 id="71-mock-cp-setup">7.1 Mock CP Setup</h3>
+<p><strong>Docker Compose:</strong></p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cp1</span><span class="kw">:</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> pstn2/mock-cp:latest</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">CP_ID</span><span class="kw">:</span><span class="at"> CP1-UK-0001</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">PORT</span><span class="kw">:</span><span class="at"> </span><span class="dv">8001</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">PEER_CPS</span><span class="kw">:</span><span class="at"> cp2:8002,cp3:8003</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;8001:8001&quot;</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cp2</span><span class="kw">:</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> pstn2/mock-cp:latest</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">CP_ID</span><span class="kw">:</span><span class="at"> CP1-UK-0002</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">PORT</span><span class="kw">:</span><span class="at"> </span><span class="dv">8002</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">PEER_CPS</span><span class="kw">:</span><span class="at"> cp1:8001,cp3:8003</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;8002:8002&quot;</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cp3</span><span class="kw">:</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> pstn2/mock-cp:latest</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">CP_ID</span><span class="kw">:</span><span class="at"> CP1-UK-0003</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">PORT</span><span class="kw">:</span><span class="at"> </span><span class="dv">8003</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">PEER_CPS</span><span class="kw">:</span><span class="at"> cp1:8001,cp2:8002</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;8003:8003&quot;</span></span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">directory</span><span class="kw">:</span></span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> pstn2/directory-service:latest</span></span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;9000:9000&quot;</span></span></code></pre></div>
+<h3 id="72-test-data">7.2 Test Data</h3>
+<p><strong>Sample Directory:</strong></p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;entries&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;cpId&quot;</span><span class="fu">:</span> <span class="st">&quot;CP1-UK-0001&quot;</span><span class="fu">,</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;ranges&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;+4471234567XX&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;endpoints&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;auth&quot;</span><span class="fu">:</span> <span class="st">&quot;http://cp1:8001/pstn2/v1/auth&quot;</span><span class="fu">,</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;routing&quot;</span><span class="fu">:</span> <span class="st">&quot;http://cp1:8001/pstn2/v1/routing&quot;</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;cpId&quot;</span><span class="fu">:</span> <span class="st">&quot;CP1-UK-0002&quot;</span><span class="fu">,</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;ranges&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;+4477009001XX&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;endpoints&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;auth&quot;</span><span class="fu">:</span> <span class="st">&quot;http://cp2:8002/pstn2/v1/auth&quot;</span><span class="fu">,</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;routing&quot;</span><span class="fu">:</span> <span class="st">&quot;http://cp2:8002/pstn2/v1/routing&quot;</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p><strong>Sample Call Records:</strong></p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;callReference&quot;</span><span class="fu">:</span> <span class="st">&quot;test-123-abc&quot;</span><span class="fu">,</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;callerID&quot;</span><span class="fu">:</span> <span class="st">&quot;+441234567890&quot;</span><span class="fu">,</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;calledID&quot;</span><span class="fu">:</span> <span class="st">&quot;+447700900123&quot;</span><span class="fu">,</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2025-11-30T21:00:00.000Z&quot;</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="ot">]</span></span></code></pre></div>
+<h3 id="73-cicd-pipeline">7.3 CI/CD Pipeline</h3>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># .github/workflows/test.yml</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> Test Suite</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">push</span><span class="kw">,</span><span class="at"> pull_request</span><span class="kw">]</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">unit-tests</span><span class="kw">:</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v3</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-node@v3</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">node-version</span><span class="kw">:</span><span class="at"> </span><span class="dv">18</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm install</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm test</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> codecov/codecov-action@v3</span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">integration-tests</span><span class="kw">:</span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">redis</span><span class="kw">:</span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:7-alpine</span></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v3</span></span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> docker-compose up -d</span></span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm run test:integration</span></span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> docker-compose down</span></span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">security-scan</span><span class="kw">:</span></span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v3</span></span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> snyk/actions/node@master</span></span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">SNYK_TOKEN</span><span class="kw">:</span><span class="at"> ${{ secrets.SNYK_TOKEN }}</span></span></code></pre></div>
+<hr />
+<h2 id="8-certification-process">8. Certification Process</h2>
+<h3 id="81-self-certification">8.1 Self-Certification</h3>
+<p><strong>Steps:</strong></p>
+<ol type="1">
+<li>Run official test suite locally</li>
+<li>Generate test report</li>
+<li>Submit report to certification portal</li>
+<li>Receive preliminary certification</li>
+</ol>
+<p><strong>Timeline:</strong> 1-2 days</p>
+<h3 id="82-independent-verification">8.2 Independent Verification</h3>
+<p><strong>Steps:</strong></p>
+<ol type="1">
+<li>Deploy to test environment</li>
+<li>Certification authority runs tests remotely</li>
+<li>Manual inspection of results</li>
+<li>Issue official certificate</li>
+</ol>
+<p><strong>Timeline:</strong> 1-2 weeks</p>
+<p><strong>Cost:</strong> Free for open-source implementations</p>
+<h3 id="83-certification-levels">8.3 Certification Levels</h3>
+<p><strong>Level 1 - Basic:</strong></p>
+<ul>
+<li>Authentication (Option 1)</li>
+<li>Routing</li>
+<li>Directory</li>
+<li>Fallback to PSTN</li>
+</ul>
+<p><strong>Level 2 - Advanced:</strong></p>
+<ul>
+<li>Level 1 requirements</li>
+<li>Authentication (Option 2)</li>
+<li>Emergency services</li>
+<li>Call branding</li>
+</ul>
+<p><strong>Level 3 - Production:</strong></p>
+<ul>
+<li>Level 2 requirements</li>
+<li>Performance benchmarks met</li>
+<li>Security audit passed</li>
+<li>99.9% uptime demonstrated</li>
+</ul>
+<h3 id="84-recertification">8.4 Recertification</h3>
+<p><strong>Frequency:</strong> Annually</p>
+<p><strong>Triggers:</strong></p>
+<ul>
+<li>Major version upgrade</li>
+<li>Security incident</li>
+<li>Compliance issues</li>
+<li>Regulatory changes</li>
+</ul>
+<hr />
+<h2 id="appendix-a-test-report-template">Appendix A: Test Report
+Template</h2>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># PSTN2 Test Report</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>**Implementation:** {Name}</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>**Version:** {Version}</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>**Date:** {YYYY-MM-DD}</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>**Tester:** {Name}</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="fu">## Summary</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Total Tests: 247</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Passed: 245 (99.2%)</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Failed: 2 (0.8%)</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Skipped: 0</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="fu">## Test Results by Category</span></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="fu">### Unit Tests (80/80 passed)</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Phone number validation: ✓ Pass</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Signature generation: ✓ Pass</span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Timestamp validation: ✓ Pass</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="fu">### Integration Tests (65/65 passed)</span></span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Auth + Directory: ✓ Pass</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Routing + Encryption: ✓ Pass</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a><span class="fu">### Performance Tests (45/47 passed)</span></span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Authentication latency: ✓ Pass (p95: 87ms)</span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Sustained load: ✓ Pass (100 RPS for 10 min)</span>
+<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Spike test: ✗ Fail (p99: 250ms, target: 200ms)</span>
+<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a><span class="fu">### Security Tests (55/55 passed)</span></span>
+<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>SQL injection: ✓ Pass</span>
+<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Signature verification: ✓ Pass</span>
+<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-39"><a href="#cb26-39" aria-hidden="true" tabindex="-1"></a><span class="fu">## Failed Tests</span></span>
+<span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a><span class="fu">### 1. Spike Test - p99 Latency</span></span>
+<span id="cb26-42"><a href="#cb26-42" aria-hidden="true" tabindex="-1"></a>**Expected:** &lt; 200ms</span>
+<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>**Actual:** 250ms</span>
+<span id="cb26-44"><a href="#cb26-44" aria-hidden="true" tabindex="-1"></a>**Root Cause:** Connection pool exhaustion</span>
+<span id="cb26-45"><a href="#cb26-45" aria-hidden="true" tabindex="-1"></a>**Remediation:** Increase pool size to 100</span>
+<span id="cb26-46"><a href="#cb26-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-47"><a href="#cb26-47" aria-hidden="true" tabindex="-1"></a><span class="fu">### 2. [Test Name]</span></span>
+<span id="cb26-48"><a href="#cb26-48" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb26-49"><a href="#cb26-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-50"><a href="#cb26-50" aria-hidden="true" tabindex="-1"></a><span class="fu">## Certification Recommendation</span></span>
+<span id="cb26-51"><a href="#cb26-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-52"><a href="#cb26-52" aria-hidden="true" tabindex="-1"></a>☐ Not Ready</span>
+<span id="cb26-53"><a href="#cb26-53" aria-hidden="true" tabindex="-1"></a>☑ Ready for Level 1 Certification</span>
+<span id="cb26-54"><a href="#cb26-54" aria-hidden="true" tabindex="-1"></a>☐ Ready for Level 2 Certification</span>
+<span id="cb26-55"><a href="#cb26-55" aria-hidden="true" tabindex="-1"></a>☐ Ready for Level 3 Certification</span>
+<span id="cb26-56"><a href="#cb26-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-57"><a href="#cb26-57" aria-hidden="true" tabindex="-1"></a>**Comments:**</span>
+<span id="cb26-58"><a href="#cb26-58" aria-hidden="true" tabindex="-1"></a>Implementation is solid with minor performance tuning needed.</span>
+<span id="cb26-59"><a href="#cb26-59" aria-hidden="true" tabindex="-1"></a>Recommend addressing spike test failure before production deployment.</span></code></pre></div>
+<hr />
+<h2 id="appendix-b-load-test-script-k6">Appendix B: Load Test Script
+(k6)</h2>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> http <span class="im">from</span> <span class="st">&#39;k6/http&#39;</span><span class="op">;</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { check<span class="op">,</span> sleep } <span class="im">from</span> <span class="st">&#39;k6&#39;</span><span class="op">;</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { Rate } <span class="im">from</span> <span class="st">&#39;k6/metrics&#39;</span><span class="op">;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> errorRate <span class="op">=</span> <span class="kw">new</span> <span class="fu">Rate</span>(<span class="st">&#39;errors&#39;</span>)<span class="op">;</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">let</span> options <span class="op">=</span> {</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">stages</span><span class="op">:</span> [</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;1m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">10</span> }<span class="op">,</span>   <span class="co">// Warm up</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;1m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">100</span> }<span class="op">,</span>  <span class="co">// Ramp to target</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;10m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">100</span> }<span class="op">,</span> <span class="co">// Sustain</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    { <span class="dt">duration</span><span class="op">:</span> <span class="st">&#39;1m&#39;</span><span class="op">,</span> <span class="dt">target</span><span class="op">:</span> <span class="dv">0</span> }<span class="op">,</span>    <span class="co">// Ramp down</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  ]<span class="op">,</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">thresholds</span><span class="op">:</span> {</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">http_req_duration</span><span class="op">:</span> [<span class="st">&#39;p(95)&lt;100&#39;</span><span class="op">,</span> <span class="st">&#39;p(99)&lt;200&#39;</span>]<span class="op">,</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">errors</span><span class="op">:</span> [<span class="st">&#39;rate&lt;0.01&#39;</span>]<span class="op">,</span> <span class="co">// &lt; 1% errors</span></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> BASE_URL <span class="op">=</span> __ENV<span class="op">.</span><span class="at">BASE_URL</span> <span class="op">||</span> <span class="st">&#39;https://api.test.pstn2.org&#39;</span><span class="op">;</span></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="im">default</span> <span class="kw">function</span>() {</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> payload <span class="op">=</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({</span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>    <span class="dt">messageId</span><span class="op">:</span> <span class="vs">`</span><span class="sc">${</span>__VU<span class="sc">}</span><span class="vs">-</span><span class="sc">${</span>__ITER<span class="sc">}</span><span class="vs">-</span><span class="sc">${</span><span class="bu">Date</span><span class="op">.</span><span class="fu">now</span>()<span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>    <span class="dt">timestamp</span><span class="op">:</span> <span class="kw">new</span> <span class="bu">Date</span>()<span class="op">.</span><span class="fu">toISOString</span>()<span class="op">,</span></span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>    <span class="dt">version</span><span class="op">:</span> <span class="st">&#39;1.0&#39;</span><span class="op">,</span></span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">requestingCP</span><span class="op">:</span> <span class="st">&#39;CP1-UK-0001&#39;</span><span class="op">,</span></span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">callerID</span><span class="op">:</span> <span class="vs">`+4412345678</span><span class="sc">${</span><span class="bu">String</span>(__VU)<span class="op">.</span><span class="fu">padStart</span>(<span class="dv">2</span><span class="op">,</span> <span class="st">&#39;0&#39;</span>)<span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">calledID</span><span class="op">:</span> <span class="st">&#39;+447700900123&#39;</span><span class="op">,</span></span>
+<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>    <span class="dt">callReference</span><span class="op">:</span> <span class="vs">`test-</span><span class="sc">${</span>__VU<span class="sc">}</span><span class="vs">-</span><span class="sc">${</span>__ITER<span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>    <span class="dt">signature</span><span class="op">:</span> <span class="st">&#39;mock-signature-for-load-test&#39;</span><span class="op">,</span></span>
+<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> {</span>
+<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> {</span>
+<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;Content-Type&#39;</span><span class="op">:</span> <span class="st">&#39;application/json&#39;</span><span class="op">,</span></span>
+<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;X-PSTN2-Version&#39;</span><span class="op">:</span> <span class="st">&#39;1.0&#39;</span><span class="op">,</span></span>
+<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a>  }<span class="op">;</span></span>
+<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-41"><a href="#cb27-41" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> response <span class="op">=</span> http<span class="op">.</span><span class="fu">post</span>(</span>
+<span id="cb27-42"><a href="#cb27-42" aria-hidden="true" tabindex="-1"></a>    <span class="vs">`</span><span class="sc">${</span>BASE_URL<span class="sc">}</span><span class="vs">/pstn2/v1/auth/verify`</span><span class="op">,</span></span>
+<span id="cb27-43"><a href="#cb27-43" aria-hidden="true" tabindex="-1"></a>    payload<span class="op">,</span></span>
+<span id="cb27-44"><a href="#cb27-44" aria-hidden="true" tabindex="-1"></a>    params</span>
+<span id="cb27-45"><a href="#cb27-45" aria-hidden="true" tabindex="-1"></a>  )<span class="op">;</span></span>
+<span id="cb27-46"><a href="#cb27-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-47"><a href="#cb27-47" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> success <span class="op">=</span> <span class="fu">check</span>(response<span class="op">,</span> {</span>
+<span id="cb27-48"><a href="#cb27-48" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;status is 200&#39;</span><span class="op">:</span> (r) <span class="kw">=&gt;</span> r<span class="op">.</span><span class="at">status</span> <span class="op">===</span> <span class="dv">200</span><span class="op">,</span></span>
+<span id="cb27-49"><a href="#cb27-49" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;response time OK&#39;</span><span class="op">:</span> (r) <span class="kw">=&gt;</span> r<span class="op">.</span><span class="at">timings</span><span class="op">.</span><span class="at">duration</span> <span class="op">&lt;</span> <span class="dv">200</span><span class="op">,</span></span>
+<span id="cb27-50"><a href="#cb27-50" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;verified field present&#39;</span><span class="op">:</span> (r) <span class="kw">=&gt;</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(r<span class="op">.</span><span class="at">body</span>)<span class="op">.</span><span class="at">verified</span> <span class="op">!==</span> <span class="kw">undefined</span><span class="op">,</span></span>
+<span id="cb27-51"><a href="#cb27-51" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb27-52"><a href="#cb27-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-53"><a href="#cb27-53" aria-hidden="true" tabindex="-1"></a>  errorRate<span class="op">.</span><span class="fu">add</span>(<span class="op">!</span>success)<span class="op">;</span></span>
+<span id="cb27-54"><a href="#cb27-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-55"><a href="#cb27-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sleep</span>(<span class="dv">1</span>)<span class="op">;</span> <span class="co">// 1 second between requests per VU</span></span>
+<span id="cb27-56"><a href="#cb27-56" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<hr />
+<p><strong>Document Status:</strong> Normative Specification
+<strong>Compliance Required:</strong> Yes for certification
+<strong>Feedback:</strong> <a
+href="https://github.com/8x8/pstn2/issues">https://github.com/8x8/pstn2/issues</a>
+(repository access is currently limited while the project incubates;
+contact <a
+href="mailto:nick.holland@8x8.com">nick.holland@8x8.com</a>)</p>
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

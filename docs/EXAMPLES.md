@@ -1,6 +1,6 @@
 # PSTN2 Code Examples
 
-This directory contains working code examples demonstrating how to use the PSTN2 protocol in TypeScript, Python, and Go.
+This guide documents the working code examples in /code/ demonstrating how to use the PSTN2 protocol in TypeScript, Python, and Go.
 
 ## Overview
 
@@ -61,9 +61,9 @@ Before running any examples, you need:
 ### Language-Specific Setup
 
 See the README.md file in each language directory for setup instructions:
-- [TypeScript README](typescript/README.md)
-- [Python README](python/README.md)
-- [Go README](go/README.md)
+- [TypeScript README](../code/typescript/README.md)
+- [Python README](../code/python/README.md)
+- [Go README](../code/go/README.md)
 
 ## Example Descriptions
 
@@ -124,7 +124,7 @@ Connection Details:
   IPv4: 203.0.113.42
   IPv6: 2001:db8::1
   Port: 5060
-  Protocol: SIP/TLS
+  Transport: TLS
 
 Agreed Capabilities:
   Codecs: opus, g722
@@ -153,13 +153,13 @@ Token Pool Authentication Example
 ---
 Step 1: Creating authentication token...
 ✓ Token created successfully
-  Token ID: tok_1234567890abcdef
+  Token ID: TK-1234567890abcdef
   Expires: 2025-11-30T12:30:45Z
   Call Reference: token-call-123
 
 Step 2: Placing call with token...
   SIP INVITE Header:
-    X-PSTN2-Token: tok_1234567890abcdef
+    X-PSTN2-Token: TK-1234567890abcdef
 
 Step 3: Recipient CP verifying token...
 ✓ Token verified successfully
@@ -388,7 +388,7 @@ For testing examples without a real PSTN2 account, you can:
 2. **Run a Local Test Server**: Set up a local PSTN2-compatible API server
 3. **Use Test Credentials**: Some PSTN2 providers offer sandbox environments
 
-See [TESTING-SPECIFICATION.md](../TESTING-SPECIFICATION.md) for more details.
+See [TESTING-SPECIFICATION.md](TESTING-SPECIFICATION.md) for more details.
 
 ## Integration Patterns
 
@@ -479,10 +479,10 @@ Common issues and solutions:
 
 ## Further Reading
 
-- [SPECIFICATION.md](../SPECIFICATION.md) - Complete PSTN2 protocol specification
-- [API-SPECIFICATION.yaml](../API-SPECIFICATION.yaml) - REST API documentation
-- [IMPLEMENTATION-GUIDE.md](../IMPLEMENTATION-GUIDE.md) - Implementation patterns and best practices
-- [TESTING-SPECIFICATION.md](../TESTING-SPECIFICATION.md) - Testing strategies and certification
+- [SPECIFICATION.md](SPECIFICATION.md) - Complete PSTN2 protocol specification
+- [API-SPECIFICATION.yaml](API-SPECIFICATION.yaml) - REST API documentation
+- [IMPLEMENTATION-GUIDE.md](IMPLEMENTATION-GUIDE.md) - Implementation patterns and best practices
+- [TESTING-SPECIFICATION.md](TESTING-SPECIFICATION.md) - Testing strategies and certification
 
 ## Support
 

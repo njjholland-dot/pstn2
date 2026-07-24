@@ -13,6 +13,10 @@ info:
     - Distributed directory
 
     **Base URL:** `https://api.{your-cp}.com/pstn2/v1`
+
+    **Request signing:** Signatures are carried in the JSON request body
+    (`signature` field, Ed25519 over the message body plus timestamp, per
+    SPECIFICATION.md §4.1). There is no signature HTTP header.
   version: 1.0.0
   contact:
     name: PSTN2 Support
@@ -61,20 +65,25 @@ paths:
                 $ref: '#/components/examples/VerificationRequestBasic'
       responses:
         '200':
-          description: Verification successful
+          description: |
+            Verification result. If the number has been ported, the body is a
+            PortingResponse (`ported: true`); the client should re-query the
+            directory and retry against the new range holder (`newRcpid`).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CallVerificationResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/CallVerificationResponse'
+                  - $ref: '#/components/schemas/PortingResponse'
               examples:
                 verified:
                   $ref: '#/components/examples/VerificationResponseVerified'
-        '301':
-          description: Number ported to different CP
+        '400':
+          description: Invalid request format or timestamp out of range
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PortingResponse'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Call not found (potential fraud)
           content:
@@ -115,6 +124,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenCreateResponse'
+        '400':
+          description: Invalid request format or timestamp out of range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '429':
@@ -136,7 +151,7 @@ paths:
           schema:
             type: string
             pattern: '^TK-[A-Za-z0-9]{16}$'
-          example: TK-abc123XYZ789def
+          example: TK-abc123XYZ789defG
       responses:
         '200':
           description: Token valid
@@ -191,6 +206,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoutingRejection'
+        '400':
+          description: Invalid request format or timestamp out of range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -210,7 +231,7 @@ paths:
         Restricted to authenticated PSAPs only.
 
         **Rate Limit:** 10 req/sec per PSAP
-        **Retention:** Location data NOT stored
+        **Retention:** Location data retained no longer than 24 hours after call end (see MAP data-retention policy)
       operationId: getEmergencyLocation
       security:
         - psapCertificate: []
@@ -230,6 +251,12 @@ paths:
               examples:
                 gps:
                   $ref: '#/components/examples/EmergencyLocationGPS'
+        '400':
+          description: Invalid request format or timestamp out of range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Location unavailable
           content:
@@ -257,6 +284,16 @@ paths:
         **Compression:** GZIP required
         **Size:** ~1-10MB typical
       operationId: pullDirectory
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          description: |
+            Entity tag from a previous response. If the directory has not
+            changed, the server responds 304 Not Modified.
+          schema:
+            type: string
+          example: '"v42"'
       responses:
         '200':
           description: Directory retrieved
@@ -265,6 +302,11 @@ paths:
               schema:
                 type: string
                 enum: [gzip]
+            ETag:
+              description: Entity tag for the current directory version (use with If-None-Match)
+              schema:
+                type: string
+              example: '"v42"'
           content:
             application/json:
               schema:
@@ -335,12 +377,10 @@ paths:
 
 components:
   securitySchemes:
-    cpSignature:
-      type: apiKey
-      in: header
-      name: X-PSTN2-Signature
-      description: Ed25519 signature of request body
-
+    # NOTE: CP request signing is body-level, not header-level. Each signed
+    # request schema carries a required `signature` field (Ed25519 over the
+    # message body plus timestamp, per SPECIFICATION.md §4.1), so it is not
+    # modelled as an OpenAPI security scheme.
     psapCertificate:
       type: mutualTLS
       description: PSAP client certificate authentication
@@ -391,6 +431,7 @@ components:
         - callerID
         - calledID
         - callReference
+        - signature
       properties:
         messageId:
           type: string
@@ -467,10 +508,13 @@ components:
 
     PortingResponse:
       type: object
+      description: |
+        Returned with HTTP 200 when the number has been ported. The client
+        should re-query the directory and retry against the new range holder.
       required:
         - verified
         - ported
-        - currentHolder
+        - newRcpid
         - callReference
       properties:
         verified:
@@ -479,7 +523,7 @@ components:
         ported:
           type: boolean
           enum: [true]
-        currentHolder:
+        newRcpid:
           $ref: '#/components/schemas/RCPID'
         portedAt:
           $ref: '#/components/schemas/Timestamp'
@@ -491,17 +535,22 @@ components:
       required:
         - messageId
         - timestamp
+        - version
         - originatingCP
         - callerID
         - calledID
         - callReference
         - ttl
+        - signature
       properties:
         messageId:
           type: string
           format: uuid
         timestamp:
           $ref: '#/components/schemas/Timestamp'
+        version:
+          type: string
+          example: '1.0'
         originatingCP:
           $ref: '#/components/schemas/RCPID'
         callerID:
@@ -531,7 +580,7 @@ components:
         tokenId:
           type: string
           pattern: '^TK-[A-Za-z0-9]{16}$'
-          example: 'TK-abc123XYZ789def'
+          example: 'TK-abc123XYZ789defG'
         expiresAt:
           $ref: '#/components/schemas/Timestamp'
         callReference:
@@ -570,18 +619,23 @@ components:
       required:
         - messageId
         - timestamp
+        - version
         - requestingCP
         - callerID
         - destinationNumber
         - callReference
         - mediaCapabilities
         - publicKey
+        - signature
       properties:
         messageId:
           type: string
           format: uuid
         timestamp:
           $ref: '#/components/schemas/Timestamp'
+        version:
+          type: string
+          example: '1.0'
         requestingCP:
           $ref: '#/components/schemas/RCPID'
         callerID:
@@ -702,15 +756,20 @@ components:
       required:
         - messageId
         - timestamp
+        - version
         - requestingPSAP
         - callerID
         - callReference
+        - signature
       properties:
         messageId:
           type: string
           format: uuid
         timestamp:
           $ref: '#/components/schemas/Timestamp'
+        version:
+          type: string
+          example: '1.0'
         requestingPSAP:
           type: string
           pattern: '^[A-Z]{2}-[0-9]{3}-[A-Z0-9-]+$'
@@ -797,7 +856,8 @@ components:
           example: 'SW1A 2AA'
         country:
           type: string
-          format: iso-3166-1-alpha-2
+          pattern: '^[A-Z]{2}$'
+          description: ISO 3166-1 alpha-2 country code
           example: 'GB'
 
     DirectoryResponse:
@@ -985,14 +1045,14 @@ components:
         requestingCP: 'CP1-UK-0002'
         callerID: '+441234567890'
         calledID: '+447700900123'
-        callReference: 'abc-123-def-456'
+        callReference: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
         signature: 'base64-encoded-signature-here'
 
     VerificationResponseVerified:
       summary: Call verified successfully
       value:
         verified: true
-        callReference: 'abc-123-def-456'
+        callReference: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
         callerName: 'John Smith'
         callerOrg: 'ACME Corp'
         callPurpose: 'Account verification'
@@ -1019,10 +1079,11 @@ components:
       value:
         messageId: '123e4567-e89b-12d3-a456-426614174000'
         timestamp: '2025-11-30T21:30:00.000Z'
+        version: '1.0'
         requestingCP: 'CP1-UK-0001'
         callerID: '+441234567890'
         destinationNumber: '+447700900123'
-        callReference: 'xyz-789'
+        callReference: '9b2f8c44-1d3e-4f6a-8b5c-2e7d9a0f4c11'
         mediaCapabilities:
           codecs: ['opus', 'g722']
           encryption: ['srtp-aes256']
@@ -1035,10 +1096,11 @@ components:
       value:
         messageId: '123e4567-e89b-12d3-a456-426614174000'
         timestamp: '2025-11-30T21:30:00.000Z'
+        version: '1.0'
         requestingCP: 'CP1-UK-0001'
         callerID: '+441234567890'
         destinationNumber: '+447700900123'
-        callReference: 'xyz-789'
+        callReference: 'e58ed763-928c-4155-bee9-fdbaaadc15f3'
         mediaCapabilities:
           codecs: ['opus', 'h264']
           encryption: ['srtp-aes256']
@@ -1051,7 +1113,7 @@ components:
       summary: Routing accepted
       value:
         accepted: true
-        callReference: 'xyz-789'
+        callReference: '9b2f8c44-1d3e-4f6a-8b5c-2e7d9a0f4c11'
         connectionDetails:
           fqdn: 'media.cp2.example.com'
           ipv4: '203.0.113.42'
@@ -1069,7 +1131,7 @@ components:
     EmergencyLocationGPS:
       summary: GPS location for emergency call
       value:
-        callReference: 'emergency-456'
+        callReference: 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
         location:
           latitude: 51.5074
           longitude: -0.1278

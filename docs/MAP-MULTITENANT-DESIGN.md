@@ -150,10 +150,11 @@ CREATE TABLE auth_logs (
     originating_cp VARCHAR(50) NOT NULL,
     verification_result VARCHAR(20) NOT NULL, -- 'verified', 'rejected', 'error'
     response_time_ms INTEGER NOT NULL,
-    timestamp TIMESTAMP DEFAULT NOW(),
-    INDEX idx_cp_timestamp (cp_id, timestamp),
-    INDEX idx_call_ref (call_reference)
+    timestamp TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_auth_logs_cp_timestamp ON auth_logs (cp_id, timestamp);
+CREATE INDEX idx_auth_logs_call_ref ON auth_logs (call_reference);
 ```
 
 **API Endpoint:**
@@ -166,7 +167,7 @@ Content-Type: application/json
     "caller_id": "+441234567890",
     "called_id": "+447700900123",
     "call_reference": "call-abc-123-def-456",
-    "originating_cp": "CP3-UK-0007"
+    "originating_cp": "CP1-UK-0007"
 }
 
 Response:
@@ -199,9 +200,10 @@ CREATE TABLE directory_cache (
     pstn2_enabled BOOLEAN DEFAULT true,
     routing_endpoint VARCHAR(255) NOT NULL,
     last_updated TIMESTAMP NOT NULL,
-    cache_expires TIMESTAMP NOT NULL,
-    INDEX idx_cp (current_cp)
+    cache_expires TIMESTAMP NOT NULL
 );
+
+CREATE INDEX idx_directory_cache_cp ON directory_cache (current_cp);
 
 -- CP Number Assignments
 CREATE TABLE cp_numbers (
@@ -209,9 +211,10 @@ CREATE TABLE cp_numbers (
     cp_id VARCHAR(50) NOT NULL REFERENCES cp_tenants(cp_id),
     routing_endpoint VARCHAR(255) NOT NULL,
     emergency_enabled BOOLEAN DEFAULT true,
-    assigned_date TIMESTAMP DEFAULT NOW(),
-    INDEX idx_cp_id (cp_id)
+    assigned_date TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_cp_numbers_cp_id ON cp_numbers (cp_id);
 ```
 
 **API Endpoints:**
@@ -223,7 +226,7 @@ Authorization: Bearer {api_key}
 Response:
 {
     "phone_number": "+447700900123",
-    "current_cp": "CP5-UK-0012",
+    "current_cp": "CP2-UK-0012",
     "pstn2_enabled": true,
     "routing_endpoint": "sip:cp5@pstn2.example.com",
     "cached": true,
@@ -268,9 +271,10 @@ CREATE TABLE emergency_locations (
     psap_notified BOOLEAN DEFAULT false,
     psap_id VARCHAR(50),
     created_at TIMESTAMP DEFAULT NOW(),
-    expires_at TIMESTAMP NOT NULL,  -- 24 hours after call
-    INDEX idx_cp_timestamp (cp_id, timestamp)
+    expires_at TIMESTAMP NOT NULL  -- 24 hours after call
 );
+
+CREATE INDEX idx_emergency_locations_cp_timestamp ON emergency_locations (cp_id, timestamp);
 ```
 
 **API Endpoint:**
@@ -324,10 +328,11 @@ CREATE TABLE active_calls (
     routing_method VARCHAR(20) NOT NULL, -- 'direct', 'relay', 'pstn_fallback'
     call_started TIMESTAMP DEFAULT NOW(),
     call_ended TIMESTAMP,
-    duration_seconds INTEGER,
-    INDEX idx_orig_cp (originating_cp, call_started),
-    INDEX idx_term_cp (terminating_cp, call_started)
+    duration_seconds INTEGER
 );
+
+CREATE INDEX idx_active_calls_orig_cp ON active_calls (originating_cp, call_started);
+CREATE INDEX idx_active_calls_term_cp ON active_calls (terminating_cp, call_started);
 ```
 
 ### 6. Billing & Usage Tracking
@@ -351,9 +356,10 @@ CREATE TABLE usage_metrics (
     metric_type VARCHAR(50) NOT NULL, -- 'auth_verify', 'directory_lookup', 'emergency', 'routing'
     metric_count INTEGER NOT NULL,
     period_start TIMESTAMP NOT NULL,
-    period_end TIMESTAMP NOT NULL,
-    INDEX idx_cp_period (cp_id, period_start)
+    period_end TIMESTAMP NOT NULL
 );
+
+CREATE INDEX idx_usage_metrics_cp_period ON usage_metrics (cp_id, period_start);
 
 -- Billing Records
 CREATE TABLE billing_records (
@@ -368,9 +374,10 @@ CREATE TABLE billing_records (
     total_amount DECIMAL(10, 2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'GBP',
     status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'sent', 'paid', 'overdue'
-    created_at TIMESTAMP DEFAULT NOW(),
-    INDEX idx_cp_period (cp_id, billing_period_start)
+    created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_billing_records_cp_period ON billing_records (cp_id, billing_period_start);
 ```
 
 **API Endpoint:**
@@ -522,7 +529,7 @@ export async function tenantContext(
 
   // Set tenant context for this request
   const cpId = tenant.rows[0].cp_id;
-  await db.query('SET app.current_tenant = $1', [cpId]);
+  await db.query("SELECT set_config('app.current_tenant', $1, false)", [cpId]);
 
   // Store tenant ID in request for later use
   req.tenantId = cpId;
@@ -788,10 +795,11 @@ CREATE TABLE audit_logs (
     new_value JSONB,
     ip_address INET NOT NULL,
     user_agent TEXT,
-    timestamp TIMESTAMP DEFAULT NOW(),
-    INDEX idx_cp_timestamp (cp_id, timestamp),
-    INDEX idx_action (action, timestamp)
+    timestamp TIMESTAMP DEFAULT NOW()
 );
+
+CREATE INDEX idx_audit_logs_cp_timestamp ON audit_logs (cp_id, timestamp);
+CREATE INDEX idx_audit_logs_action ON audit_logs (action, timestamp);
 ```
 
 **Log Retention:**
@@ -987,7 +995,7 @@ This architecture has been proven to support large-scale multi-tenant operations
 **Next Steps:**
 1. Review MAP-DEPLOYMENT-AWS.md for AWS-specific implementation
 2. Review MAP-DEPLOYMENT-ONPREM.md for on-premises setup
-3. Review reference code in `/code/map/`
+3. Review reference code at https://pstn2.org/code/
 4. Deploy test environment
 5. Onboard pilot downstream CP
 

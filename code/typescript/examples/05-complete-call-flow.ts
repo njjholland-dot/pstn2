@@ -5,7 +5,9 @@
  * showing all PSTN2 features working together.
  */
 
-import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+// In your application, import from the published package instead:
+//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+import { PSTN2Client, AuthenticationMode } from '../src';
 
 async function main() {
   console.log('='.repeat(60));

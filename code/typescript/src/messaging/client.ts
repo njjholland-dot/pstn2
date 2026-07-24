@@ -5,11 +5,20 @@
 
 import { HttpClient } from './http-client';
 import { generateSignature, generateUUID } from '../utils/crypto';
+import { extractNumberRange } from '../utils/numbering';
 import { getLogger } from '../utils/logger';
-import { PSTN2Config, HttpResponse } from '../types';
-import { PSTN2Error, NumberPortedError } from '../errors';
+import { PSTN2Config } from '../types';
+import { PSTN2Error } from '../errors';
 
 const logger = getLogger();
+
+const PSTN2_VERSION = '1.0';
+
+interface RequestOptions {
+  skipSignature?: boolean;
+  maxPortingHops?: number;
+  portingChain?: string[];
+}
 
 export class MessagingClient {
   private httpClient: HttpClient;
@@ -26,17 +35,25 @@ export class MessagingClient {
   }
 
   /**
-   * Make authenticated request to another CP
+   * Get this client's CP identifier
+   */
+  getCpId(): string {
+    return this.config.cpId;
+  }
+
+  /**
+   * Make authenticated request to another CP.
+   *
+   * Wraps the payload in the PSTN2 message envelope (SPECIFICATION.md
+   * section 4.1): messageId, version, timestamp, and a body-level Ed25519
+   * `signature` field (the canonical signature location). The signature is
+   * also mirrored in the X-PSTN2-Signature header for middleboxes.
    */
   async request<TRequest, TResponse>(
     endpoint: string,
     url: string,
     data: TRequest,
-    options?: {
-      skipSignature?: boolean;
-      maxPortingHops?: number;
-      portingChain?: string[];
-    }
+    options?: RequestOptions
   ): Promise<{ response: TResponse; portingChain: string[] }> {
     const portingChain = options?.portingChain || [];
     const maxPortingHops = options?.maxPortingHops || 10;
@@ -50,21 +67,26 @@ export class MessagingClient {
       );
     }
 
-    // Add timestamp if not present
-    const requestData = {
+    // Build the message envelope (messageId, version, timestamp)
+    const envelope = {
       ...data,
+      messageId: (data as any).messageId || generateUUID(),
+      version: (data as any).version || PSTN2_VERSION,
       timestamp: (data as any).timestamp || new Date().toISOString(),
     };
 
-    // Generate signature
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-PSTN2-Version': PSTN2_VERSION,
+      'X-PSTN2-CP-ID': this.config.cpId,
     };
 
+    // Sign the envelope; the body `signature` field is canonical
+    let requestData: typeof envelope & { signature?: string } = envelope;
     if (!options?.skipSignature && this.config.privateKey) {
-      const signature = generateSignature(requestData, this.config.privateKey);
-      headers['X-CP-Signature'] = `HMAC-SHA256 ${signature}`;
-      headers['X-CP-ID'] = this.config.cpId;
+      const signature = generateSignature(envelope, this.config.privateKey);
+      requestData = { ...envelope, signature };
+      headers['X-PSTN2-Signature'] = signature;
     }
 
     try {
@@ -90,7 +112,7 @@ export class MessagingClient {
     } catch (error) {
       // Handle porting (410 Gone)
       if (error instanceof PSTN2Error && error.code === 'number_ported') {
-        return this.handlePorting(endpoint, requestData, portingChain, error);
+        return this.handlePorting(endpoint, requestData, portingChain, error, options);
       }
 
       throw error;
@@ -104,7 +126,8 @@ export class MessagingClient {
     endpoint: string,
     data: TRequest,
     portingChain: string[],
-    error: PSTN2Error
+    error: PSTN2Error,
+    options?: RequestOptions
   ): Promise<{ response: TResponse; portingChain: string[] }> {
     const portingInfo = (error.details?.response as any)?.portedTo;
 
@@ -143,8 +166,9 @@ export class MessagingClient {
       logger.debug('Caching porting info', { from: data, to: newCP });
     }
 
-    // Retry with new CP
+    // Retry with new CP, preserving the caller's options
     return this.request<TRequest, TResponse>(endpoint, newEndpoint, data, {
+      ...options,
       portingChain: updatedChain,
     });
   }
@@ -154,7 +178,8 @@ export class MessagingClient {
    */
   async get<TResponse>(url: string, endpoint: string): Promise<TResponse> {
     const headers: Record<string, string> = {
-      'X-CP-ID': this.config.cpId,
+      'X-PSTN2-Version': PSTN2_VERSION,
+      'X-PSTN2-CP-ID': this.config.cpId,
     };
 
     const response = await this.httpClient.get<TResponse>(`${url}${endpoint}`, headers);
@@ -186,10 +211,10 @@ export class MessagingClient {
   }
 
   /**
-   * Extract number range from phone number for cache lookup
+   * Extract number range from phone number for cache lookup.
+   * Delegates to the shared UK-centric numbering utility.
    */
-  extractNumberRange(phoneNumber: string, prefixLength: number = 6): string {
-    // Remove the + and take first N digits
-    return phoneNumber.substring(0, prefixLength + 1); // +1 for the + sign
+  extractNumberRange(phoneNumber: string, prefixDigits?: number): string {
+    return extractNumberRange(phoneNumber, prefixDigits);
   }
 }

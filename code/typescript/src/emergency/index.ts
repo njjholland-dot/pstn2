@@ -1,6 +1,6 @@
 /**
  * Emergency services module
- * Handles live location for emergency calls
+ * Handles live location for emergency calls (POST /emergency/location)
  */
 
 import { MessagingClient } from '../messaging';
@@ -13,6 +13,12 @@ import {
 import { getLogger } from '../utils/logger';
 
 const logger = getLogger();
+
+export interface GetLocationParams {
+  callerID: PhoneNumber;
+  callReference: CallReference;
+  psapID: string;
+}
 
 export class EmergencyModule {
   private messagingClient: MessagingClient;
@@ -27,13 +33,15 @@ export class EmergencyModule {
   }
 
   /**
-   * Get live location for emergency call (PSAP use)
+   * Get live location for emergency call (PSAP use).
+   *
+   * Errors are logged and RETHROWN: a PSAP caller must be able to see that
+   * the location query failed so it can fall back to other location sources
+   * (e.g. billing address). This method never silently returns null.
    */
-  async getLocation(
-    callerID: PhoneNumber,
-    callReference: CallReference,
-    psapID: string
-  ): Promise<EmergencyLocationResponse | null> {
+  async getLocation(params: GetLocationParams): Promise<EmergencyLocationResponse> {
+    const { callerID, callReference, psapID } = params;
+
     logger.info('Emergency location request', {
       callerID,
       callReference,
@@ -53,16 +61,15 @@ export class EmergencyModule {
       const request: EmergencyLocationRequest = {
         callerID,
         callReference,
-        psapID,
+        requestingPSAP: psapID,
         timestamp: this.messagingClient.getCurrentTimestamp(),
-        requestType: 'location',
       };
 
       // Make request to CP
       const { response } = await this.messagingClient.request<
         EmergencyLocationRequest,
         EmergencyLocationResponse
-      >('/emergency-location', cpInfo.apiEndpoint, request);
+      >('/emergency/location', cpInfo.apiEndpoint, request);
 
       logger.info('Emergency location received', {
         callReference,
@@ -77,7 +84,8 @@ export class EmergencyModule {
         callReference,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      return null;
+      // Rethrow: PSAP callers must see failures and apply their own fallback
+      throw error;
     }
   }
 
@@ -95,7 +103,7 @@ export class EmergencyModule {
     logger.info('Handling emergency location request', {
       callerID: request.callerID,
       callReference: request.callReference,
-      psapID: request.psapID,
+      requestingPSAP: request.requestingPSAP,
     });
 
     // Get location from device/database

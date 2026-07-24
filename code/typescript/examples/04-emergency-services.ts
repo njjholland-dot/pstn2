@@ -5,7 +5,9 @@
  * data for emergency calls (999/112/911).
  */
 
-import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+// In your application, import from the published package instead:
+//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+import { PSTN2Client, AuthenticationMode } from '../src';
 
 async function main() {
   // Initialize as a PSAP (Public Safety Answering Point)
@@ -50,12 +52,14 @@ async function main() {
     console.log('  Altitude:', location.location.altitude || 'N/A', 'meters');
     console.log('  Source:', location.location.source);
     console.log('');
-    console.log('Address:');
-    console.log('  Street:', location.address.street);
-    console.log('  City:', location.address.city);
-    console.log('  Postcode:', location.address.postcode);
-    console.log('  Country:', location.address.country);
-    console.log('');
+    if (location.address) {
+      console.log('Address:');
+      console.log('  Street:', location.address.street);
+      console.log('  City:', location.address.city);
+      console.log('  Postcode:', location.address.postcode);
+      console.log('  Country:', location.address.country);
+      console.log('');
+    }
 
     if (location.additionalInfo) {
       console.log('Additional Information:');
@@ -96,8 +100,10 @@ async function main() {
     console.log('  Result: Faster response, lives saved! 🚑');
 
   } catch (error) {
+    // getLocation() rethrows on failure so the PSAP can apply its own fallback
     console.error('Error retrieving location:', error);
-    console.log('Falling back to billing address...');
+    console.log('Falling back to traditional PSTN location (billing address)...');
+    console.log('Dispatch with caller-confirmed address.');
   }
 
   await psapClient.close();

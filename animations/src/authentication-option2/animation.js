@@ -7,6 +7,9 @@ let playInterval = null;
 let audioEnabled = true;
 let currentUtterance = null;
 let speechEndCallback = null;
+let speechSessionId = 0;
+let narrationTimer = null;
+let cachedVoices = [];
 
 const sceneDurations = {
     "1": 13000,
@@ -28,9 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateProgress();
 
     if ('speechSynthesis' in window) {
-        speechSynthesis.getVoices();
+        cachedVoices = speechSynthesis.getVoices();
         speechSynthesis.onvoiceschanged = () => {
-            speechSynthesis.getVoices();
+            cachedVoices = speechSynthesis.getVoices();
         };
     }
 
@@ -52,17 +55,27 @@ function setupControls() {
 }
 
 function speak(text, onComplete) {
+    // Cancel any current speech first; then take a fresh session id so this
+    // utterance's own callbacks remain valid (stale sessions are ignored).
+    stopSpeech();
+    const thisSessionId = ++speechSessionId;
+
     if (!audioEnabled || !text) {
-        if (onComplete) setTimeout(onComplete, 100);
+        if (onComplete) {
+            setTimeout(() => {
+                if (speechSessionId === thisSessionId) onComplete();
+            }, 100);
+        }
         return;
     }
-    stopSpeech();
+
     if ('speechSynthesis' in window) {
         currentUtterance = new SpeechSynthesisUtterance(text);
         currentUtterance.rate = 0.9;
         currentUtterance.pitch = 1.0;
         currentUtterance.volume = 1.0;
-        const voices = speechSynthesis.getVoices();
+
+        const voices = cachedVoices.length ? cachedVoices : speechSynthesis.getVoices();
         const preferredVoice = voices.find(voice =>
             voice.lang.startsWith('en-GB') ||
             voice.lang === 'en-gb' ||
@@ -77,13 +90,28 @@ function speak(text, onComplete) {
         if (preferredVoice) {
             currentUtterance.voice = preferredVoice;
         }
+
+        currentUtterance.onend = () => {
+            if (onComplete && speechSessionId === thisSessionId) onComplete();
+        };
+
+        currentUtterance.onerror = (e) => {
+            // Deliberate cancellation (scene change, stop) is not an error and
+            // must not trigger the completion callback (would double-advance).
+            if (e.error === 'interrupted' || e.error === 'canceled') return;
+            console.error('Speech error:', e);
+            if (onComplete && speechSessionId === thisSessionId) onComplete();
+        };
+
         speechSynthesis.speak(currentUtterance);
     } else if (onComplete) {
-        onComplete();
+        if (speechSessionId === thisSessionId) onComplete();
     }
 }
 
 function stopSpeech() {
+    // Invalidate any pending speech callbacks before cancelling
+    speechSessionId++;
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     currentUtterance = null;
 }
@@ -94,12 +122,26 @@ function toggleAudio() {
     if (audioEnabled) {
         audioBtn.textContent = '🔊 Audio On';
         audioBtn.classList.remove('audio-off');
+        // Leaving audio-off mode: clear any timer-based auto-advance
+        if (playInterval) {
+            clearTimeout(playInterval);
+            playInterval = null;
+        }
+        // If autoplaying, re-establish the speech auto-advance callback
+        if (isPlaying) autoPlay();
         const narration = document.querySelector(`#scene-${currentScene} .narration`);
-        if (narration) speak(narration.getAttribute('data-speech'));
+        if (narration) speak(narration.getAttribute('data-speech'), isPlaying ? speechEndCallback : null);
     } else {
         audioBtn.textContent = '🔇 Audio Off';
         audioBtn.classList.add('audio-off');
         stopSpeech();
+        speechEndCallback = null;
+        if (playInterval) {
+            clearTimeout(playInterval);
+            playInterval = null;
+        }
+        // If autoplaying, switch to timer-based auto-advance
+        if (isPlaying) autoPlay();
     }
 }
 
@@ -107,7 +149,13 @@ function previousScene() { if (currentScene > 1) goToScene(currentScene - 1); el
 function nextScene() { if (currentScene < totalScenes) goToScene(currentScene + 1); else window.location.href = '/index.html'; }
 
 function goToScene(sceneNumber) {
+    // Cancel any pending narration from a previous scene change
+    if (narrationTimer) {
+        clearTimeout(narrationTimer);
+        narrationTimer = null;
+    }
     stopSpeech();
+
     document.getElementById(`scene-${currentScene}`).style.display = 'none';
     currentScene = sceneNumber;
     document.getElementById(`scene-${currentScene}`).style.display = 'block';
@@ -115,7 +163,9 @@ function goToScene(sceneNumber) {
     updateButtons();
     updateProgress();
     document.getElementById('current-scene').textContent = currentScene;
-    setTimeout(() => {
+
+    narrationTimer = setTimeout(() => {
+        narrationTimer = null;
         const narration = document.querySelector(`#scene-${currentScene} .narration`);
         if (narration) speak(narration.getAttribute('data-speech'), speechEndCallback);
     }, 800);
@@ -139,9 +189,15 @@ function togglePlay() {
         playBtn.textContent = '⏸ Pause';
         playBtn.classList.add('playing');
         autoPlay();
+        if (audioEnabled) {
+            // (Re)start the current scene's narration with the auto-advance callback
+            const narration = document.querySelector(`#scene-${currentScene} .narration`);
+            if (narration) speak(narration.getAttribute('data-speech'), speechEndCallback);
+        }
     } else {
         playBtn.textContent = '▶ Play';
         playBtn.classList.remove('playing');
+        speechEndCallback = null;
         if (playInterval) {
             clearTimeout(playInterval);
             playInterval = null;
@@ -159,6 +215,7 @@ function autoPlay() {
                 autoPlay();
             } else {
                 isPlaying = false;
+                speechEndCallback = null;
                 document.getElementById('play-btn').textContent = '▶ Play';
                 document.getElementById('play-btn').classList.remove('playing');
             }
@@ -166,6 +223,7 @@ function autoPlay() {
     } else {
         const duration = sceneDurations[currentScene];
         playInterval = setTimeout(() => {
+            if (!isPlaying) return;
             if (currentScene < totalScenes) {
                 nextScene();
                 autoPlay();
@@ -1067,10 +1125,12 @@ function setupScene11() {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
-        nextScene();
+        // No-op on the last scene (button click still exits to homepage)
+        if (currentScene < totalScenes) nextScene();
     } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        previousScene();
+        // No-op on the first scene
+        if (currentScene > 1) previousScene();
     } else if (e.key === 'Enter') {
         e.preventDefault();
         togglePlay();

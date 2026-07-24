@@ -2,7 +2,13 @@
 
 Python implementation of the PSTN2 distributed telecommunications protocol.
 
+> **Status: reference API — not yet on PyPI.** The `pstn2` package has not
+> been published, so `pip install pstn2` will not work yet. The examples in
+> `examples/` and the snippets below illustrate the *intended* SDK surface.
+
 ## Installation
+
+Once the SDK is published to PyPI, installation will be:
 
 ```bash
 pip install pstn2
@@ -21,6 +27,8 @@ uv add pstn2
 
 ```python
 import asyncio
+import os
+
 from pstn2.client import PSTN2Client, AuthenticationMode
 
 async def main():
@@ -309,7 +317,7 @@ from pstn2.client import PSTN2Client
 app = FastAPI()
 client = PSTN2Client(...)
 
-@app.post('/api/verify-call')
+@app.post('/api/calls/verify')
 async def verify_call(
     caller_id: str,
     called_id: str,
@@ -400,9 +408,9 @@ See [EXAMPLES.md](../EXAMPLES.md) for detailed documentation.
 
 ## Further Reading
 
-- [SPECIFICATION.md](../../SPECIFICATION.md) - PSTN2 protocol specification
-- [API-SPECIFICATION.yaml](../../API-SPECIFICATION.yaml) - REST API documentation
-- [IMPLEMENTATION-GUIDE.md](../../IMPLEMENTATION-GUIDE.md) - Implementation patterns
+- [SPECIFICATION.md](../../docs/SPECIFICATION.md) - PSTN2 protocol specification
+- [API-SPECIFICATION.yaml](../../docs/API-SPECIFICATION.yaml) - REST API documentation
+- [IMPLEMENTATION-GUIDE.md](../../docs/IMPLEMENTATION-GUIDE.md) - Implementation patterns
 
 ## License
 

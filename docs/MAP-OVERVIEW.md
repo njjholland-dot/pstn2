@@ -115,7 +115,7 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 **Core Principles:**
 1. **Isolation** - Each CP's data and credentials isolated
 2. **Scalability** - Add CPs without infrastructure changes
-3. **Performance** - Sub-2-second authentication targets
+3. **Performance** - Sub-500ms authentication targets (p95)
 4. **Reliability** - 99.99% uptime SLA
 5. **Security** - End-to-end encryption, audit logs
 
@@ -221,7 +221,7 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 1. **Review Technical Specifications**
    - Read SPECIFICATION.md
    - Review API-SPECIFICATION.yaml
-   - Study MAP-ARCHITECTURE.md
+   - Study MAP-MULTITENANT-DESIGN.md
 
 2. **Choose Deployment Model**
    - Cloud (AWS/Azure/GCP) or On-Premises
@@ -389,14 +389,13 @@ Becoming a MAP represents a significant business opportunity in the PSTN2 ecosys
 
 ## Next Steps
 
-1. Read **MAP-ARCHITECTURE.md** for technical deep-dive
-2. Review **MAP-MULTITENANT-DESIGN.md** for architecture patterns
-3. Choose deployment model:
+1. Read **MAP-MULTITENANT-DESIGN.md** for the technical deep-dive and architecture patterns
+2. Choose deployment model:
    - **AWS:** Read MAP-DEPLOYMENT-AWS.md
    - **On-Premises:** Read MAP-DEPLOYMENT-ONPREM.md
-4. Review reference implementations in `/code/map/`
-5. Run certification test suite
-6. Join PSTN2 consortium and obtain CPID
+3. Review reference implementations at https://pstn2.org/code/
+4. Run certification test suite
+5. Join PSTN2 consortium and obtain CPID
 
 ---
 

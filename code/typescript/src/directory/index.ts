@@ -5,11 +5,13 @@
 
 import { HttpClient } from '../messaging';
 import {
+  DirectoryEndpoints,
   DirectoryEntry,
   DirectoryResponse,
   PhoneNumber,
   RCPID,
 } from '../types';
+import { extractNumberRange } from '../utils/numbering';
 import { getLogger } from '../utils/logger';
 
 const logger = getLogger();
@@ -17,19 +19,24 @@ const logger = getLogger();
 export interface CachedCPInfo {
   cpId: RCPID;
   apiEndpoint: string;
+  endpoints: DirectoryEndpoints;
   lastUpdate: Date;
 }
+
+const DEFAULT_CACHE_TTL_SECONDS = 86400; // 24 hours
 
 export class DirectoryModule {
   private httpClient: HttpClient;
   private directory: Map<string, CachedCPInfo> = new Map(); // numberRange -> CP info
   private cpEndpoints: Map<RCPID, string> = new Map(); // cpId -> endpoint
-  private cacheTTL: number;
+  private cacheTTL: number; // milliseconds (internal)
 
-  constructor(cacheTTL: number = 86400000) {
-    // Default 24 hours
+  /**
+   * @param cacheTTLSeconds - Cache TTL in seconds (default 86400 = 24 hours)
+   */
+  constructor(cacheTTLSeconds: number = DEFAULT_CACHE_TTL_SECONDS) {
     this.httpClient = new HttpClient();
-    this.cacheTTL = cacheTTL;
+    this.cacheTTL = cacheTTLSeconds * 1000;
   }
 
   /**
@@ -37,7 +44,7 @@ export class DirectoryModule {
    */
   async lookup(phoneNumber: PhoneNumber): Promise<CachedCPInfo> {
     // Extract number range for lookup
-    const range = this.extractRange(phoneNumber);
+    const range = extractNumberRange(phoneNumber);
 
     // Check cache first
     const cached = this.directory.get(range);
@@ -60,19 +67,21 @@ export class DirectoryModule {
   }
 
   /**
-   * Pull directory from another CP
+   * Pull directory from another CP (GET /directory/all)
    */
   async pullFromCP(cpEndpoint: string): Promise<DirectoryResponse> {
     logger.info('Pulling directory from CP', { cpEndpoint });
 
     try {
-      const response = await this.httpClient.get<DirectoryResponse>(cpEndpoint, '/directory');
+      const response = await this.httpClient.get<DirectoryResponse>(
+        `${cpEndpoint}/directory/all`
+      );
 
-      // Cache the entries
-      this.cacheDirectory(response.data);
+      // Cache the entries, remembering which endpoint they came from
+      this.cacheDirectory(response.data, cpEndpoint);
 
       logger.info('Directory pulled successfully', {
-        cpId: response.data.cpID,
+        cpEndpoint,
         entries: response.data.entries.length,
       });
 
@@ -112,39 +121,72 @@ export class DirectoryModule {
   }
 
   /**
-   * Cache directory entries
+   * Cache directory entries.
+   *
+   * @param directoryData - Directory payload from GET /directory/all
+   * @param cpEndpoint - The source endpoint the directory was pulled from
    */
-  private cacheDirectory(directoryData: DirectoryResponse): void {
-    // Store CP endpoint
-    this.cpEndpoints.set(directoryData.cpID, directoryData.cpID);
+  private cacheDirectory(directoryData: DirectoryResponse, cpEndpoint: string): void {
+    const lastUpdate = directoryData.lastModified
+      ? new Date(directoryData.lastModified)
+      : new Date();
 
-    // Cache each entry
     for (const entry of directoryData.entries) {
-      if (entry.status === 'active' && entry.apiEndpoint) {
-        this.directory.set(entry.numberRange, {
-          cpId: directoryData.cpID,
-          apiEndpoint: entry.apiEndpoint,
-          lastUpdate: new Date(directoryData.lastUpdate),
-        });
-      } else if (entry.status === 'ported' && entry.portedTo) {
-        // Entry is ported - cache the new CP
-        const portedEndpoint = this.cpEndpoints.get(entry.portedTo);
-        if (portedEndpoint) {
-          this.directory.set(entry.numberRange, {
-            cpId: entry.portedTo,
-            apiEndpoint: portedEndpoint,
-            lastUpdate: new Date(directoryData.lastUpdate),
+      const apiEndpoint = this.resolveApiEndpoint(entry, cpEndpoint);
+
+      // Remember where this CP can be reached
+      this.cpEndpoints.set(entry.cpId, apiEndpoint);
+
+      for (const range of entry.ranges) {
+        const rangeKey = extractNumberRange(range.numberRange);
+
+        if (range.status === 'active') {
+          this.directory.set(rangeKey, {
+            cpId: entry.cpId,
+            apiEndpoint,
+            endpoints: this.fillEndpoints(entry.endpoints, apiEndpoint),
+            lastUpdate,
           });
+        } else if (range.status === 'ported' && range.portedTo) {
+          // Range is ported - cache the new CP if we know its endpoint
+          const portedEndpoint = this.cpEndpoints.get(range.portedTo);
+          if (portedEndpoint) {
+            this.directory.set(rangeKey, {
+              cpId: range.portedTo,
+              apiEndpoint: portedEndpoint,
+              endpoints: this.fillEndpoints({}, portedEndpoint),
+              lastUpdate,
+            });
+          }
         }
       }
     }
   }
 
   /**
+   * Choose a base API endpoint for a directory entry, falling back to the
+   * endpoint the directory was pulled from.
+   */
+  private resolveApiEndpoint(entry: DirectoryEntry, cpEndpoint: string): string {
+    return entry.endpoints?.auth || entry.endpoints?.routing || cpEndpoint;
+  }
+
+  /**
+   * Fill in any missing per-service endpoints from the base API endpoint.
+   */
+  private fillEndpoints(endpoints: DirectoryEndpoints, apiEndpoint: string): DirectoryEndpoints {
+    return {
+      auth: endpoints.auth || apiEndpoint,
+      routing: endpoints.routing || apiEndpoint,
+      emergency: endpoints.emergency || apiEndpoint,
+    };
+  }
+
+  /**
    * Manual cache update (from porting responses)
    */
   updateCache(phoneNumber: PhoneNumber, cpId: RCPID, apiEndpoint: string): void {
-    const range = this.extractRange(phoneNumber);
+    const range = extractNumberRange(phoneNumber);
 
     logger.debug('Updating directory cache', {
       phoneNumber,
@@ -152,9 +194,11 @@ export class DirectoryModule {
       cpId,
     });
 
+    this.cpEndpoints.set(cpId, apiEndpoint);
     this.directory.set(range, {
       cpId,
       apiEndpoint,
+      endpoints: this.fillEndpoints({}, apiEndpoint),
       lastUpdate: new Date(),
     });
   }
@@ -164,16 +208,6 @@ export class DirectoryModule {
    */
   private isCacheValid(lastUpdate: Date): boolean {
     return Date.now() - lastUpdate.getTime() < this.cacheTTL;
-  }
-
-  /**
-   * Extract number range from phone number
-   * Takes first 6 digits after country code
-   */
-  private extractRange(phoneNumber: PhoneNumber): string {
-    // Remove + and take first 6 digits
-    // E.g., +441234567890 -> +44123456
-    return phoneNumber.substring(0, 9); // +XX + 6 digits
   }
 
   /**

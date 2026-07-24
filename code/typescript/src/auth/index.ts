@@ -21,6 +21,21 @@ import { PSTN2Error, ErrorCode } from '../errors';
 
 const logger = getLogger();
 
+export interface VerifyCallParams {
+  callerID: PhoneNumber;
+  calledID: PhoneNumber;
+  callReference: CallReference;
+  tokenId?: string;
+}
+
+export interface CreateTokenParams {
+  callerID: PhoneNumber;
+  calledID: PhoneNumber;
+  callReference?: CallReference;
+  ttl?: number;
+  branding?: BrandingInfo;
+}
+
 export class AuthenticationModule {
   private directQueryAuth?: DirectQueryAuth;
   private tokenPoolAuth?: TokenPoolAuth;
@@ -34,11 +49,11 @@ export class AuthenticationModule {
   ) {
     this.mode = config.authMode;
 
+    // fallbackToTraditional defaults to true (safer for learners; matches README)
+    const fallbackEnabled = config.fallbackToTraditional !== false;
+
     // Initialize Direct Query (Option 1)
-    if (
-      config.authMode === AuthenticationMode.DirectQuery ||
-      config.fallbackToTraditional
-    ) {
+    if (config.authMode === AuthenticationMode.DirectQuery || fallbackEnabled) {
       this.directQueryAuth = new DirectQueryAuth(messagingClient, directoryLookup);
     }
 
@@ -58,7 +73,7 @@ export class AuthenticationModule {
       );
 
       // Set fallback to direct query if configured
-      if (config.fallbackToTraditional && this.directQueryAuth) {
+      if (fallbackEnabled && this.directQueryAuth) {
         this.fallbackMode = AuthenticationMode.DirectQuery;
         logger.info('Token pool mode with direct query fallback enabled');
       }
@@ -69,12 +84,9 @@ export class AuthenticationModule {
    * Verify an inbound call
    * Uses configured authentication mode with optional fallback
    */
-  async verifyCall(
-    callerID: PhoneNumber,
-    calledID: PhoneNumber,
-    callReference: CallReference,
-    tokenId?: string
-  ): Promise<CallVerificationResponse> {
+  async verifyCall(params: VerifyCallParams): Promise<CallVerificationResponse> {
+    const { callerID, calledID, callReference, tokenId } = params;
+
     // If token ID provided and we have token pool, verify via token
     if (tokenId && this.tokenPoolAuth) {
       try {
@@ -122,8 +134,9 @@ export class AuthenticationModule {
       }
     }
 
-    // Use direct query authentication
-    if (this.mode === AuthenticationMode.DirectQuery && this.directQueryAuth) {
+    // No token supplied: use direct query whenever it is available,
+    // regardless of the configured mode
+    if (this.directQueryAuth) {
       return await this.directQueryAuth.verifyCall(callerID, calledID, callReference);
     }
 
@@ -136,13 +149,7 @@ export class AuthenticationModule {
   /**
    * Create token before placing outbound call (Token Pool mode)
    */
-  async createToken(
-    callerID: PhoneNumber,
-    calledID: PhoneNumber,
-    callReference?: CallReference,
-    branding?: BrandingInfo,
-    ttl?: number
-  ): Promise<TokenCreateResponse> {
+  async createToken(params: CreateTokenParams): Promise<TokenCreateResponse> {
     if (!this.tokenPoolAuth) {
       throw new PSTN2Error(
         ErrorCode.InvalidRequest,
@@ -150,13 +157,22 @@ export class AuthenticationModule {
       );
     }
 
-    return await this.tokenPoolAuth.createToken(
-      callerID,
-      calledID,
-      callReference,
-      branding,
-      ttl
-    );
+    return await this.tokenPoolAuth.createToken(params);
+  }
+
+  /**
+   * Verify a token directly against the token pool
+   * (GET /auth/tokens/{tokenId})
+   */
+  async verifyToken(tokenId: string): Promise<TokenData | null> {
+    if (!this.tokenPoolAuth) {
+      throw new PSTN2Error(
+        ErrorCode.InvalidRequest,
+        'Token pool not configured - cannot verify token'
+      );
+    }
+
+    return await this.tokenPoolAuth.verifyToken(tokenId);
   }
 
   /**
