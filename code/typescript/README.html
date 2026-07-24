@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@pstn2/core - TypeScript/Node.js Library | PSTN2</title>
+    <link rel="stylesheet" href="../../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../../index.html" class="back-link">← Back to Home</a>
+        <h1>@pstn2/core - TypeScript/Node.js Library</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#installation">Installation</a>
+                <a href="#quick-start">Quick Start</a>
+                <a href="#features">Features</a>
+                <a href="#architecture">Architecture</a>
+                <a href="#configuration">Configuration</a>
+                <a href="#examples">Examples</a>
+                <a href="#error-handling">Error Handling</a>
+                <a href="#testing">Testing</a>
+                <a href="#development">Development</a>
+                <a href="#api-documentation">API Documentation</a>
+                <a href="#license">License</a>
+                <a href="#contributing">Contributing</a>
+                <a href="#support">Support</a>
+                <a href="#related-packages">Related Packages</a>
+                <a href="README.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="pstn2-core-typescript-node-js-library">@pstn2/core - TypeScript/Node.js Library</h1>
+
+<p>Official TypeScript implementation of the PSTN2 distributed telecommunications protocol.</p>
+
+<h2 id="installation">Installation</h2>
+
+<pre><code class="language-bash">npm install @pstn2/core</code></pre>
+
+<h2 id="quick-start">Quick Start</h2>
+
+<pre><code class="language-typescript">import { PSTN2Client, AuthenticationMode } from &#039;@pstn2/core&#039;;
+
+<p>// Initialize client</p>
+<p>const client = new PSTN2Client({</p>
+<p>  cpId: &#039;CP1-UK-0001&#039;,</p>
+<p>  apiEndpoint: &#039;https://api.yourcp.com/pstn2/v1&#039;,</p>
+<p>  privateKey: process.env.PSTN2<em>PRIVATE</em>KEY,</p>
+<p>  authMode: AuthenticationMode.DirectQuery, // or TokenPool</p>
+<p>});</p>
+
+<p>// Verify an inbound call</p>
+<p>const verification = await client.auth.verifyCall({</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  calledID: &#039;+447700900123&#039;,</p>
+<p>  callReference: &#039;unique-call-id&#039;,</p>
+<p>});</p>
+
+<p>if (verification.verified) {</p>
+<p>  console.log(<code>Call from ${verification.callerName} verified</code>);</p>
+<p>  console.log(<code>Purpose: ${verification.callPurpose}</code>);</p>
+<p>}</p>
+
+<p>// Request direct routing for outbound call</p>
+<p>const routing = await client.routing.requestRouting({</p>
+<p>  destinationNumber: &#039;+447700900123&#039;,</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  mediaCapabilities: {</p>
+<p>    codecs: [&#039;opus&#039;, &#039;g722&#039;],</p>
+<p>    encryption: [&#039;srtp-aes256&#039;],</p>
+<p>  },</p>
+<p>});</p>
+
+<p>if (routing.accepted) {</p>
+<p>  // Establish direct media connection</p>
+<p>  const media = await client.media.connect({</p>
+<p>    fqdn: routing.connectionDetails.fqdn,</p>
+<p>    port: routing.connectionDetails.port,</p>
+<p>    publicKey: routing.connectionDetails.publicKey,</p>
+<p>  });</p>
+<p>}</code></pre></p>
+
+<h2 id="features">Features</h2>
+
+<ul>
+<li>✅ <strong>Authentication</strong>: Verify caller IDs in real-time (Option 1 & 2)</li>
+<li>✅ <strong>Direct Routing</strong>: Discover IP/Port for peer-to-peer calls</li>
+<li>✅ <strong>End-to-End Encryption</strong>: Per-call key exchange</li>
+<li>✅ <strong>Call Branding</strong>: Display caller information</li>
+<li>✅ <strong>Emergency Services</strong>: Live location for 999/112 calls</li>
+<li>✅ <strong>Directory Service</strong>: Distributed number database</li>
+<li>✅ <strong>Automatic Fallback</strong>: Falls back to traditional PSTN on timeout</li>
+</ul>
+
+<h2 id="architecture">Architecture</h2>
+
+<h3 id="modules">Modules</h3>
+
+<ul>
+<li><strong>auth/</strong>: Authentication (Option 1 direct queries, Option 2 token pool)</li>
+<li><strong>routing/</strong>: Direct routing discovery and setup</li>
+<li><strong>encryption/</strong>: Key management and media encryption</li>
+<li><strong>branding/</strong>: Call branding and purpose signaling</li>
+<li><strong>emergency/</strong>: Emergency services location</li>
+<li><strong>directory/</strong>: Distributed directory service</li>
+<li><strong>messaging/</strong>: Core HTTP messaging with retry logic</li>
+</ul>
+
+<h3 id="authentication-modes">Authentication Modes</h3>
+
+<h4 id="option-1-direct-query">Option 1: Direct Query</h4>
+<pre><code class="language-typescript">const client = new PSTN2Client({
+<p>  authMode: AuthenticationMode.DirectQuery,</p>
+<p>  // ...</p>
+<p>});</p>
+
+<p>// Queries originating CP directly to verify call</code></pre></p>
+
+<h4 id="option-2-token-pool">Option 2: Token Pool</h4>
+<pre><code class="language-typescript">const client = new PSTN2Client({
+<p>  authMode: AuthenticationMode.TokenPool,</p>
+<p>  tokenPoolEndpoint: &#039;https://tokenpool.pstn2.org&#039;,</p>
+<p>  tokenPoolAuth: process.env.TOKEN<em>POOL</em>JWT,</p>
+<p>  // ...</p>
+<p>});</p>
+
+<p>// Creates/verifies tokens in shared pool</code></pre></p>
+
+<h2 id="configuration">Configuration</h2>
+
+<pre><code class="language-typescript">interface PSTN2Config {
+<p>  // CP identification</p>
+<p>  cpId: string;                    // Your RCPID</p>
+<p>  apiEndpoint: string;             // Your API endpoint URL</p>
+
+<p>  // Security</p>
+<p>  privateKey: string;              // For signing messages</p>
+<p>  publicKey?: string;              // Will be derived if not provided</p>
+
+<p>  // Authentication</p>
+<p>  authMode: AuthenticationMode;    // DirectQuery or TokenPool</p>
+<p>  tokenPoolEndpoint?: string;      // If using TokenPool</p>
+<p>  tokenPoolAuth?: string;          // JWT for token pool</p>
+
+<p>  // Caching</p>
+<p>  cacheDirectory?: boolean;        // Cache other CPs&#039; directories</p>
+<p>  cacheTTL?: number;               // Cache TTL in seconds (default: 3600)</p>
+
+<p>  // Network</p>
+<p>  timeout?: number;                // Request timeout ms (default: 2000)</p>
+<p>  retries?: number;                // Number of retries (default: 3)</p>
+
+<p>  // Fallback</p>
+<p>  fallbackToTraditional?: boolean; // Fallback to PSTN (default: true)</p>
+
+<p>  // Logging</p>
+<p>  logLevel?: &#039;error&#039; | &#039;warn&#039; | &#039;info&#039; | &#039;debug&#039;;</p>
+<p>}</code></pre></p>
+
+<h2 id="examples">Examples</h2>
+
+<h3 id="verify-inbound-call-with-porting-chain">Verify Inbound Call with Porting Chain</h3>
+
+<pre><code class="language-typescript">// Recipient CP verifies caller
+<p>const verification = await client.auth.verifyCall({</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  calledID: &#039;+447700900123&#039;,</p>
+<p>  callReference: &#039;abc-123&#039;,</p>
+<p>});</p>
+
+<p>// If number is ported, library automatically follows chain</p>
+<p>// verification.portingChain shows the path taken</p>
+<p>console.log(&#039;Porting chain:&#039;, verification.portingChain);</p>
+<p>// [&#039;CP1-UK-0001&#039;, &#039;CP2-UK-0002&#039;, &#039;CP3-UK-0003&#039;]</code></pre></p>
+
+<h3 id="direct-routing-with-encryption">Direct Routing with Encryption</h3>
+
+<pre><code class="language-typescript">// Request routing info
+<p>const routing = await client.routing.requestRouting({</p>
+<p>  destinationNumber: &#039;+447700900123&#039;,</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  callReference: &#039;xyz-789&#039;,</p>
+<p>  mediaCapabilities: {</p>
+<p>    codecs: [&#039;opus&#039;],</p>
+<p>    encryption: [&#039;srtp-aes256&#039;],</p>
+<p>    video: false,</p>
+<p>  },</p>
+<p>  // Client automatically includes your public key</p>
+<p>});</p>
+
+<p>if (routing.accepted) {</p>
+<p>  // Keys are exchanged, ready for encrypted media</p>
+<p>  console.log(&#039;Connect to:&#039;, routing.connectionDetails.fqdn);</p>
+<p>  console.log(&#039;Encrypt with:&#039;, routing.connectionDetails.publicKey);</p>
+<p>}</code></pre></p>
+
+<h3 id="call-with-branding">Call with Branding</h3>
+
+<pre><code class="language-typescript">// Originating CP includes branding
+<p>const routing = await client.routing.requestRouting({</p>
+<p>  destinationNumber: &#039;+447700900123&#039;,</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  branding: {</p>
+<p>    displayName: &#039;ACME Support&#039;,</p>
+<p>    logo: &#039;https://cdn.acme.com/logo.png&#039;,</p>
+<p>    backgroundColor: &#039;#0066cc&#039;,</p>
+<p>    callPurpose: &#039;Account Security Alert&#039;,</p>
+<p>  },</p>
+<p>});</p>
+
+<p>// Recipient can display branding before ringing phone</code></pre></p>
+
+<h3 id="emergency-call-with-live-location">Emergency Call with Live Location</h3>
+
+<pre><code class="language-typescript">// PSAP queries for location
+<p>const location = await client.emergency.getLocation({</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  callReference: &#039;emergency-456&#039;,</p>
+<p>  psapID: &#039;UK-999-LONDON-CENTRAL&#039;,</p>
+<p>});</p>
+
+<p>console.log(&#039;Location:&#039;, location.location.latitude, location.location.longitude);</p>
+<p>console.log(&#039;Accuracy:&#039;, location.location.accuracy, &#039;meters&#039;);</p>
+<p>console.log(&#039;Address:&#039;, location.address.street, location.address.postcode);</code></pre></p>
+
+<h3 id="directory-service-for-eventual-consistency">Directory Service (for eventual consistency)</h3>
+
+<pre><code class="language-typescript">// Publish your directory
+<p>await client.directory.publish({</p>
+<p>  ranges: [</p>
+<p>    {</p>
+<p>      numberRange: &#039;+4471234567XX&#039;,</p>
+<p>      status: &#039;active&#039;,</p>
+<p>      apiEndpoint: &#039;https://api.yourcp.com/pstn2/v1&#039;,</p>
+<p>    },</p>
+<p>  ],</p>
+<p>});</p>
+
+<p>// Pull other CPs&#039; directories</p>
+<p>const allCPs = await client.directory.pullAll();</p>
+<p>console.log(<code>Cached ${allCPs.length} CP directories</code>);</p>
+
+<p>// Query cached directory</p>
+<p>const cp = await client.directory.lookup(&#039;+441234567890&#039;);</p>
+<p>console.log(&#039;Number hosted by:&#039;, cp.cpId);</p>
+<p>console.log(&#039;API endpoint:&#039;, cp.apiEndpoint);</code></pre></p>
+
+<h3 id="token-pool-operations">Token Pool Operations</h3>
+
+<pre><code class="language-typescript">// Create token before placing call
+<p>const token = await client.auth.createToken({</p>
+<p>  callerID: &#039;+441234567890&#039;,</p>
+<p>  calledID: &#039;+447700900123&#039;,</p>
+<p>  callReference: &#039;token-call-123&#039;,</p>
+<p>  ttl: 30, // 30 seconds</p>
+<p>});</p>
+
+<p>console.log(&#039;Include token in INVITE:&#039;, token.tokenId);</p>
+
+<p>// Recipient verifies token</p>
+<p>const tokenData = await client.auth.verifyToken(token.tokenId);</p>
+<p>if (tokenData) {</p>
+<p>  console.log(&#039;Call from:&#039;, tokenData.cpId);</p>
+<p>  console.log(&#039;Caller ID:&#039;, tokenData.callerID);</p>
+<p>}</code></pre></p>
+
+<h2 id="error-handling">Error Handling</h2>
+
+<pre><code class="language-typescript">import { PSTN2Error, ErrorCode } from &#039;@pstn2/core&#039;;
+
+<p>try {</p>
+<p>  const verification = await client.auth.verifyCall({...});</p>
+<p>} catch (error) {</p>
+<p>  if (error instanceof PSTN2Error) {</p>
+<p>    switch (error.code) {</p>
+<p>      case ErrorCode.Timeout:</p>
+<p>        // Fall back to traditional PSTN</p>
+<p>        console.log(&#039;Verification timeout, using traditional routing&#039;);</p>
+<p>        break;</p>
+
+<p>      case ErrorCode.CallNotFound:</p>
+<p>        // Potential fraud - caller ID not verified</p>
+<p>        console.log(&#039;WARNING: Unverified caller ID&#039;);</p>
+<p>        break;</p>
+
+<p>      case ErrorCode.NumberPorted:</p>
+<p>        // Library automatically retries with new CP</p>
+<p>        console.log(&#039;Number ported, retrying...&#039;);</p>
+<p>        break;</p>
+
+<p>      default:</p>
+<p>        console.error(&#039;PSTN2 error:&#039;, error.message);</p>
+<p>    }</p>
+<p>  } else {</p>
+<p>    throw error;</p>
+<p>  }</p>
+<p>}</code></pre></p>
+
+<h2 id="testing">Testing</h2>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;run-tests&quot;&gt;Run tests&lt;/h1&gt;
+<p>npm test</p>
+
+<p>&lt;h1 id=&quot;run-with-coverage&quot;&gt;Run with coverage&lt;/h1&gt;</p>
+<p>npm test:coverage</p>
+
+<p>&lt;h1 id=&quot;watch-mode&quot;&gt;Watch mode&lt;/h1&gt;</p>
+<p>npm test:watch</code></pre></p>
+
+<h2 id="development">Development</h2>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;install-dependencies&quot;&gt;Install dependencies&lt;/h1&gt;
+<p>npm install</p>
+
+<p>&lt;h1 id=&quot;build&quot;&gt;Build&lt;/h1&gt;</p>
+<p>npm run build</p>
+
+<p>&lt;h1 id=&quot;watch-mode&quot;&gt;Watch mode&lt;/h1&gt;</p>
+<p>npm run watch</p>
+
+<p>&lt;h1 id=&quot;lint&quot;&gt;Lint&lt;/h1&gt;</p>
+<p>npm run lint</p>
+
+<p>&lt;h1 id=&quot;format&quot;&gt;Format&lt;/h1&gt;</p>
+<p>npm run format</code></pre></p>
+
+<h2 id="api-documentation">API Documentation</h2>
+
+<p>Full API documentation generated with TypeDoc:</p>
+
+<pre><code class="language-bash">npm run docs
+<p>&lt;h1 id=&quot;open-docs-index-html&quot;&gt;Open docs/index.html&lt;/h1&gt;</code></pre></p>
+
+<h2 id="license">License</h2>
+
+<p>MIT - See LICENSE file</p>
+
+<h2 id="contributing">Contributing</h2>
+
+<p>Contributions welcome! Please see <a href="../../CONTRIBUTING.md">CONTRIBUTING.md</a></p>
+
+<h2 id="support">Support</h2>
+
+<ul>
+<li>Documentation: https://pstn2.org/docs</li>
+<li>GitHub Issues: https://github.com/pstn2/pstn2/issues</li>
+<li>Email: nick.holland@8x8.com</li>
+</ul>
+
+<h2 id="related-packages">Related Packages</h2>
+
+<ul>
+<li><a href="../cli">@pstn2/cli</a> - Command line tools</li>
+<li><a href="../server">@pstn2/server</a> - API server implementation</li>
+<li><a href="../mock">@pstn2/mock</a> - Mock CP for testing</li>
+</ul>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

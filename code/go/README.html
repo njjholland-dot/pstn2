@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 Go SDK | PSTN2</title>
+    <link rel="stylesheet" href="../../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../../index.html" class="back-link">← Back to Home</a>
+        <h1>PSTN2 Go SDK</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#installation">Installation</a>
+                <a href="#requirements">Requirements</a>
+                <a href="#quick-start">Quick Start</a>
+                <a href="#features">Features</a>
+                <a href="#project-setup">Project Setup</a>
+                <a href="#running-examples">Running Examples</a>
+                <a href="#sdk-api-reference">SDK API Reference</a>
+                <a href="#error-handling">Error Handling</a>
+                <a href="#best-practices">Best Practices</a>
+                <a href="#integration-examples">Integration Examples</a>
+                <a href="#testing">Testing</a>
+                <a href="#performance-tips">Performance Tips</a>
+                <a href="#examples">Examples</a>
+                <a href="#further-reading">Further Reading</a>
+                <a href="#license">License</a>
+                <a href="README.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="pstn2-go-sdk">PSTN2 Go SDK</h1>
+
+<p>High-performance Go implementation of the PSTN2 distributed telecommunications protocol.</p>
+
+<h2 id="installation">Installation</h2>
+
+<pre><code class="language-bash">go get github.com/pstn2/pstn2-go</code></pre>
+
+<h2 id="requirements">Requirements</h2>
+
+<ul>
+<li>Go 1.21 or later</li>
+<li>Dependencies managed with Go modules</li>
+</ul>
+
+<h2 id="quick-start">Quick Start</h2>
+
+<pre><code class="language-go">package main
+
+<p>import (</p>
+<p>    &quot;context&quot;</p>
+<p>    &quot;fmt&quot;</p>
+<p>    &quot;os&quot;</p>
+
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/client&quot;</p>
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/types&quot;</p>
+<p>)</p>
+
+<p>func main() {</p>
+<p>    ctx := context.Background()</p>
+
+<p>    pstn2Client, err := client.NewClient(&amp;client.Config{</p>
+<p>        CPID:        &quot;CP1-UK-0001&quot;,</p>
+<p>        APIEndpoint: &quot;https://api.yourcp.com/pstn2/v1&quot;,</p>
+<p>        PrivateKey:  os.Getenv(&quot;PSTN2<em>PRIVATE</em>KEY&quot;),</p>
+<p>        AuthMode:    types.AuthModeDirectQuery,</p>
+<p>    })</p>
+<p>    if err != nil {</p>
+<p>        panic(err)</p>
+<p>    }</p>
+<p>    defer pstn2Client.Close()</p>
+
+<p>    // Verify an inbound call</p>
+<p>    verification, err := pstn2Client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{</p>
+<p>        CallerID:      &quot;+441234567890&quot;,</p>
+<p>        CalledID:      &quot;+447700900123&quot;,</p>
+<p>        CallReference: &quot;abc-123-def-456&quot;,</p>
+<p>    })</p>
+<p>    if err != nil {</p>
+<p>        panic(err)</p>
+<p>    }</p>
+
+<p>    fmt.Printf(&quot;Call verified: %t\n&quot;, verification.Verified)</p>
+<p>}</code></pre></p>
+
+<h2 id="features">Features</h2>
+
+<ul>
+<li>✅ <strong>High Performance</strong>: Concurrent processing with goroutines</li>
+<li>✅ <strong>Type Safety</strong>: Full type definitions throughout</li>
+<li>✅ <strong>Authentication</strong>: Both Direct Query and Token Pool modes</li>
+<li>✅ <strong>Direct Routing</strong>: Peer-to-peer routing discovery</li>
+<li>✅ <strong>End-to-End Encryption</strong>: Ed25519 key exchange</li>
+<li>✅ <strong>Call Branding</strong>: Verified caller information display</li>
+<li>✅ <strong>Emergency Services</strong>: Real-time GPS location (PSAP)</li>
+<li>✅ <strong>Directory Service</strong>: Distributed number lookups</li>
+<li>✅ <strong>Context Support</strong>: Full context.Context integration</li>
+<li>✅ <strong>Production Ready</strong>: Connection pooling, retries, timeouts</li>
+</ul>
+
+<h2 id="project-setup">Project Setup</h2>
+
+<h3 id="initialize-module">Initialize Module</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;create-new-module&quot;&gt;Create new module&lt;/h1&gt;
+<p>mkdir my-pstn2-app</p>
+<p>cd my-pstn2-app</p>
+<p>go mod init my-pstn2-app</p>
+
+<p>&lt;h1 id=&quot;add-pstn2-dependency&quot;&gt;Add PSTN2 dependency&lt;/h1&gt;</p>
+<p>go get github.com/pstn2/pstn2-go</code></pre></p>
+
+<h3 id="project-structure">Project Structure</h3>
+
+<pre><code class="language-">my-pstn2-app/
+<p>├── main.go</p>
+<p>├── go.mod</p>
+<p>└── go.sum</code></pre></p>
+
+<h2 id="running-examples">Running Examples</h2>
+
+<ul>
+<li>Set environment variables:</li>
+</ul>
+<pre><code class="language-bash">export PSTN2<em>PRIVATE</em>KEY=&quot;your-private-key-here&quot;
+<p>export CP1<em>PRIVATE</em>KEY=&quot;your-cp1-key-here&quot;</p>
+<p>export PSAP<em>PRIVATE</em>KEY=&quot;your-psap-key-here&quot;</p>
+<p>export TOKEN<em>POOL</em>JWT=&quot;your-jwt-token-here&quot;</code></pre></p>
+
+<ul>
+<li>Run an example:</li>
+</ul>
+<pre><code class="language-bash">go run examples/01-basic-authentication.go
+<p>go run examples/02-direct-routing.go</p>
+<p>go run examples/03-token-pool.go</p>
+<p>go run examples/04-emergency-services.go</p>
+<p>go run examples/05-complete-call-flow.go</code></pre></p>
+
+<h2 id="sdk-api-reference">SDK API Reference</h2>
+
+<h3 id="client-configuration">Client Configuration</h3>
+
+<pre><code class="language-go">import (
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/client&quot;</p>
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/types&quot;</p>
+<p>)</p>
+
+<p>pstn2Client, err := client.NewClient(&amp;client.Config{</p>
+<p>    CPID:        &quot;CP1-UK-0001&quot;,</p>
+<p>    APIEndpoint: &quot;https://api.yourcp.com/pstn2/v1&quot;,</p>
+<p>    PrivateKey:  os.Getenv(&quot;PSTN2<em>PRIVATE</em>KEY&quot;),</p>
+<p>    AuthMode:    types.AuthModeDirectQuery,</p>
+<p>    Timeout:     2 * time.Second,</p>
+<p>    Retries:     3,</p>
+<p>    LogLevel:    &quot;info&quot;,</p>
+<p>})</p>
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</p>
+<p>defer pstn2Client.Close()</code></pre></p>
+
+<h3 id="authentication-module">Authentication Module</h3>
+
+<pre><code class="language-go">// Verify call (Direct Query)
+<p>verification, err := pstn2Client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{</p>
+<p>    CallerID:      &quot;+441234567890&quot;,</p>
+<p>    CalledID:      &quot;+447700900123&quot;,</p>
+<p>    CallReference: &quot;abc-123-def-456&quot;,</p>
+<p>})</p>
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</p>
+
+<p>// Create token (Token Pool)</p>
+<p>token, err := pstn2Client.Auth().CreateToken(ctx, &amp;types.CreateTokenRequest{</p>
+<p>    CallerID:      &quot;+441234567890&quot;,</p>
+<p>    CalledID:      &quot;+447700900123&quot;,</p>
+<p>    CallReference: &quot;token-call-123&quot;,</p>
+<p>    TTL:           30, // seconds</p>
+<p>})</p>
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</p>
+
+<p>// Verify token</p>
+<p>verification, err := pstn2Client.Auth().VerifyToken(ctx, token.TokenID)</code></pre></p>
+
+<h3 id="routing-module">Routing Module</h3>
+
+<pre><code class="language-go">routing, err := pstn2Client.Routing().RequestRouting(ctx, &amp;types.RoutingRequest{
+<p>    DestinationNumber: &quot;+447700900123&quot;,</p>
+<p>    CallerID:          &quot;+441234567890&quot;,</p>
+<p>    CallReference:     &quot;xyz-789-abc-012&quot;,</p>
+<p>    MediaCapabilities: &amp;types.MediaCapabilities{</p>
+<p>        Codecs:       []string{&quot;opus&quot;, &quot;g722&quot;, &quot;pcmu&quot;},</p>
+<p>        Encryption:   []string{&quot;srtp-aes256&quot;, &quot;srtp-aes128&quot;},</p>
+<p>        Video:        false,</p>
+<p>        MaxBandwidth: 128000,</p>
+<p>    },</p>
+<p>    Branding: &amp;types.CallBranding{</p>
+<p>        DisplayName:     &quot;ACME Support&quot;,</p>
+<p>        Logo:            &quot;https://cdn.acme.com/logo.png&quot;,</p>
+<p>        BackgroundColor: &quot;#0066cc&quot;,</p>
+<p>        CallPurpose:     &quot;Account Security Alert&quot;,</p>
+<p>    },</p>
+<p>})</p>
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</code></pre></p>
+
+<h3 id="directory-module">Directory Module</h3>
+
+<pre><code class="language-go">// Lookup number
+<p>cpInfo, err := pstn2Client.Directory().Lookup(ctx, &quot;+441234567890&quot;)</p>
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</p>
+<p>fmt.Printf(&quot;Hosted by: %s\n&quot;, cpInfo.CPID)</p>
+
+<p>// Reverse lookup</p>
+<p>ranges, err := pstn2Client.Directory().Reverse(ctx, &quot;CP1-UK-0001&quot;)</code></pre></p>
+
+<h3 id="emergency-module">Emergency Module</h3>
+
+<pre><code class="language-go">// Get caller location (PSAP only)
+<p>location, err := pstn2Client.Emergency().GetLocation(ctx, &amp;types.LocationRequest{</p>
+<p>    CallerID:      &quot;+441234567890&quot;,</p>
+<p>    CallReference: &quot;emergency-456-789&quot;,</p>
+<p>    PSAPID:        &quot;UK-999-LONDON-CENTRAL&quot;,</p>
+<p>})</p>
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</p>
+
+<p>fmt.Printf(&quot;GPS: %.6f, %.6f\n&quot;, location.Location.Latitude, location.Location.Longitude)</p>
+<p>fmt.Printf(&quot;Accuracy: %.1fm\n&quot;, location.Location.Accuracy)</code></pre></p>
+
+<h2 id="error-handling">Error Handling</h2>
+
+<pre><code class="language-go">import &quot;github.com/pstn2/pstn2-go/pkg/errors&quot;
+
+<p>verification, err := pstn2Client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{...})</p>
+<p>if err != nil {</p>
+<p>    switch {</p>
+<p>    case errors.IsAuthenticationError(err):</p>
+<p>        fmt.Printf(&quot;Authentication failed: %v\n&quot;, err)</p>
+<p>    case errors.IsNetworkError(err):</p>
+<p>        fmt.Printf(&quot;Network error: %v\n&quot;, err)</p>
+<p>    case errors.IsTimeout(err):</p>
+<p>        fmt.Printf(&quot;Request timeout: %v\n&quot;, err)</p>
+<p>    default:</p>
+<p>        fmt.Printf(&quot;Error: %v\n&quot;, err)</p>
+<p>    }</p>
+<p>    return err</p>
+<p>}</code></pre></p>
+
+<h2 id="best-practices">Best Practices</h2>
+
+<h3 id="1-use-context">1. Use Context</h3>
+
+<pre><code class="language-go">// ✅ Good - pass context for cancellation and timeouts
+<p>ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)</p>
+<p>defer cancel()</p>
+
+<p>verification, err := client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{...})</code></pre></p>
+
+<h3 id="2-always-close-clients">2. Always Close Clients</h3>
+
+<pre><code class="language-go">pstn2Client, err := client.NewClient(&amp;client.Config{...})
+<p>if err != nil {</p>
+<p>    return err</p>
+<p>}</p>
+<p>defer pstn2Client.Close()</code></pre></p>
+
+<h3 id="3-use-environment-variables">3. Use Environment Variables</h3>
+
+<pre><code class="language-go">// ✅ Good
+<p>privateKey := os.Getenv(&quot;PSTN2<em>PRIVATE</em>KEY&quot;)</p>
+
+<p>// ❌ Bad</p>
+<p>privateKey := &quot;hardcoded-key&quot;</code></pre></p>
+
+<h3 id="4-handle-errors-gracefully">4. Handle Errors Gracefully</h3>
+
+<pre><code class="language-go">routing, err := pstn2Client.Routing().RequestRouting(ctx, &amp;types.RoutingRequest{...})
+<p>if err != nil {</p>
+<p>    log.Printf(&quot;PSTN2 routing failed: %v, falling back to PSTN&quot;, err)</p>
+<p>    return fallbackToPSTN(...)</p>
+<p>}</p>
+
+<p>if !routing.Accepted {</p>
+<p>    log.Printf(&quot;Routing rejected: %s&quot;, routing.Reason)</p>
+<p>    return fallbackToPSTN(...)</p>
+<p>}</p>
+
+<p>// Use PSTN2 routing</p>
+<p>return connectDirectly(routing.ConnectionDetails)</code></pre></p>
+
+<h2 id="integration-examples">Integration Examples</h2>
+
+<h3 id="http-server-integration">HTTP Server Integration</h3>
+
+<pre><code class="language-go">package main
+
+<p>import (</p>
+<p>    &quot;context&quot;</p>
+<p>    &quot;encoding/json&quot;</p>
+<p>    &quot;net/http&quot;</p>
+<p>    &quot;os&quot;</p>
+<p>    &quot;time&quot;</p>
+
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/client&quot;</p>
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/types&quot;</p>
+<p>)</p>
+
+<p>var pstn2Client *client.Client</p>
+
+<p>func main() {</p>
+<p>    var err error</p>
+<p>    pstn2Client, err = client.NewClient(&amp;client.Config{</p>
+<p>        CPID:        os.Getenv(&quot;PSTN2<em>CP</em>ID&quot;),</p>
+<p>        APIEndpoint: os.Getenv(&quot;PSTN2<em>API</em>ENDPOINT&quot;),</p>
+<p>        PrivateKey:  os.Getenv(&quot;PSTN2<em>PRIVATE</em>KEY&quot;),</p>
+<p>        AuthMode:    types.AuthModeDirectQuery,</p>
+<p>    })</p>
+<p>    if err != nil {</p>
+<p>        panic(err)</p>
+<p>    }</p>
+<p>    defer pstn2Client.Close()</p>
+
+<p>    http.HandleFunc(&quot;/api/verify-call&quot;, verifyCallHandler)</p>
+<p>    http.ListenAndServe(&quot;:8080&quot;, nil)</p>
+<p>}</p>
+
+<p>func verifyCallHandler(w http.ResponseWriter, r *http.Request) {</p>
+<p>    var req types.VerifyCallRequest</p>
+<p>    if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil {</p>
+<p>        http.Error(w, err.Error(), http.StatusBadRequest)</p>
+<p>        return</p>
+<p>    }</p>
+
+<p>    ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)</p>
+<p>    defer cancel()</p>
+
+<p>    verification, err := pstn2Client.Auth().VerifyCall(ctx, &amp;req)</p>
+<p>    if err != nil {</p>
+<p>        http.Error(w, err.Error(), http.StatusInternalServerError)</p>
+<p>        return</p>
+<p>    }</p>
+
+<p>    json.NewEncoder(w).Encode(verification)</p>
+<p>}</code></pre></p>
+
+<h3 id="grpc-service-integration">gRPC Service Integration</h3>
+
+<pre><code class="language-go">type callService struct {
+<p>    pstn2Client *client.Client</p>
+<p>}</p>
+
+<p>func (s <em>callService) VerifyCall(ctx context.Context, req </em>pb.VerifyCallRequest) (*pb.VerifyCallResponse, error) {</p>
+<p>    verification, err := s.pstn2Client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{</p>
+<p>        CallerID:      req.CallerId,</p>
+<p>        CalledID:      req.CalledId,</p>
+<p>        CallReference: req.CallReference,</p>
+<p>    })</p>
+<p>    if err != nil {</p>
+<p>        return nil, err</p>
+<p>    }</p>
+
+<p>    return &amp;pb.VerifyCallResponse{</p>
+<p>        Verified:   verification.Verified,</p>
+<p>        CallerName: verification.CallerName,</p>
+<p>        TrustLevel: string(verification.TrustLevel),</p>
+<p>    }, nil</p>
+<p>}</code></pre></p>
+
+<h2 id="testing">Testing</h2>
+
+<h3 id="unit-tests">Unit Tests</h3>
+
+<pre><code class="language-go">package main
+
+<p>import (</p>
+<p>    &quot;context&quot;</p>
+<p>    &quot;testing&quot;</p>
+
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/client&quot;</p>
+<p>    &quot;github.com/pstn2/pstn2-go/pkg/types&quot;</p>
+<p>)</p>
+
+<p>func TestVerifyCall(t *testing.T) {</p>
+<p>    ctx := context.Background()</p>
+
+<p>    pstn2Client, err := client.NewClient(&amp;client.Config{</p>
+<p>        CPID:        &quot;TEST-CP-001&quot;,</p>
+<p>        APIEndpoint: &quot;https://test.example.com&quot;,</p>
+<p>        PrivateKey:  &quot;test-key&quot;,</p>
+<p>        AuthMode:    types.AuthModeDirectQuery,</p>
+<p>    })</p>
+<p>    if err != nil {</p>
+<p>        t.Fatal(err)</p>
+<p>    }</p>
+<p>    defer pstn2Client.Close()</p>
+
+<p>    verification, err := pstn2Client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{</p>
+<p>        CallerID:      &quot;+441234567890&quot;,</p>
+<p>        CalledID:      &quot;+447700900123&quot;,</p>
+<p>        CallReference: &quot;test-123&quot;,</p>
+<p>    })</p>
+<p>    if err != nil {</p>
+<p>        t.Fatal(err)</p>
+<p>    }</p>
+
+<p>    if !verification.Verified {</p>
+<p>        t.Error(&quot;Expected call to be verified&quot;)</p>
+<p>    }</p>
+<p>}</code></pre></p>
+
+<h3 id="benchmark-tests">Benchmark Tests</h3>
+
+<pre><code class="language-go">func BenchmarkVerifyCall(b *testing.B) {
+<p>    ctx := context.Background()</p>
+<p>    pstn2Client, _ := client.NewClient(&amp;client.Config{...})</p>
+<p>    defer pstn2Client.Close()</p>
+
+<p>    req := &amp;types.VerifyCallRequest{</p>
+<p>        CallerID:      &quot;+441234567890&quot;,</p>
+<p>        CalledID:      &quot;+447700900123&quot;,</p>
+<p>        CallReference: &quot;bench-test&quot;,</p>
+<p>    }</p>
+
+<p>    b.ResetTimer()</p>
+<p>    for i := 0; i &lt; b.N; i++ {</p>
+<p>        _, err := pstn2Client.Auth().VerifyCall(ctx, req)</p>
+<p>        if err != nil {</p>
+<p>            b.Fatal(err)</p>
+<p>        }</p>
+<p>    }</p>
+<p>}</code></pre></p>
+
+<h2 id="performance-tips">Performance Tips</h2>
+
+<ul>
+<li><strong>Reuse Client Instances</strong>: Create one client instance and reuse it</li>
+<li><strong>Use Connection Pooling</strong>: The SDK automatically pools HTTP connections</li>
+<li><strong>Leverage Goroutines</strong>: Make concurrent calls when appropriate</li>
+<li><strong>Set Appropriate Timeouts</strong>: Use context timeouts for better control</li>
+<li><strong>Cache Directory Results</strong>: Store CP lookups with TTL</li>
+</ul>
+
+<h2 id="examples">Examples</h2>
+
+<p>See the <code>examples/</code> directory for complete working examples:</p>
+
+<ul>
+<li><code>01-basic-authentication.go</code> - Basic authentication flow</li>
+<li><code>02-direct-routing.go</code> - Direct routing with media negotiation</li>
+<li><code>03-token-pool.go</code> - Token Pool authentication</li>
+<li><code>04-emergency-services.go</code> - Emergency location services</li>
+<li><code>05-complete-call-flow.go</code> - End-to-end call scenario</li>
+</ul>
+
+<p>See <a href="../EXAMPLES.md">EXAMPLES.md</a> for detailed documentation.</p>
+
+<h2 id="further-reading">Further Reading</h2>
+
+<ul>
+<li><a href="../../SPECIFICATION.md">SPECIFICATION.md</a> - PSTN2 protocol specification</li>
+<li><a href="../../API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> - REST API documentation</li>
+<li><a href="../../IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> - Implementation patterns</li>
+</ul>
+
+<h2 id="license">License</h2>
+
+<p>See main project LICENSE file.</p>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 Implementation Guide | PSTN2</title>
+    <link rel="stylesheet" href="../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        <h1>PSTN2 Implementation Guide</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#table-of-contents">Table of Contents</a>
+                <a href="#1-getting-started">1. Getting Started</a>
+                <a href="#2-architecture-patterns">2. Architecture Patterns</a>
+                <a href="#3-typescript-implementation">3. TypeScript Implementation</a>
+                <a href="#4-python-implementation">4. Python Implementation</a>
+                <a href="#5-go-implementation">5. Go Implementation</a>
+                <a href="#6-testing-strategy">6. Testing Strategy</a>
+                <a href="#7-deployment-guide">7. Deployment Guide</a>
+                <a href="#8-performance-optimization">8. Performance Optimization</a>
+                <a href="#9-security-checklist">9. Security Checklist</a>
+                <a href="#10-common-pitfalls">10. Common Pitfalls</a>
+                <a href="#appendix-configuration-examples">Appendix: Configuration Examples</a>
+                <a href="IMPLEMENTATION-GUIDE.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="pstn2-implementation-guide">PSTN2 Implementation Guide</h1>
+
+<p><strong>Version:</strong> 1.0</p>
+<p><strong>Last Updated:</strong> 2025-11-30</p>
+<p><strong>Target Audience:</strong> Software engineers implementing PSTN2 clients/servers</p>
+
+<p>---</p>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ul>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#architecture-patterns">Architecture Patterns</a></li>
+<li><a href="#typescript-implementation">TypeScript Implementation</a></li>
+<li><a href="#python-implementation">Python Implementation</a></li>
+<li><a href="#go-implementation">Go Implementation</a></li>
+<li><a href="#testing-strategy">Testing Strategy</a></li>
+<li><a href="#deployment-guide">Deployment Guide</a></li>
+<li><a href="#performance-optimization">Performance Optimization</a></li>
+<li><a href="#security-checklist">Security Checklist</a></li>
+<li><a href="#common-pitfalls">Common Pitfalls</a></li>
+</ul>
+
+<p>---</p>
+
+<h2 id="1-getting-started">1. Getting Started</h2>
+
+<h3 id="1-1-prerequisites">1.1 Prerequisites</h3>
+
+<strong>Knowledge Required:</strong>
+<ul>
+<li>RESTful API design</li>
+<li>Cryptographic signatures (Ed25519)</li>
+<li>TLS/HTTPS</li>
+<li>Async/await patterns</li>
+<li>Error handling strategies</li>
+</ul>
+
+<strong>Infrastructure:</strong>
+<ul>
+<li>TLS certificate (Let's Encrypt recommended)</li>
+<li>Public IP address with DNS</li>
+<li>Key management system (AWS KMS, HashiCorp Vault, etc.)</li>
+<li>Logging infrastructure (ELK, Datadog, etc.)</li>
+</ul>
+
+<h3 id="1-2-quick-start-checklist">1.2 Quick Start Checklist</h3>
+
+<ul>
+<li>[ ] Generate Ed25519 key pair</li>
+<li>[ ] Register RCPID with regulator</li>
+<li>[ ] Set up TLS endpoints</li>
+<li>[ ] Implement authentication API</li>
+<li>[ ] Implement routing API</li>
+<li>[ ] Cache directory locally</li>
+<li>[ ] Set up monitoring/alerting</li>
+<li>[ ] Test with other CPs</li>
+<li>[ ] Deploy with fallback to traditional PSTN</li>
+</ul>
+
+<h3 id="1-3-development-environment">1.3 Development Environment</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;clone-reference-implementations&quot;&gt;Clone reference implementations&lt;/h1&gt;
+<p>git clone https://github.com/pstn2/pstn2.git</p>
+<p>cd pstn2/code</p>
+
+<p>&lt;h1 id=&quot;typescript&quot;&gt;TypeScript&lt;/h1&gt;</p>
+<p>cd typescript</p>
+<p>npm install</p>
+<p>npm run build</p>
+<p>npm test</p>
+
+<p>&lt;h1 id=&quot;python&quot;&gt;Python&lt;/h1&gt;</p>
+<p>cd python</p>
+<p>pip install -r requirements.txt</p>
+<p>pytest</p>
+
+<p>&lt;h1 id=&quot;go&quot;&gt;Go&lt;/h1&gt;</p>
+<p>cd go</p>
+<p>go mod download</p>
+<p>go test ./...</code></pre></p>
+
+<p>---</p>
+
+<h2 id="2-architecture-patterns">2. Architecture Patterns</h2>
+
+<h3 id="2-1-client-library-structure">2.1 Client Library Structure</h3>
+
+<strong>Recommended Module Structure:</strong>
+<pre><code class="language-">pstn2-client/
+<p>├── src/</p>
+<p>│   ├── client.{ts,py,go}          # Main client class</p>
+<p>│   ├── types.{ts,py,go}           # Type definitions</p>
+<p>│   ├── errors.{ts,py,go}          # Error classes</p>
+<p>│   ├── auth/                      # Authentication module</p>
+<p>│   │   ├── direct-query.{...}</p>
+<p>│   │   └── token-pool.{...}</p>
+<p>│   ├── routing/                   # Routing module</p>
+<p>│   ├── encryption/                # Encryption utilities</p>
+<p>│   ├── emergency/                 # Emergency services</p>
+<p>│   ├── directory/                 # Directory cache</p>
+<p>│   ├── messaging/                 # HTTP client with retry</p>
+<p>│   └── utils/</p>
+<p>│       ├── crypto.{...}           # Cryptographic functions</p>
+<p>│       └── logger.{...}           # Logging utilities</p>
+<p>├── examples/                      # Usage examples</p>
+<p>├── tests/                         # Test suite</p>
+<p>└── docs/                          # API documentation</code></pre></p>
+
+<h3 id="2-2-server-implementation-structure">2.2 Server Implementation Structure</h3>
+
+<strong>Recommended Server Structure:</strong>
+<pre><code class="language-">pstn2-server/
+<p>├── src/</p>
+<p>│   ├── server.{ts,py,go}          # HTTP server setup</p>
+<p>│   ├── routes/                    # API route handlers</p>
+<p>│   │   ├── auth.{...}</p>
+<p>│   │   ├── routing.{...}</p>
+<p>│   │   ├── emergency.{...}</p>
+<p>│   │   └── directory.{...}</p>
+<p>│   ├── middleware/                # Authentication, rate limiting</p>
+<p>│   ├── models/                    # Data models</p>
+<p>│   ├── services/                  # Business logic</p>
+<p>│   │   ├── call-records.{...}    # Track active calls</p>
+<p>│   │   ├── directory-sync.{...}  # Sync with other CPs</p>
+<p>│   │   └── location.{...}        # Location services</p>
+<p>│   └── utils/</p>
+<p>│       ├── validation.{...}       # Request validation</p>
+<p>│       └── signing.{...}          # Signature verification</p>
+<p>├── config/                        # Configuration files</p>
+<p>├── migrations/                    # Database migrations</p>
+<p>└── tests/                         # Integration tests</code></pre></p>
+
+<h3 id="2-3-design-patterns">2.3 Design Patterns</h3>
+
+<h4 id="2-3-1-retry-with-exponential-backoff">2.3.1 Retry with Exponential Backoff</h4>
+
+<pre><code class="language-typescript">// TypeScript
+<p>async function retryWithBackoff&lt;T&gt;(</p>
+<p>  fn: () =&gt; Promise&lt;T&gt;,</p>
+<p>  maxRetries: number = 3,</p>
+<p>  baseDelay: number = 100</p>
+<p>): Promise&lt;T&gt; {</p>
+<p>  for (let i = 0; i &lt; maxRetries; i++) {</p>
+<p>    try {</p>
+<p>      return await fn();</p>
+<p>    } catch (error) {</p>
+<p>      if (i === maxRetries - 1) throw error;</p>
+<p>      if (!isRetryable(error)) throw error;</p>
+
+<p>      const delay = baseDelay * Math.pow(2, i);</p>
+<p>      await sleep(delay);</p>
+<p>    }</p>
+<p>  }</p>
+<p>  throw new Error(&#039;Max retries exceeded&#039;);</p>
+<p>}</code></pre></p>
+
+<pre><code class="language-python">&lt;h1 id=&quot;python&quot;&gt;Python&lt;/h1&gt;
+<p>import asyncio</p>
+<p>from typing import TypeVar, Callable</p>
+
+<p>T = TypeVar(&#039;T&#039;)</p>
+
+<p>async def retry<em>with</em>backoff(</p>
+<p>    fn: Callable[[], T],</p>
+<p>    max_retries: int = 3,</p>
+<p>    base_delay: float = 0.1</p>
+<p>) -&gt; T:</p>
+<p>    for i in range(max_retries):</p>
+<p>        try:</p>
+<p>            return await fn()</p>
+<p>        except Exception as e:</p>
+<p>            if i == max_retries - 1:</p>
+<p>                raise</p>
+<p>            if not is_retryable(e):</p>
+<p>                raise</p>
+
+<p>            delay = base_delay <em> (2 </em>* i)</p>
+<p>            await asyncio.sleep(delay)</code></pre></p>
+
+<pre><code class="language-go">// Go
+<p>func retryWithBackoff(</p>
+<p>    fn func() error,</p>
+<p>    maxRetries int,</p>
+<p>    baseDelay time.Duration,</p>
+<p>) error {</p>
+<p>    for i := 0; i &lt; maxRetries; i++ {</p>
+<p>        err := fn()</p>
+<p>        if err == nil {</p>
+<p>            return nil</p>
+<p>        }</p>
+
+<p>        if i == maxRetries-1 {</p>
+<p>            return err</p>
+<p>        }</p>
+<p>        if !isRetryable(err) {</p>
+<p>            return err</p>
+<p>        }</p>
+
+<p>        delay := baseDelay * time.Duration(1&lt;&lt;uint(i))</p>
+<p>        time.Sleep(delay)</p>
+<p>    }</p>
+<p>    return errors.New(&quot;max retries exceeded&quot;)</p>
+<p>}</code></pre></p>
+
+<h4 id="2-3-2-porting-chain-resolution">2.3.2 Porting Chain Resolution</h4>
+
+<pre><code class="language-typescript">// TypeScript
+<p>async function resolvePortingChain(</p>
+<p>  phoneNumber: string,</p>
+<p>  maxHops: number = 5</p>
+<p>): Promise&lt;{ cpId: string; endpoint: string; chain: string[] }&gt; {</p>
+<p>  const chain: string[] = [];</p>
+<p>  let currentCP = await directory.lookup(phoneNumber);</p>
+
+<p>  while (chain.length &lt; maxHops) {</p>
+<p>    chain.push(currentCP.cpId);</p>
+
+<p>    const portingInfo = await checkPorting(currentCP, phoneNumber);</p>
+<p>    if (!portingInfo.ported) {</p>
+<p>      return { cpId: currentCP.cpId, endpoint: currentCP.endpoint, chain };</p>
+<p>    }</p>
+
+<p>    currentCP = await directory.lookup(phoneNumber, portingInfo.currentHolder);</p>
+<p>  }</p>
+
+<p>  throw new Error(&#039;Porting chain too long (possible loop)&#039;);</p>
+<p>}</code></pre></p>
+
+<h4 id="2-3-3-circuit-breaker-pattern">2.3.3 Circuit Breaker Pattern</h4>
+
+<pre><code class="language-typescript">class CircuitBreaker {
+<p>  private failures = 0;</p>
+<p>  private lastFailTime = 0;</p>
+<p>  private state: &#039;closed&#039; | &#039;open&#039; | &#039;half-open&#039; = &#039;closed&#039;;</p>
+
+<p>  constructor(</p>
+<p>    private threshold: number = 5,</p>
+<p>    private timeout: number = 30000</p>
+<p>  ) {}</p>
+
+<p>  async execute&lt;T&gt;(fn: () =&gt; Promise&lt;T&gt;): Promise&lt;T&gt; {</p>
+<p>    if (this.state === &#039;open&#039;) {</p>
+<p>      if (Date.now() - this.lastFailTime &gt; this.timeout) {</p>
+<p>        this.state = &#039;half-open&#039;;</p>
+<p>      } else {</p>
+<p>        throw new Error(&#039;Circuit breaker is OPEN&#039;);</p>
+<p>      }</p>
+<p>    }</p>
+
+<p>    try {</p>
+<p>      const result = await fn();</p>
+<p>      this.onSuccess();</p>
+<p>      return result;</p>
+<p>    } catch (error) {</p>
+<p>      this.onFailure();</p>
+<p>      throw error;</p>
+<p>    }</p>
+<p>  }</p>
+
+<p>  private onSuccess() {</p>
+<p>    this.failures = 0;</p>
+<p>    this.state = &#039;closed&#039;;</p>
+<p>  }</p>
+
+<p>  private onFailure() {</p>
+<p>    this.failures++;</p>
+<p>    this.lastFailTime = Date.now();</p>
+
+<p>    if (this.failures &gt;= this.threshold) {</p>
+<p>      this.state = &#039;open&#039;;</p>
+<p>    }</p>
+<p>  }</p>
+<p>}</code></pre></p>
+
+<p>---</p>
+
+<h2 id="3-typescript-implementation">3. TypeScript Implementation</h2>
+
+<h3 id="3-1-project-setup">3.1 Project Setup</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;initialize-project&quot;&gt;Initialize project&lt;/h1&gt;
+<p>mkdir pstn2-typescript &amp;&amp; cd pstn2-typescript</p>
+<p>npm init -y</p>
+
+<p>&lt;h1 id=&quot;install-dependencies&quot;&gt;Install dependencies&lt;/h1&gt;</p>
+<p>npm install --save \</p>
+<p>  axios axios-retry \</p>
+<p>  joi \</p>
+<p>  redis \</p>
+<p>  uuid \</p>
+<p>  winston</p>
+
+<p>npm install --save-dev \</p>
+<p>  @types/node \</p>
+<p>  @types/jest \</p>
+<p>  @types/uuid \</p>
+<p>  typescript \</p>
+<p>  ts-jest \</p>
+<p>  jest \</p>
+<p>  eslint \</p>
+<p>  prettier</code></pre></p>
+
+<h3 id="3-2-typescript-configuration">3.2 TypeScript Configuration</h3>
+
+<strong>tsconfig.json:</strong>
+<pre><code class="language-json">{
+<p>  &quot;compilerOptions&quot;: {</p>
+<p>    &quot;target&quot;: &quot;ES2020&quot;,</p>
+<p>    &quot;module&quot;: &quot;commonjs&quot;,</p>
+<p>    &quot;lib&quot;: [&quot;ES2020&quot;],</p>
+<p>    &quot;outDir&quot;: &quot;./dist&quot;,</p>
+<p>    &quot;rootDir&quot;: &quot;./src&quot;,</p>
+<p>    &quot;strict&quot;: true,</p>
+<p>    &quot;esModuleInterop&quot;: true,</p>
+<p>    &quot;skipLibCheck&quot;: true,</p>
+<p>    &quot;forceConsistentCasingInFileNames&quot;: true,</p>
+<p>    &quot;declaration&quot;: true,</p>
+<p>    &quot;declarationMap&quot;: true,</p>
+<p>    &quot;sourceMap&quot;: true,</p>
+<p>    &quot;moduleResolution&quot;: &quot;node&quot;,</p>
+<p>    &quot;resolveJsonModule&quot;: true,</p>
+<p>    &quot;types&quot;: [&quot;node&quot;, &quot;jest&quot;]</p>
+<p>  },</p>
+<p>  &quot;include&quot;: [&quot;src/<em>*/</em>&quot;],</p>
+<p>  &quot;exclude&quot;: [&quot;node_modules&quot;, &quot;dist&quot;, &quot;<em>*/</em>.test.ts&quot;]</p>
+<p>}</code></pre></p>
+
+<h3 id="3-3-core-client-implementation">3.3 Core Client Implementation</h3>
+
+<pre><code class="language-typescript">// src/client.ts
+<p>import { AuthenticationModule } from &#039;./auth&#039;;</p>
+<p>import { RoutingModule } from &#039;./routing&#039;;</p>
+<p>import { DirectoryModule } from &#039;./directory&#039;;</p>
+<p>import { PSTN2Config } from &#039;./types&#039;;</p>
+
+<p>export class PSTN2Client {</p>
+<p>  public readonly auth: AuthenticationModule;</p>
+<p>  public readonly routing: RoutingModule;</p>
+<p>  public readonly directory: DirectoryModule;</p>
+
+<p>  constructor(private config: PSTN2Config) {</p>
+<p>    // Validate configuration</p>
+<p>    this.validateConfig();</p>
+
+<p>    // Initialize modules</p>
+<p>    this.directory = new DirectoryModule(config);</p>
+<p>    this.auth = new AuthenticationModule(config, this.directory);</p>
+<p>    this.routing = new RoutingModule(config, this.directory);</p>
+
+<p>    // Start background tasks</p>
+<p>    this.startDirectorySync();</p>
+<p>  }</p>
+
+<p>  private validateConfig(): void {</p>
+<p>    if (!this.config.cpId) {</p>
+<p>      throw new Error(&#039;cpId is required&#039;);</p>
+<p>    }</p>
+<p>    if (!/^CP[12]-[A-Z]{2}-\d{4}$/.test(this.config.cpId)) {</p>
+<p>      throw new Error(&#039;Invalid cpId format&#039;);</p>
+<p>    }</p>
+<p>    // ... more validation</p>
+<p>  }</p>
+
+<p>  private startDirectorySync(): void {</p>
+<p>    // Sync directory every hour</p>
+<p>    setInterval(() =&gt; {</p>
+<p>      this.directory.sync().catch(console.error);</p>
+<p>    }, 3600000);</p>
+<p>  }</p>
+
+<p>  async close(): Promise&lt;void&gt; {</p>
+<p>    // Cleanup resources</p>
+<p>    await this.directory.close();</p>
+<p>  }</p>
+<p>}</code></pre></p>
+
+<h3 id="3-4-testing-strategy">3.4 Testing Strategy</h3>
+
+<pre><code class="language-typescript">// src/client.test.ts
+<p>import { PSTN2Client } from &#039;./client&#039;;</p>
+<p>import { AuthenticationMode } from &#039;./types&#039;;</p>
+
+<p>describe(&#039;PSTN2Client&#039;, () =&gt; {</p>
+<p>  let client: PSTN2Client;</p>
+
+<p>  beforeEach(() =&gt; {</p>
+<p>    client = new PSTN2Client({</p>
+<p>      cpId: &#039;CP1-UK-0001&#039;,</p>
+<p>      apiEndpoint: &#039;https://api.test.example.com&#039;,</p>
+<p>      privateKey: &#039;test-private-key&#039;,</p>
+<p>      authMode: AuthenticationMode.DirectQuery,</p>
+<p>    });</p>
+<p>  });</p>
+
+<p>  afterEach(async () =&gt; {</p>
+<p>    await client.close();</p>
+<p>  });</p>
+
+<p>  describe(&#039;verifyCall&#039;, () =&gt; {</p>
+<p>    it(&#039;should verify legitimate call&#039;, async () =&gt; {</p>
+<p>      const result = await client.auth.verifyCall({</p>
+<p>        callerID: &#039;+441234567890&#039;,</p>
+<p>        calledID: &#039;+447700900123&#039;,</p>
+<p>        callReference: &#039;test-123&#039;,</p>
+<p>      });</p>
+
+<p>      expect(result.verified).toBe(true);</p>
+<p>    });</p>
+
+<p>    it(&#039;should reject fraudulent call&#039;, async () =&gt; {</p>
+<p>      const result = await client.auth.verifyCall({</p>
+<p>        callerID: &#039;+441234567890&#039;,</p>
+<p>        calledID: &#039;+447700900123&#039;,</p>
+<p>        callReference: &#039;fraud-456&#039;,</p>
+<p>      });</p>
+
+<p>      expect(result.verified).toBe(false);</p>
+<p>    });</p>
+<p>  });</p>
+<p>});</code></pre></p>
+
+<p>---</p>
+
+<h2 id="4-python-implementation">4. Python Implementation</h2>
+
+<h3 id="4-1-project-setup">4.1 Project Setup</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;create-virtual-environment&quot;&gt;Create virtual environment&lt;/h1&gt;
+<p>python -m venv venv</p>
+<p>source venv/bin/activate  # or <code>venv\Scripts\activate</code> on Windows</p>
+
+<p>&lt;h1 id=&quot;install-dependencies&quot;&gt;Install dependencies&lt;/h1&gt;</p>
+<p>pip install \</p>
+<p>  httpx \</p>
+<p>  pydantic \</p>
+<p>  cryptography \</p>
+<p>  redis \</p>
+<p>  structlog \</p>
+<p>  pytest \</p>
+<p>  pytest-asyncio</code></pre></p>
+
+<h3 id="4-2-project-structure">4.2 Project Structure</h3>
+
+<pre><code class="language-python">&lt;h1 id=&quot;pstn2-init-py&quot;&gt;pstn2/<strong>init</strong>.py&lt;/h1&gt;
+<p>from .client import PSTN2Client</p>
+<p>from .types import AuthenticationMode, PhoneNumber, RCPID</p>
+<p>from .errors import PSTN2Error, CallNotFoundError</p>
+
+<p><strong>all</strong> = [</p>
+<p>    &#039;PSTN2Client&#039;,</p>
+<p>    &#039;AuthenticationMode&#039;,</p>
+<p>    &#039;PhoneNumber&#039;,</p>
+<p>    &#039;RCPID&#039;,</p>
+<p>    &#039;PSTN2Error&#039;,</p>
+<p>    &#039;CallNotFoundError&#039;,</p>
+<p>]</p>
+
+<strong>version</strong> = &#039;1.0.0&#039;</code></pre>
+
+<h3 id="4-3-core-client-implementation">4.3 Core Client Implementation</h3>
+
+<pre><code class="language-python">&lt;h1 id=&quot;pstn2-client-py&quot;&gt;pstn2/client.py&lt;/h1&gt;
+<p>from typing import Optional</p>
+<p>import httpx</p>
+<p>from .auth import AuthenticationModule</p>
+<p>from .routing import RoutingModule</p>
+<p>from .directory import DirectoryModule</p>
+<p>from .types import PSTN2Config, PhoneNumber</p>
+
+<p>class PSTN2Client:</p>
+<p>    &quot;&quot;&quot;PSTN2 client for distributed telecommunications.&quot;&quot;&quot;</p>
+
+<p>    def <strong>init</strong>(self, config: PSTN2Config):</p>
+<p>        self.config = config</p>
+<p>        self.<em>validate</em>config()</p>
+
+<p>        # Initialize HTTP client</p>
+<p>        self.<em>http</em>client = httpx.AsyncClient(</p>
+<p>            timeout=config.timeout or 2.0,</p>
+<p>            verify=True,  # Always verify TLS</p>
+<p>        )</p>
+
+<p>        # Initialize modules</p>
+<p>        self.directory = DirectoryModule(config, self.<em>http</em>client)</p>
+<p>        self.auth = AuthenticationModule(config, self.<em>http</em>client, self.directory)</p>
+<p>        self.routing = RoutingModule(config, self.<em>http</em>client, self.directory)</p>
+
+<p>    def <em>validate</em>config(self) -&gt; None:</p>
+<p>        &quot;&quot;&quot;Validate configuration.&quot;&quot;&quot;</p>
+<p>        if not self.config.cp_id:</p>
+<p>            raise ValueError(&#039;cp_id is required&#039;)</p>
+<p>        # ... more validation</p>
+
+<p>    async def verify_call(</p>
+<p>        self,</p>
+<p>        caller_id: PhoneNumber,</p>
+<p>        called_id: PhoneNumber,</p>
+<p>        call_reference: str,</p>
+<p>    ) -&gt; dict:</p>
+<p>        &quot;&quot;&quot;Verify an inbound call.&quot;&quot;&quot;</p>
+<p>        return await self.auth.verify_call(</p>
+<p>            caller<em>id=caller</em>id,</p>
+<p>            called<em>id=called</em>id,</p>
+<p>            call<em>reference=call</em>reference,</p>
+<p>        )</p>
+
+<p>    async def close(self) -&gt; None:</p>
+<p>        &quot;&quot;&quot;Close HTTP client and cleanup resources.&quot;&quot;&quot;</p>
+<p>        await self.<em>http</em>client.aclose()</code></pre></p>
+
+<h3 id="4-4-type-definitions-with-pydantic">4.4 Type Definitions with Pydantic</h3>
+
+<pre><code class="language-python">&lt;h1 id=&quot;pstn2-types-py&quot;&gt;pstn2/types.py&lt;/h1&gt;
+<p>from pydantic import BaseModel, Field, validator</p>
+<p>from typing import Optional, List</p>
+<p>from enum import Enum</p>
+
+<p>class PhoneNumber(str):</p>
+<p>    &quot;&quot;&quot;E.164 formatted phone number.&quot;&quot;&quot;</p>
+
+<p>    @classmethod</p>
+<p>    def <strong>get_validators</strong>(cls):</p>
+<p>        yield cls.validate</p>
+
+<p>    @classmethod</p>
+<p>    def validate(cls, v):</p>
+<p>        if not isinstance(v, str):</p>
+<p>            raise TypeError(&#039;string required&#039;)</p>
+<p>        if not v.startswith(&#039;+&#039;):</p>
+<p>            raise ValueError(&#039;must start with +&#039;)</p>
+<p>        if not v[1:].isdigit():</p>
+<p>            raise ValueError(&#039;must contain only digits after +&#039;)</p>
+<p>        if len(v) &lt; 3 or len(v) &gt; 16:</p>
+<p>            raise ValueError(&#039;invalid length&#039;)</p>
+<p>        return cls(v)</p>
+
+<p>class AuthenticationMode(str, Enum):</p>
+<p>    DIRECT<em>QUERY = &#039;direct</em>query&#039;</p>
+<p>    TOKEN<em>POOL = &#039;token</em>pool&#039;</p>
+
+<p>class PSTN2Config(BaseModel):</p>
+<p>    cp_id: str = Field(..., regex=r&#039;^CP[12]-[A-Z]{2}-\d{4}$&#039;)</p>
+<p>    api_endpoint: str = Field(..., regex=r&#039;^https://&#039;)</p>
+<p>    private_key: str</p>
+<p>    auth_mode: AuthenticationMode</p>
+<p>    timeout: Optional[float] = 2.0</p>
+<p>    retries: Optional[int] = 3</p>
+
+<p>    class Config:</p>
+<p>        use<em>enum</em>values = True</code></pre></p>
+
+<p>---</p>
+
+<h2 id="5-go-implementation">5. Go Implementation</h2>
+
+<h3 id="5-1-project-setup">5.1 Project Setup</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;initialize-go-module&quot;&gt;Initialize Go module&lt;/h1&gt;
+<p>mkdir pstn2-go &amp;&amp; cd pstn2-go</p>
+<p>go mod init github.com/yourorg/pstn2</p>
+
+<p>&lt;h1 id=&quot;install-dependencies&quot;&gt;Install dependencies&lt;/h1&gt;</p>
+<p>go get github.com/go-chi/chi/v5</p>
+<p>go get github.com/go-redis/redis/v9</p>
+<p>go get golang.org/x/crypto/ed25519</p>
+<p>go get github.com/stretchr/testify</code></pre></p>
+
+<h3 id="5-2-project-structure">5.2 Project Structure</h3>
+
+<pre><code class="language-">pstn2/
+<p>├── go.mod</p>
+<p>├── go.sum</p>
+<p>├── cmd/</p>
+<p>│   └── pstn2-server/</p>
+<p>│       └── main.go</p>
+<p>├── pkg/</p>
+<p>│   └── pstn2/</p>
+<p>│       ├── client.go</p>
+<p>│       ├── types.go</p>
+<p>│       ├── errors.go</p>
+<p>│       ├── auth/</p>
+<p>│       ├── routing/</p>
+<p>│       └── directory/</p>
+<p>├── internal/</p>
+<p>│   └── server/</p>
+<p>│       ├── handlers.go</p>
+<p>│       └── middleware.go</p>
+<p>└── examples/</code></pre></p>
+
+<h3 id="5-3-core-client-implementation">5.3 Core Client Implementation</h3>
+
+<pre><code class="language-go">// pkg/pstn2/client.go
+<p>package pstn2</p>
+
+<p>import (</p>
+<p>	&quot;context&quot;</p>
+<p>	&quot;crypto/ed25519&quot;</p>
+<p>	&quot;net/http&quot;</p>
+<p>	&quot;time&quot;</p>
+<p>)</p>
+
+<p>type Config struct {</p>
+<p>	CPID          string</p>
+<p>	APIEndpoint   string</p>
+<p>	PrivateKey    ed25519.PrivateKey</p>
+<p>	AuthMode      AuthenticationMode</p>
+<p>	Timeout       time.Duration</p>
+<p>	Retries       int</p>
+<p>	LogLevel      string</p>
+<p>}</p>
+
+<p>type Client struct {</p>
+<p>	config      Config</p>
+<p>	httpClient  *http.Client</p>
+<p>	auth        *AuthModule</p>
+<p>	routing     *RoutingModule</p>
+<p>	directory   *DirectoryModule</p>
+<p>}</p>
+
+<p>func NewClient(config Config) (*Client, error) {</p>
+<p>	// Validate configuration</p>
+<p>	if err := validateConfig(config); err != nil {</p>
+<p>		return nil, err</p>
+<p>	}</p>
+
+<p>	// Create HTTP client</p>
+<p>	httpClient := &amp;http.Client{</p>
+<p>		Timeout: config.Timeout,</p>
+<p>		Transport: &amp;http.Transport{</p>
+<p>			MaxIdleConns:        100,</p>
+<p>			MaxIdleConnsPerHost: 10,</p>
+<p>			IdleConnTimeout:     90 * time.Second,</p>
+<p>		},</p>
+<p>	}</p>
+
+<p>	// Initialize modules</p>
+<p>	directory := NewDirectoryModule(config, httpClient)</p>
+<p>	auth := NewAuthModule(config, httpClient, directory)</p>
+<p>	routing := NewRoutingModule(config, httpClient, directory)</p>
+
+<p>	return &amp;Client{</p>
+<p>		config:     config,</p>
+<p>		httpClient: httpClient,</p>
+<p>		auth:       auth,</p>
+<p>		routing:    routing,</p>
+<p>		directory:  directory,</p>
+<p>	}, nil</p>
+<p>}</p>
+
+<p>func (c <em>Client) VerifyCall(ctx context.Context, req CallVerificationRequest) (</em>CallVerificationResponse, error) {</p>
+<p>	return c.auth.VerifyCall(ctx, req)</p>
+<p>}</p>
+
+<p>func (c *Client) Close() error {</p>
+<p>	c.httpClient.CloseIdleConnections()</p>
+<p>	return nil</p>
+<p>}</code></pre></p>
+
+<h3 id="5-4-type-definitions">5.4 Type Definitions</h3>
+
+<pre><code class="language-go">// pkg/pstn2/types.go
+<p>package pstn2</p>
+
+<p>import (</p>
+<p>	&quot;errors&quot;</p>
+<p>	&quot;regexp&quot;</p>
+<p>	&quot;time&quot;</p>
+<p>)</p>
+
+<p>type PhoneNumber string</p>
+
+<p>var phoneNumberRegex = regexp.MustCompile(<code>^\+[1-9]\d{1,14}$</code>)</p>
+
+<p>func (p PhoneNumber) Validate() error {</p>
+<p>	if !phoneNumberRegex.MatchString(string(p)) {</p>
+<p>		return errors.New(&quot;invalid phone number format&quot;)</p>
+<p>	}</p>
+<p>	return nil</p>
+<p>}</p>
+
+<p>type RCPID string</p>
+
+<p>var rcpidRegex = regexp.MustCompile(<code>^CP[12]-[A-Z]{2}-\d{4}$</code>)</p>
+
+<p>func (r RCPID) Validate() error {</p>
+<p>	if !rcpidRegex.MatchString(string(r)) {</p>
+<p>		return errors.New(&quot;invalid RCPID format&quot;)</p>
+<p>	}</p>
+<p>	return nil</p>
+<p>}</p>
+
+<p>type CallVerificationRequest struct {</p>
+<p>	MessageID     string      <code>json:&quot;messageId&quot;</code></p>
+<p>	Timestamp     time.Time   <code>json:&quot;timestamp&quot;</code></p>
+<p>	Version       string      <code>json:&quot;version&quot;</code></p>
+<p>	RequestingCP  RCPID       <code>json:&quot;requestingCP&quot;</code></p>
+<p>	CallerID      PhoneNumber <code>json:&quot;callerID&quot;</code></p>
+<p>	CalledID      PhoneNumber <code>json:&quot;calledID&quot;</code></p>
+<p>	CallReference string      <code>json:&quot;callReference&quot;</code></p>
+<p>	Signature     []byte      <code>json:&quot;signature&quot;</code></p>
+<p>}</p>
+
+<p>type CallVerificationResponse struct {</p>
+<p>	Verified      bool        <code>json:&quot;verified&quot;</code></p>
+<p>	CallReference string      <code>json:&quot;callReference&quot;</code></p>
+<p>	CallerName    string      <code>json:&quot;callerName,omitempty&quot;</code></p>
+<p>	CallerOrg     string      <code>json:&quot;callerOrg,omitempty&quot;</code></p>
+<p>	CallPurpose   string      <code>json:&quot;callPurpose,omitempty&quot;</code></p>
+<p>	TrustLevel    string      <code>json:&quot;trustLevel,omitempty&quot;</code></p>
+<p>	Timestamp     time.Time   <code>json:&quot;timestamp&quot;</code></p>
+<p>	Signature     []byte      <code>json:&quot;signature&quot;</code></p>
+<p>}</code></pre></p>
+
+<p>---</p>
+
+<h2 id="6-testing-strategy">6. Testing Strategy</h2>
+
+<h3 id="6-1-unit-testing">6.1 Unit Testing</h3>
+
+<p>Test individual modules in isolation with mocked dependencies.</p>
+
+<strong>Example (TypeScript/Jest):</strong>
+<pre><code class="language-typescript">describe(&#039;AuthenticationModule&#039;, () =&gt; {
+<p>  let auth: AuthenticationModule;</p>
+<p>  let mockHttp: jest.Mocked&lt;HttpClient&gt;;</p>
+<p>  let mockDirectory: jest.Mocked&lt;DirectoryModule&gt;;</p>
+
+<p>  beforeEach(() =&gt; {</p>
+<p>    mockHttp = createMockHttpClient();</p>
+<p>    mockDirectory = createMockDirectory();</p>
+<p>    auth = new AuthenticationModule(config, mockHttp, mockDirectory);</p>
+<p>  });</p>
+
+<p>  it(&#039;should verify call successfully&#039;, async () =&gt; {</p>
+<p>    mockHttp.post.mockResolvedValue({</p>
+<p>      verified: true,</p>
+<p>      callReference: &#039;test-123&#039;,</p>
+<p>    });</p>
+
+<p>    const result = await auth.verifyCall({</p>
+<p>      callerID: &#039;+441234567890&#039;,</p>
+<p>      calledID: &#039;+447700900123&#039;,</p>
+<p>      callReference: &#039;test-123&#039;,</p>
+<p>    });</p>
+
+<p>    expect(result.verified).toBe(true);</p>
+<p>    expect(mockHttp.post).toHaveBeenCalledWith(</p>
+<p>      expect.stringContaining(&#039;/auth/verify&#039;),</p>
+<p>      expect.any(Object)</p>
+<p>    );</p>
+<p>  });</p>
+<p>});</code></pre></p>
+
+<h3 id="6-2-integration-testing">6.2 Integration Testing</h3>
+
+<p>Test interactions between real CPs.</p>
+
+<strong>Test Environment Setup:</strong>
+<pre><code class="language-">Docker Compose with 3 mock CPs:
+<p>  CP1 (Port 8001)</p>
+<p>  CP2 (Port 8002)</p>
+<p>  CP3 (Port 8003)</p>
+
+<p>Test scenarios:</p>
+<p>  1. CP1 → CP2 authentication</p>
+<p>  2. Porting chain: CP1 → CP2 → CP3</p>
+<p>  3. Emergency location query</p>
+<p>  4. Directory synchronization</code></pre></p>
+
+<h3 id="6-3-load-testing">6.3 Load Testing</h3>
+
+<p>Use tools like k6, Artillery, or Locust.</p>
+
+<strong>Example k6 script:</strong>
+<pre><code class="language-javascript">import http from &#039;k6/http&#039;;
+<p>import { check } from &#039;k6&#039;;</p>
+
+<p>export let options = {</p>
+<p>  stages: [</p>
+<p>    { duration: &#039;1m&#039;, target: 100 },  // Ramp to 100 RPS</p>
+<p>    { duration: &#039;5m&#039;, target: 100 },  // Sustain 100 RPS</p>
+<p>    { duration: &#039;1m&#039;, target: 0 },    // Ramp down</p>
+<p>  ],</p>
+<p>  thresholds: {</p>
+<p>    http<em>req</em>duration: [&#039;p(95)&lt;100&#039;],  // 95% under 100ms</p>
+<p>  },</p>
+<p>};</p>
+
+<p>export default function() {</p>
+<p>  const payload = JSON.stringify({</p>
+<p>    messageId: &#039;123&#039;,</p>
+<p>    timestamp: new Date().toISOString(),</p>
+<p>    requestingCP: &#039;CP1-UK-0001&#039;,</p>
+<p>    callerID: &#039;+441234567890&#039;,</p>
+<p>    calledID: &#039;+447700900123&#039;,</p>
+<p>    callReference: <code>test-${<strong>VU}-${</strong>ITER}</code>,</p>
+<p>  });</p>
+
+<p>  const response = http.post(</p>
+<p>    &#039;https://api.cp2.example.com/pstn2/v1/auth/verify&#039;,</p>
+<p>    payload,</p>
+<p>    {</p>
+<p>      headers: { &#039;Content-Type&#039;: &#039;application/json&#039; },</p>
+<p>    }</p>
+<p>  );</p>
+
+<p>  check(response, {</p>
+<p>    &#039;status is 200&#039;: (r) =&gt; r.status === 200,</p>
+<p>    &#039;response time OK&#039;: (r) =&gt; r.timings.duration &lt; 100,</p>
+<p>  });</p>
+<p>}</code></pre></p>
+
+<p>---</p>
+
+<h2 id="7-deployment-guide">7. Deployment Guide</h2>
+
+<h3 id="7-1-production-checklist">7.1 Production Checklist</h3>
+
+<ul>
+<li>[ ] TLS certificate installed and valid</li>
+<li>[ ] DNS records configured (A/AAAA)</li>
+<li>[ ] Firewall rules allow inbound 443</li>
+<li>[ ] Keys stored in secure key management system</li>
+<li>[ ] Monitoring/alerting configured</li>
+<li>[ ] Log aggregation set up</li>
+<li>[ ] Rate limiting configured</li>
+<li>[ ] DDoS protection active</li>
+<li>[ ] Backup/disaster recovery plan</li>
+<li>[ ] Tested failover to traditional PSTN</li>
+</ul>
+
+<h3 id="7-2-docker-deployment">7.2 Docker Deployment</h3>
+
+<strong>Dockerfile:</strong>
+<pre><code class="language-dockerfile">FROM node:18-alpine AS builder
+<p>WORKDIR /app</p>
+<p>COPY package*.json ./</p>
+<p>RUN npm ci --only=production</p>
+<p>COPY . .</p>
+<p>RUN npm run build</p>
+
+<p>FROM node:18-alpine</p>
+<p>WORKDIR /app</p>
+<p>COPY --from=builder /app/dist ./dist</p>
+<p>COPY --from=builder /app/node<em>modules ./node</em>modules</p>
+<p>COPY package.json ./</p>
+
+<p>ENV NODE_ENV=production</p>
+<p>EXPOSE 443</p>
+
+<p>CMD [&quot;node&quot;, &quot;dist/server.js&quot;]</code></pre></p>
+
+<strong>docker-compose.yml:</strong>
+<pre><code class="language-yaml">version: &#039;3.8&#039;
+
+<p>services:</p>
+<p>  pstn2-server:</p>
+<p>    build: .</p>
+<p>    ports:</p>
+<p>      - &quot;443:443&quot;</p>
+<p>    environment:</p>
+<p>      - CP<em>ID=${CP</em>ID}</p>
+<p>      - PRIVATE<em>KEY</em>PATH=/run/secrets/private_key</p>
+<p>      - REDIS_URL=redis://redis:6379</p>
+<p>    secrets:</p>
+<p>      - private_key</p>
+<p>    depends_on:</p>
+<p>      - redis</p>
+<p>    restart: unless-stopped</p>
+
+<p>  redis:</p>
+<p>    image: redis:7-alpine</p>
+<p>    volumes:</p>
+<p>      - redis-data:/data</p>
+<p>    restart: unless-stopped</p>
+
+<p>secrets:</p>
+<p>  private_key:</p>
+<p>    file: ./secrets/private_key.pem</p>
+
+<p>volumes:</p>
+<p>  redis-data:</code></pre></p>
+
+<h3 id="7-3-kubernetes-deployment">7.3 Kubernetes Deployment</h3>
+
+<pre><code class="language-yaml">apiVersion: apps/v1
+<p>kind: Deployment</p>
+<p>metadata:</p>
+<p>  name: pstn2-server</p>
+<p>spec:</p>
+<p>  replicas: 3</p>
+<p>  selector:</p>
+<p>    matchLabels:</p>
+<p>      app: pstn2-server</p>
+<p>  template:</p>
+<p>    metadata:</p>
+<p>      labels:</p>
+<p>        app: pstn2-server</p>
+<p>    spec:</p>
+<p>      containers:</p>
+<p>      - name: pstn2-server</p>
+<p>        image: yourorg/pstn2-server:1.0.0</p>
+<p>        ports:</p>
+<p>        - containerPort: 443</p>
+<p>        env:</p>
+<p>        - name: CP_ID</p>
+<p>          valueFrom:</p>
+<p>            configMapKeyRef:</p>
+<p>              name: pstn2-config</p>
+<p>              key: cp-id</p>
+<p>        - name: PRIVATE_KEY</p>
+<p>          valueFrom:</p>
+<p>            secretKeyRef:</p>
+<p>              name: pstn2-secrets</p>
+<p>              key: private-key</p>
+<p>        resources:</p>
+<p>          requests:</p>
+<p>            memory: &quot;256Mi&quot;</p>
+<p>            cpu: &quot;500m&quot;</p>
+<p>          limits:</p>
+<p>            memory: &quot;512Mi&quot;</p>
+<p>            cpu: &quot;1000m&quot;</p>
+<p>        livenessProbe:</p>
+<p>          httpGet:</p>
+<p>            path: /health</p>
+<p>            port: 443</p>
+<p>            scheme: HTTPS</p>
+<p>          initialDelaySeconds: 30</p>
+<p>          periodSeconds: 10</p>
+<p>        readinessProbe:</p>
+<p>          httpGet:</p>
+<p>            path: /ready</p>
+<p>            port: 443</p>
+<p>            scheme: HTTPS</p>
+<p>          initialDelaySeconds: 5</p>
+<p>          periodSeconds: 5</p>
+<p>---</p>
+<p>apiVersion: v1</p>
+<p>kind: Service</p>
+<p>metadata:</p>
+<p>  name: pstn2-server</p>
+<p>spec:</p>
+<p>  type: LoadBalancer</p>
+<p>  selector:</p>
+<p>    app: pstn2-server</p>
+<p>  ports:</p>
+<p>  - protocol: TCP</p>
+<p>    port: 443</p>
+<p>    targetPort: 443</code></pre></p>
+
+<p>---</p>
+
+<h2 id="8-performance-optimization">8. Performance Optimization</h2>
+
+<h3 id="8-1-caching-strategy">8.1 Caching Strategy</h3>
+
+<strong>Directory Cache:</strong>
+<ul>
+<li>Cache TTL: 1 hour</li>
+<li>Invalidate on version change</li>
+<li>Pre-warm cache on startup</li>
+</ul>
+
+<strong>Authentication Results:</strong>
+<ul>
+<li>Cache negative results: 5 minutes</li>
+<li>Cache positive results: 1 minute</li>
+<li>Use Redis or in-memory cache</li>
+</ul>
+
+<h3 id="8-2-connection-pooling">8.2 Connection Pooling</h3>
+
+<pre><code class="language-typescript">// HTTP connection pooling
+<p>const httpAgent = new http.Agent({</p>
+<p>  keepAlive: true,</p>
+<p>  maxSockets: 100,</p>
+<p>  maxFreeSockets: 10,</p>
+<p>  timeout: 60000,</p>
+<p>  keepAliveMsecs: 30000,</p>
+<p>});</p>
+
+<p>const httpClient = axios.create({</p>
+<p>  httpAgent,</p>
+<p>  httpsAgent: new https.Agent({ /<em> same config </em>/ }),</p>
+<p>});</code></pre></p>
+
+<h3 id="8-3-database-optimization">8.3 Database Optimization</h3>
+
+<strong>Call Records Table (PostgreSQL):</strong>
+<pre><code class="language-sql">CREATE TABLE call_records (
+<p>  call_reference UUID PRIMARY KEY,</p>
+<p>  caller_id VARCHAR(20) NOT NULL,</p>
+<p>  called_id VARCHAR(20) NOT NULL,</p>
+<p>  created_at TIMESTAMP NOT NULL DEFAULT NOW(),</p>
+<p>  expires_at TIMESTAMP NOT NULL</p>
+<p>);</p>
+
+<p>-- Index for fast lookups</p>
+<p>CREATE INDEX idx<em>call</em>records_expires</p>
+<p>  ON call<em>records (expires</em>at);</p>
+
+<p>-- Auto-delete expired records</p>
+<p>CREATE FUNCTION delete<em>expired</em>calls() RETURNS VOID AS $$</p>
+<p>  DELETE FROM call<em>records WHERE expires</em>at &lt; NOW();</p>
+<p>$$ LANGUAGE SQL;</p>
+
+<p>-- Run cleanup every minute</p>
+<p>SELECT cron.schedule(&#039;cleanup-calls&#039;, &#039;<em> </em> <em> </em> *&#039;, &#039;SELECT delete<em>expired</em>calls()&#039;);</code></pre></p>
+
+<p>---</p>
+
+<h2 id="9-security-checklist">9. Security Checklist</h2>
+
+<h3 id="9-1-cryptography">9.1 Cryptography</h3>
+
+<ul>
+<li>[ ] Ed25519 keys properly generated (256-bit entropy)</li>
+<li>[ ] Private keys stored in hardware security module (HSM) or key vault</li>
+<li>[ ] Key rotation policy: 90 days</li>
+<li>[ ] Signature verification on all incoming requests</li>
+<li>[ ] TLS 1.3 enforced (no TLS 1.2 or lower)</li>
+<li>[ ] Certificate pinning implemented (optional but recommended)</li>
+</ul>
+
+<h3 id="9-2-network-security">9.2 Network Security</h3>
+
+<ul>
+<li>[ ] HTTPS only (no HTTP)</li>
+<li>[ ] HSTS headers set (<code>Strict-Transport-Security</code>)</li>
+<li>[ ] Rate limiting per IP/CP</li>
+<li>[ ] DDoS protection (Cloudflare, AWS Shield, etc.)</li>
+<li>[ ] Firewall rules: only 443 inbound</li>
+<li>[ ] No sensitive data in logs</li>
+</ul>
+
+<h3 id="9-3-application-security">9.3 Application Security</h3>
+
+<ul>
+<li>[ ] Input validation on all fields</li>
+<li>[ ] SQL injection prevention (parameterized queries)</li>
+<li>[ ] XSS prevention (output encoding)</li>
+<li>[ ] CSRF tokens (for admin interfaces)</li>
+<li>[ ] Dependency security scanning (Snyk, Dependabot)</li>
+<li>[ ] Regular security audits</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="10-common-pitfalls">10. Common Pitfalls</h2>
+
+<h3 id="10-1-clock-skew">10.1 Clock Skew</h3>
+
+<p><strong>Problem:</strong> Timestamp validation fails due to clock drift.</p>
+
+<strong>Solution:</strong>
+<ul>
+<li>Use NTP to sync clocks</li>
+<li>Accept timestamps ±30 seconds</li>
+<li>Log clock skew warnings</li>
+</ul>
+
+<h3 id="10-2-porting-loop-detection">10.2 Porting Loop Detection</h3>
+
+<p><strong>Problem:</strong> Infinite loop following porting chain.</p>
+
+<strong>Solution:</strong>
+<ul>
+<li>Limit to 5 hops maximum</li>
+<li>Track visited CPs</li>
+<li>Timeout after 2 seconds total</li>
+</ul>
+
+<h3 id="10-3-memory-leaks">10.3 Memory Leaks</h3>
+
+<p><strong>Problem:</strong> Directory cache grows unbounded.</p>
+
+<strong>Solution:</strong>
+<ul>
+<li>Set TTL on all cache entries</li>
+<li>Use LRU eviction policy</li>
+<li>Monitor memory usage</li>
+</ul>
+
+<h3 id="10-4-signature-verification">10.4 Signature Verification</h3>
+
+<p><strong>Problem:</strong> Signature verification fails silently.</p>
+
+<strong>Solution:</strong>
+<ul>
+<li>Log all verification failures</li>
+<li>Alert on high failure rate</li>
+<li>Provide clear error messages</li>
+</ul>
+
+<h3 id="10-5-fallback-not-tested">10.5 Fallback Not Tested</h3>
+
+<p><strong>Problem:</strong> Traditional PSTN fallback broken in production.</p>
+
+<strong>Solution:</strong>
+<ul>
+<li>Test fallback regularly</li>
+<li>Monitor fallback rate</li>
+<li>Have runbook for manual fallback</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="appendix-configuration-examples">Appendix: Configuration Examples</h2>
+
+<h3 id="typescript">TypeScript</h3>
+
+<pre><code class="language-typescript">const config: PSTN2Config = {
+<p>  cpId: &#039;CP1-UK-0001&#039;,</p>
+<p>  apiEndpoint: &#039;https://api.yourcp.com/pstn2/v1&#039;,</p>
+<p>  privateKey: process.env.PSTN2<em>PRIVATE</em>KEY!,</p>
+<p>  publicKey: process.env.PSTN2<em>PUBLIC</em>KEY,</p>
+<p>  authMode: AuthenticationMode.DirectQuery,</p>
+<p>  timeout: 2000,</p>
+<p>  retries: 3,</p>
+<p>  cacheDirectory: true,</p>
+<p>  cacheTTL: 3600,</p>
+<p>  fallbackToTraditional: true,</p>
+<p>  logLevel: &#039;info&#039;,</p>
+<p>};</code></pre></p>
+
+<h3 id="python">Python</h3>
+
+<pre><code class="language-python">config = PSTN2Config(
+<p>    cp_id=&#039;CP1-UK-0001&#039;,</p>
+<p>    api_endpoint=&#039;https://api.yourcp.com/pstn2/v1&#039;,</p>
+<p>    private<em>key=os.environ[&#039;PSTN2</em>PRIVATE_KEY&#039;],</p>
+<p>    auth<em>mode=AuthenticationMode.DIRECT</em>QUERY,</p>
+<p>    timeout=2.0,</p>
+<p>    retries=3,</p>
+<p>    cache_directory=True,</p>
+<p>    cache_ttl=3600,</p>
+<p>    fallback<em>to</em>traditional=True,</p>
+<p>    log_level=&#039;INFO&#039;,</p>
+<p>)</code></pre></p>
+
+<h3 id="go">Go</h3>
+
+<pre><code class="language-go">config := pstn2.Config{
+<p>    CPID:        &quot;CP1-UK-0001&quot;,</p>
+<p>    APIEndpoint: &quot;https://api.yourcp.com/pstn2/v1&quot;,</p>
+<p>    PrivateKey:  privateKey,</p>
+<p>    AuthMode:    pstn2.DirectQuery,</p>
+<p>    Timeout:     2 * time.Second,</p>
+<p>    Retries:     3,</p>
+<p>    CacheDir:    true,</p>
+<p>    CacheTTL:    1 * time.Hour,</p>
+<p>    Fallback:    true,</p>
+<p>    LogLevel:    &quot;info&quot;,</p>
+<p>}</code></pre></p>
+
+<p>---</p>
+
+<p><strong>Document Status:</strong> Living Guide</p>
+<p><strong>Contributions:</strong> https://github.com/pstn2/pstn2/pulls</p>
+<p><strong>Questions:</strong> https://github.com/pstn2/pstn2/discussions</p>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

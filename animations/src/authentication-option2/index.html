@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 - Authentication Option 2: Token Pool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="animation-container">
+        <!-- Scene 1: Alternative Approach -->
+        <div class="scene" id="scene-1">
+            <h1 class="scene-title">Alternative Approach</h1>
+            <div class="visual-content">
+                <svg id="scene-1-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Authentication Option 2 provides an alternative to direct queries. Instead of querying the originating CP for every call, CPs place short-lived tokens into shared pools. Terminating CPs check these pools to verify calls.">
+                Authentication Option 2 provides an alternative to direct queries. Instead of querying the originating CP for every call, CPs place short-lived tokens into shared pools. Terminating CPs check these pools to verify calls.
+            </div>
+        </div>
+
+        <!-- Scene 2: How Token Pools Work -->
+        <div class="scene" id="scene-2" style="display: none;">
+            <h1 class="scene-title">How Token Pools Work</h1>
+            <div class="visual-content">
+                <svg id="scene-2-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="When CP1 originates a call, they generate a unique token valid for 30 seconds. This token contains encrypted call details: source number, destination number, timestamp. CP1 places this token in a shared pool accessible to other CPs.">
+                When CP1 originates a call, they generate a unique token valid for 30 seconds. This token contains encrypted call details: source number, destination number, timestamp. CP1 places this token in a shared pool accessible to other CPs.
+            </div>
+        </div>
+
+        <!-- Scene 3: Token Verification -->
+        <div class="scene" id="scene-3" style="display: none;">
+            <h1 class="scene-title">Token Verification</h1>
+            <div class="visual-content">
+                <svg id="scene-3-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="When CP2 receives the call, they check the token pool. If they find a valid token matching the call details, authentication succeeds. The token is consumed and marked invalid. If no matching token exists, the call fails authentication.">
+                When CP2 receives the call, they check the token pool. If they find a valid token matching the call details, authentication succeeds. The token is consumed and marked invalid. If no matching token exists, the call fails authentication.
+            </div>
+        </div>
+
+        <!-- Scene 4: Governance Model -->
+        <div class="scene" id="scene-4" style="display: none;">
+            <h1 class="scene-title">Governance Model</h1>
+            <div class="visual-content">
+                <svg id="scene-4-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Token pools require governance. A trusted consortium of major CPs manages the pool infrastructure. Rules are established for token format, expiration, and access controls. This creates accountability while maintaining distribution.">
+                Token pools require governance. A trusted consortium of major CPs manages the pool infrastructure. Rules are established for token format, expiration, and access controls. This creates accountability while maintaining distribution.
+            </div>
+        </div>
+
+        <!-- Scene 5: Scalability Benefits -->
+        <div class="scene" id="scene-5" style="display: none;">
+            <h1 class="scene-title">Scalability Benefits</h1>
+            <div class="visual-content">
+                <svg id="scene-5-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Token pools scale better than direct queries for small CPs with high call volumes. Instead of implementing an authentication API, small CPs simply write to and read from the pool. The infrastructure is shared, reducing individual CP burden.">
+                Token pools scale better than direct queries for small CPs with high call volumes. Instead of implementing an authentication API, small CPs simply write to and read from the pool. The infrastructure is shared, reducing individual CP burden.
+            </div>
+        </div>
+
+        <!-- Scene 6: Redundancy and Reliability -->
+        <div class="scene" id="scene-6" style="display: none;">
+            <h1 class="scene-title">Redundancy and Reliability</h1>
+            <div class="visual-content">
+                <svg id="scene-6-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Multiple token pool servers provide redundancy. If one pool is unavailable, others continue operating. Tokens can be written to multiple pools simultaneously. This ensures high availability even during failures.">
+                Multiple token pool servers provide redundancy. If one pool is unavailable, others continue operating. Tokens can be written to multiple pools simultaneously. This ensures high availability even during failures.
+            </div>
+        </div>
+
+        <!-- Scene 7: Security Model -->
+        <div class="scene" id="scene-7" style="display: none;">
+            <h1 class="scene-title">Security Model</h1>
+            <div class="visual-content">
+                <svg id="scene-7-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Tokens are encrypted and signed to prevent forgery. Access to pools requires authentication. Rate limiting prevents flooding attacks. Token pools are isolated from public networks. All access is logged for audit trails.">
+                Tokens are encrypted and signed to prevent forgery. Access to pools requires authentication. Rate limiting prevents flooding attacks. Token pools are isolated from public networks. All access is logged for audit trails.
+            </div>
+        </div>
+
+        <!-- Scene 8: Small CP Benefits -->
+        <div class="scene" id="scene-8" style="display: none;">
+            <h1 class="scene-title">Small CP Benefits</h1>
+            <div class="visual-content">
+                <svg id="scene-8-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Small CPs benefit most from token pools. They don't need to run their own authentication infrastructure. They don't need to handle incoming authentication queries. They just integrate with the pool API, which is simpler and cheaper to implement.">
+                Small CPs benefit most from token pools. They don't need to run their own authentication infrastructure. They don't need to handle incoming authentication queries. They just integrate with the pool API, which is simpler and cheaper to implement.
+            </div>
+        </div>
+
+        <!-- Scene 9: Hybrid Deployment -->
+        <div class="scene" id="scene-9" style="display: none;">
+            <h1 class="scene-title">Hybrid Deployment</h1>
+            <div class="visual-content">
+                <svg id="scene-9-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Options 1 and 2 can coexist. Large CPs might prefer direct queries for full control. Small CPs might prefer token pools for simplicity. The terminating CP can check both: first the token pool, then fallback to direct query if needed.">
+                Options 1 and 2 can coexist. Large CPs might prefer direct queries for full control. Small CPs might prefer token pools for simplicity. The terminating CP can check both: first the token pool, then fallback to direct query if needed.
+            </div>
+        </div>
+
+        <!-- Scene 10: Trade-offs -->
+        <div class="scene" id="scene-10" style="display: none;">
+            <h1 class="scene-title">Trade-offs</h1>
+            <div class="visual-content">
+                <svg id="scene-10-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Token pools add a governance requirement and central points, which direct queries avoid. But they offer better scalability for high-volume scenarios. The choice depends on CP size, call volume, and preference for control versus simplicity.">
+                Token pools add a governance requirement and central points, which direct queries avoid. But they offer better scalability for high-volume scenarios. The choice depends on CP size, call volume, and preference for control versus simplicity.
+            </div>
+        </div>
+
+        <!-- Scene 11: Implementation Path -->
+        <div class="scene" id="scene-11" style="display: none;">
+            <h1 class="scene-title">Implementation Path</h1>
+            <div class="visual-content">
+                <svg id="scene-11-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Token pools could be operated by industry groups, regulators, or commercial providers. The key is neutrality and open access. Any qualified CP should be able to participate. This democratizes access to advanced authentication for all providers.">
+                Token pools could be operated by industry groups, regulators, or commercial providers. The key is neutrality and open access. Any qualified CP should be able to participate. This democratizes access to advanced authentication for all providers.
+            </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="controls">
+            <button id="prev-btn" class="control-btn">← Previous</button>
+            <div class="scene-indicator">
+                <span id="current-scene">1</span> / <span id="total-scenes">11</span>
+            </div>
+            <button id="next-btn" class="control-btn">Next →</button>
+            <button id="play-btn" class="control-btn primary">▶ Play</button>
+            <button id="audio-btn" class="control-btn">🔊 Audio On</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="animation.js"></script>
+</body>
+</html>

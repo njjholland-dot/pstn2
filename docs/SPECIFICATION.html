@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 Protocol Specification v1.0 | PSTN2</title>
+    <link rel="stylesheet" href="../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        <h1>PSTN2 Protocol Specification v1.0</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#table-of-contents">Table of Contents</a>
+                <a href="#1-introduction">1. Introduction</a>
+                <a href="#2-architecture-overview">2. Architecture Overview</a>
+                <a href="#3-core-concepts">3. Core Concepts</a>
+                <a href="#4-protocol-messages">4. Protocol Messages</a>
+                <a href="#5-authentication">5. Authentication</a>
+                <a href="#6-routing">6. Routing</a>
+                <a href="#7-encryption">7. Encryption</a>
+                <a href="#8-emergency-services">8. Emergency Services</a>
+                <a href="#9-directory-service">9. Directory Service</a>
+                <a href="#10-error-handling">10. Error Handling</a>
+                <a href="#11-security-considerations">11. Security Considerations</a>
+                <a href="#12-implementation-requirements">12. Implementation Requirements</a>
+                <a href="#appendix-a-example-call-flow">Appendix A: Example Call Flow</a>
+                <a href="#appendix-b-security-audit-checklist">Appendix B: Security Audit Checklist</a>
+                <a href="#appendix-c-version-history">Appendix C: Version History</a>
+                <a href="#appendix-d-references">Appendix D: References</a>
+                <a href="SPECIFICATION.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="pstn2-protocol-specification-v1-0">PSTN2 Protocol Specification v1.0</h1>
+
+<p><strong>Status:</strong> Draft</p>
+<p><strong>Last Updated:</strong> 2025-11-30</p>
+<p><strong>Authors:</strong> Nick Holland, Comms Council UK</p>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#architecture-overview">Architecture Overview</a></li>
+<li><a href="#core-concepts">Core Concepts</a></li>
+<li><a href="#protocol-messages">Protocol Messages</a></li>
+<li><a href="#authentication">Authentication</a></li>
+<li><a href="#routing">Routing</a></li>
+<li><a href="#encryption">Encryption</a></li>
+<li><a href="#emergency-services">Emergency Services</a></li>
+<li><a href="#directory-service">Directory Service</a></li>
+<li><a href="#error-handling">Error Handling</a></li>
+<li><a href="#security-considerations">Security Considerations</a></li>
+<li><a href="#implementation-requirements">Implementation Requirements</a></li>
+</ul>
+
+<p>---</p>
+
+<h2 id="1-introduction">1. Introduction</h2>
+
+<h3 id="1-1-purpose">1.1 Purpose</h3>
+
+<p>PSTN2 is a distributed telecommunications protocol designed to provide:</p>
+<ul>
+<li><strong>Authentication</strong>: Cryptographic verification of caller identity</li>
+<li><strong>Direct Routing</strong>: Peer-to-peer call connections eliminating transit providers</li>
+<li><strong>Encryption</strong>: End-to-end encrypted media</li>
+<li><strong>Enhanced Emergency Services</strong>: Real-time location data for emergency calls</li>
+<li><strong>Fraud Prevention</strong>: Real-time caller ID verification</li>
+<li><strong>Interoperability</strong>: Seamless integration with traditional PSTN</li>
+</ul>
+
+<h3 id="1-2-design-principles">1.2 Design Principles</h3>
+
+<ul>
+<li><strong>Distributed Architecture</strong>: No central authority or single point of failure</li>
+<li><strong>Backward Compatible</strong>: Falls back to traditional PSTN when needed</li>
+<li><strong>Privacy First</strong>: Minimal data sharing, maximum encryption</li>
+<li><strong>Real-time Performance</strong>: Sub-100ms authentication, sub-1s call setup</li>
+<li><strong>Simplicity</strong>: Easy to implement and deploy</li>
+<li><strong>Eventual Consistency</strong>: Directory data propagates over time</li>
+</ul>
+
+<h3 id="1-3-terminology">1.3 Terminology</h3>
+
+<ul>
+<li><strong>CP (Communication Provider)</strong>: Any entity providing telephony services</li>
+<li><strong>RCPID (Range-CP-ID)</strong>: Globally unique identifier for a CP (format: <code>CP{N}-{CC}-{ID}</code>)</li>
+<li><strong>Range Holder</strong>: CP currently assigned a number range by regulator</li>
+<li><strong>MAP (Managed Access Provider)</strong>: CP providing PSTN2 services to smaller CPs</li>
+<li><strong>PSAP (Public Safety Answering Point)</strong>: Emergency services dispatch center</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="2-architecture-overview">2. Architecture Overview</h2>
+
+<h3 id="2-1-system-components">2.1 System Components</h3>
+
+<pre><code class="language-">┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+<p>│   CP1 (UK)   │◄───────►│   CP2 (UK)   │◄───────►│   CP3 (US)   │</p>
+<p>│              │         │              │         │              │</p>
+<p>│ • Auth API   │         │ • Auth API   │         │ • Auth API   │</p>
+<p>│ • Routing    │         │ • Routing    │         │ • Routing    │</p>
+<p>│ • Directory  │         │ • Directory  │         │ • Directory  │</p>
+<p>│ • Emergency  │         │ • Emergency  │         │ • Emergency  │</p>
+<p>└──────┬───────┘         └──────┬───────┘         └──────┬───────┘</p>
+<p>       │                        │                        │</p>
+<p>       └────────────────────────┼────────────────────────┘</p>
+<p>                                │</p>
+<p>                    ┌───────────▼───────────┐</p>
+<p>                    │   Directory Service   │</p>
+<p>                    │  (Eventual Consistency)│</p>
+<p>                    └───────────────────────┘</code></pre></p>
+
+<h3 id="2-2-communication-flow">2.2 Communication Flow</h3>
+
+<ul>
+<li><strong>Directory Lookup</strong>: Find CP hosting destination number</li>
+<li><strong>Authentication</strong>: Verify caller identity with originating CP</li>
+<li><strong>Routing</strong>: Discover connection details for direct media</li>
+<li><strong>Encryption</strong>: Exchange keys for secure media</li>
+<li><strong>Media</strong>: Establish direct peer-to-peer connection</li>
+<li><strong>Emergency</strong>: Query real-time location if emergency call</li>
+</ul>
+
+<h3 id="2-3-network-requirements">2.3 Network Requirements</h3>
+
+<ul>
+<li><strong>TLS 1.3</strong>: All HTTP communications MUST use TLS 1.3+</li>
+<li><strong>HTTPS</strong>: RESTful API over HTTPS</li>
+<li><strong>Timeouts</strong>: 2 seconds default, configurable per CP</li>
+<li><strong>Retry Logic</strong>: Exponential backoff (100ms, 200ms, 400ms)</li>
+<li><strong>Rate Limiting</strong>: Minimum 1000 requests/second per CP</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="3-core-concepts">3. Core Concepts</h2>
+
+<h3 id="3-1-identifiers">3.1 Identifiers</h3>
+
+<h4 id="3-1-1-phone-numbers">3.1.1 Phone Numbers</h4>
+<ul>
+<li><strong>Format</strong>: E.164 (e.g., <code>+441234567890</code>)</li>
+<li><strong>Validation</strong>: Must match regex <code>^\+[1-9]\d{1,14}$</code></li>
+</ul>
+
+<h4 id="3-1-2-rcpid-range-cp-id">3.1.2 RCPID (Range-CP-ID)</h4>
+<ul>
+<li><strong>Format</strong>: <code>CP{N}-{COUNTRY}-{ID}</code></li>
+<li><strong>Example</strong>: <code>CP1-UK-0001</code></li>
+<li><strong>Components</strong>:</li>
+</ul>
+<p>  - <code>{N}</code>: Tier (1=Direct CP, 2=MAP)</p>
+<p>  - <code>{COUNTRY}</code>: ISO 3166-1 alpha-2 country code</p>
+<p>  - <code>{ID}</code>: 4-digit unique identifier within country</p>
+
+<h4 id="3-1-3-call-reference">3.1.3 Call Reference</h4>
+<ul>
+<li><strong>Format</strong>: UUID v4</li>
+<li><strong>Example</strong>: <code>550e8400-e29b-41d4-a716-446655440000</code></li>
+<li><strong>Uniqueness</strong>: MUST be globally unique</li>
+<li><strong>Lifetime</strong>: Valid for duration of call + 24 hours (for logging)</li>
+</ul>
+
+<h3 id="3-2-timestamps">3.2 Timestamps</h3>
+
+<ul>
+<li><strong>Format</strong>: ISO 8601 with timezone</li>
+<li><strong>Example</strong>: <code>2025-11-30T21:30:00.000Z</code></li>
+<li><strong>Clock Sync</strong>: CPs MUST synchronize clocks (NTP recommended)</li>
+<li><strong>Tolerance</strong>: Accept timestamps ±30 seconds</li>
+</ul>
+
+<h3 id="3-3-cryptographic-requirements">3.3 Cryptographic Requirements</h3>
+
+<h4 id="3-3-1-key-pairs">3.3.1 Key Pairs</h4>
+<ul>
+<li><strong>Algorithm</strong>: Ed25519 (preferred) or RSA-4096</li>
+<li><strong>Format</strong>: Base64-encoded</li>
+<li><strong>Storage</strong>: Private keys MUST be stored in secure key management system</li>
+<li><strong>Rotation</strong>: Recommended every 90 days</li>
+</ul>
+
+<h4 id="3-3-2-signatures">3.3.2 Signatures</h4>
+<ul>
+<li><strong>Algorithm</strong>: Ed25519 signature</li>
+<li><strong>Format</strong>: Base64-encoded</li>
+<li><strong>Scope</strong>: Sign entire message body + timestamp</li>
+<li><strong>Verification</strong>: Verify using public key from Directory</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="4-protocol-messages">4. Protocol Messages</h2>
+
+<h3 id="4-1-message-format">4.1 Message Format</h3>
+
+<p>All messages are JSON with UTF-8 encoding.</p>
+
+<strong>Common Fields:</strong>
+<pre><code class="language-json">{
+<p>  &quot;messageId&quot;: &quot;uuid-v4&quot;,</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>  &quot;version&quot;: &quot;1.0&quot;,</p>
+<p>  &quot;requestingCP&quot;: &quot;RCPID&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64-encoded-signature&quot;</p>
+<p>}</code></pre></p>
+
+<h3 id="4-2-http-headers">4.2 HTTP Headers</h3>
+
+<strong>Required Headers:</strong>
+<pre><code class="language-">Content-Type: application/json; charset=utf-8
+<p>User-Agent: PSTN2-Client/{version} ({implementation})</p>
+<p>X-PSTN2-Version: 1.0</p>
+<p>X-PSTN2-CP-ID: {RCPID}</p>
+<p>Authorization: Bearer {JWT-token}  (optional, for token pool)</code></pre></p>
+
+<h3 id="4-3-response-codes">4.3 Response Codes</h3>
+
+<strong>Success:</strong>
+<ul>
+<li><code>200 OK</code>: Request successful</li>
+<li><code>202 Accepted</code>: Request accepted, processing asynchronously</li>
+</ul>
+
+<strong>Client Errors:</strong>
+<ul>
+<li><code>400 Bad Request</code>: Invalid message format</li>
+<li><code>401 Unauthorized</code>: Invalid credentials/signature</li>
+<li><code>404 Not Found</code>: Call/number not found</li>
+<li><code>408 Request Timeout</code>: Request took too long</li>
+<li><code>429 Too Many Requests</code>: Rate limit exceeded</li>
+</ul>
+
+<strong>Server Errors:</strong>
+<ul>
+<li><code>500 Internal Server Error</code>: CP system error</li>
+<li><code>503 Service Unavailable</code>: CP temporarily unavailable</li>
+<li><code>504 Gateway Timeout</code>: Downstream dependency timeout</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="5-authentication">5. Authentication</h2>
+
+<h3 id="5-1-option-1-direct-query">5.1 Option 1: Direct Query</h3>
+
+<p>Direct real-time query to originating CP.</p>
+
+<h4 id="5-1-1-verification-request">5.1.1 Verification Request</h4>
+
+<strong>Endpoint:</strong> <code>POST /pstn2/v1/auth/verify</code>
+
+<strong>Request:</strong>
+<pre><code class="language-json">{
+<p>  &quot;messageId&quot;: &quot;550e8400-e29b-41d4-a716-446655440000&quot;,</p>
+<p>  &quot;timestamp&quot;: &quot;2025-11-30T21:30:00.000Z&quot;,</p>
+<p>  &quot;version&quot;: &quot;1.0&quot;,</p>
+<p>  &quot;requestingCP&quot;: &quot;CP1-UK-0002&quot;,</p>
+<p>  &quot;callerID&quot;: &quot;+441234567890&quot;,</p>
+<p>  &quot;calledID&quot;: &quot;+447700900123&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123-def-456&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64-signature&quot;</p>
+<p>}</code></pre></p>
+
+<strong>Response (200 OK):</strong>
+<pre><code class="language-json">{
+<p>  &quot;verified&quot;: true,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123-def-456&quot;,</p>
+<p>  &quot;callerName&quot;: &quot;John Smith&quot;,</p>
+<p>  &quot;callerOrg&quot;: &quot;ACME Corp&quot;,</p>
+<p>  &quot;callPurpose&quot;: &quot;Account verification&quot;,</p>
+<p>  &quot;trustLevel&quot;: &quot;verified&quot;,</p>
+<p>  &quot;branding&quot;: {</p>
+<p>    &quot;displayName&quot;: &quot;ACME Support&quot;,</p>
+<p>    &quot;logo&quot;: &quot;https://cdn.acme.com/logo.png&quot;,</p>
+<p>    &quot;backgroundColor&quot;: &quot;#0066cc&quot;,</p>
+<p>    &quot;textColor&quot;: &quot;#ffffff&quot;</p>
+<p>  },</p>
+<p>  &quot;timestamp&quot;: &quot;2025-11-30T21:30:00.050Z&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64-signature&quot;</p>
+<p>}</code></pre></p>
+
+<strong>Response (404 Not Found):</strong>
+<pre><code class="language-json">{
+<p>  &quot;verified&quot;: false,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123-def-456&quot;,</p>
+<p>  &quot;error&quot;: &quot;call<em>not</em>found&quot;,</p>
+<p>  &quot;message&quot;: &quot;No matching call found&quot;,</p>
+<p>  &quot;timestamp&quot;: &quot;2025-11-30T21:30:00.050Z&quot;</p>
+<p>}</code></pre></p>
+
+<h4 id="5-1-2-porting-chain-resolution">5.1.2 Porting Chain Resolution</h4>
+
+<p>If number is ported, originating CP MUST return porting information:</p>
+
+<strong>Response (301 Moved Permanently):</strong>
+<pre><code class="language-json">{
+<p>  &quot;verified&quot;: false,</p>
+<p>  &quot;ported&quot;: true,</p>
+<p>  &quot;currentHolder&quot;: &quot;CP1-UK-0003&quot;,</p>
+<p>  &quot;portedAt&quot;: &quot;2025-10-15T10:00:00.000Z&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123-def-456&quot;</p>
+<p>}</code></pre></p>
+
+<p>Client MUST automatically retry with new CP. Maximum 5 hops.</p>
+
+<h3 id="5-2-option-2-token-pool">5.2 Option 2: Token Pool</h3>
+
+<p>Shared token repository for reduced query load.</p>
+
+<h4 id="5-2-1-create-token">5.2.1 Create Token</h4>
+
+<strong>Endpoint:</strong> <code>POST /pstn2/v1/auth/tokens</code>
+
+<strong>Request:</strong>
+<pre><code class="language-json">{
+<p>  &quot;messageId&quot;: &quot;uuid&quot;,</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>  &quot;originatingCP&quot;: &quot;CP1-UK-0001&quot;,</p>
+<p>  &quot;callerID&quot;: &quot;+441234567890&quot;,</p>
+<p>  &quot;calledID&quot;: &quot;+447700900123&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123&quot;,</p>
+<p>  &quot;ttl&quot;: 30,</p>
+<p>  &quot;signature&quot;: &quot;base64&quot;</p>
+<p>}</code></pre></p>
+
+<strong>Response (201 Created):</strong>
+<pre><code class="language-json">{
+<p>  &quot;tokenId&quot;: &quot;TK-abc123def456&quot;,</p>
+<p>  &quot;expiresAt&quot;: &quot;2025-11-30T21:30:30.000Z&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123&quot;</p>
+<p>}</code></pre></p>
+
+<h4 id="5-2-2-verify-token">5.2.2 Verify Token</h4>
+
+<strong>Endpoint:</strong> <code>GET /pstn2/v1/auth/tokens/{tokenId}</code>
+
+<strong>Response (200 OK):</strong>
+<pre><code class="language-json">{
+<p>  &quot;tokenId&quot;: &quot;TK-abc123def456&quot;,</p>
+<p>  &quot;originatingCP&quot;: &quot;CP1-UK-0001&quot;,</p>
+<p>  &quot;callerID&quot;: &quot;+441234567890&quot;,</p>
+<p>  &quot;calledID&quot;: &quot;+447700900123&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;abc-123&quot;,</p>
+<p>  &quot;verified&quot;: true,</p>
+<p>  &quot;branding&quot;: {...},</p>
+<p>  &quot;expiresAt&quot;: &quot;2025-11-30T21:30:30.000Z&quot;</p>
+<p>}</code></pre></p>
+
+<h4 id="5-2-3-token-format">5.2.3 Token Format</h4>
+
+<ul>
+<li><strong>Prefix</strong>: <code>TK-</code></li>
+<li><strong>Length</strong>: 16 characters (after prefix)</li>
+<li><strong>Charset</strong>: Base58 (excludes confusing characters)</li>
+<li><strong>Example</strong>: <code>TK-abc123XYZ789def</code></li>
+</ul>
+
+<p>---</p>
+
+<h2 id="6-routing">6. Routing</h2>
+
+<p>Direct peer-to-peer routing discovery.</p>
+
+<h3 id="6-1-routing-request">6.1 Routing Request</h3>
+
+<strong>Endpoint:</strong> <code>POST /pstn2/v1/routing/request</code>
+
+<strong>Request:</strong>
+<pre><code class="language-json">{
+<p>  &quot;messageId&quot;: &quot;uuid&quot;,</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>  &quot;requestingCP&quot;: &quot;CP1-UK-0001&quot;,</p>
+<p>  &quot;callerID&quot;: &quot;+441234567890&quot;,</p>
+<p>  &quot;destinationNumber&quot;: &quot;+447700900123&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;xyz-789&quot;,</p>
+<p>  &quot;mediaCapabilities&quot;: {</p>
+<p>    &quot;codecs&quot;: [&quot;opus&quot;, &quot;g722&quot;, &quot;pcmu&quot;],</p>
+<p>    &quot;encryption&quot;: [&quot;srtp-aes256&quot;, &quot;srtp-aes128&quot;],</p>
+<p>    &quot;video&quot;: false,</p>
+<p>    &quot;maxBandwidth&quot;: 128000</p>
+<p>  },</p>
+<p>  &quot;publicKey&quot;: &quot;base64-ed25519-public-key&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64&quot;</p>
+<p>}</code></pre></p>
+
+<strong>Response (200 OK):</strong>
+<pre><code class="language-json">{
+<p>  &quot;accepted&quot;: true,</p>
+<p>  &quot;callReference&quot;: &quot;xyz-789&quot;,</p>
+<p>  &quot;connectionDetails&quot;: {</p>
+<p>    &quot;fqdn&quot;: &quot;media.cp2.example.com&quot;,</p>
+<p>    &quot;ipv4&quot;: &quot;203.0.113.42&quot;,</p>
+<p>    &quot;ipv6&quot;: &quot;2001:db8::42&quot;,</p>
+<p>    &quot;port&quot;: 5060,</p>
+<p>    &quot;protocol&quot;: &quot;udp&quot;,</p>
+<p>    &quot;publicKey&quot;: &quot;base64-ed25519-public-key&quot;</p>
+<p>  },</p>
+<p>  &quot;agreedCapabilities&quot;: {</p>
+<p>    &quot;codecs&quot;: [&quot;opus&quot;],</p>
+<p>    &quot;encryption&quot;: [&quot;srtp-aes256&quot;],</p>
+<p>    &quot;video&quot;: false</p>
+<p>  },</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64&quot;</p>
+<p>}</code></pre></p>
+
+<strong>Response (503 Service Unavailable):</strong>
+<pre><code class="language-json">{
+<p>  &quot;accepted&quot;: false,</p>
+<p>  &quot;reason&quot;: &quot;capacity_exceeded&quot;,</p>
+<p>  &quot;fallbackToTraditional&quot;: true,</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;</p>
+<p>}</code></pre></p>
+
+<h3 id="6-2-media-codecs">6.2 Media Codecs</h3>
+
+<strong>Required Support:</strong>
+<ul>
+<li><code>opus</code>: Opus codec (preferred for quality)</li>
+<li><code>g722</code>: G.722 wideband</li>
+<li><code>pcmu</code>: G.711 μ-law (fallback)</li>
+<li><code>pcma</code>: G.711 A-law (fallback)</li>
+</ul>
+
+<strong>Optional Support:</strong>
+<ul>
+<li><code>g729</code>: G.729</li>
+<li><code>vp8</code>: VP8 video codec</li>
+<li><code>h264</code>: H.264 video codec</li>
+</ul>
+
+<h3 id="6-3-encryption">6.3 Encryption</h3>
+
+<strong>Required Support:</strong>
+<ul>
+<li><code>srtp-aes256</code>: SRTP with AES-256-GCM</li>
+<li><code>srtp-aes128</code>: SRTP with AES-128-GCM</li>
+</ul>
+
+<strong>Key Exchange:</strong>
+<ul>
+<li>DTLS-SRTP (RFC 5764)</li>
+<li>Public keys exchanged in routing request/response</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="7-encryption">7. Encryption</h2>
+
+<h3 id="7-1-key-exchange">7.1 Key Exchange</h3>
+
+<p>Keys are exchanged during routing negotiation.</p>
+
+<strong>Public Key Format:</strong>
+<pre><code class="language-json">{
+<p>  &quot;algorithm&quot;: &quot;ed25519&quot;,</p>
+<p>  &quot;publicKey&quot;: &quot;base64-encoded-32-bytes&quot;,</p>
+<p>  &quot;fingerprint&quot;: &quot;sha256:hexadecimal&quot;</p>
+<p>}</code></pre></p>
+
+<h3 id="7-2-media-encryption">7.2 Media Encryption</h3>
+
+<strong>Required:</strong>
+<ul>
+<li>SRTP (RFC 3711)</li>
+<li>DTLS 1.3 (RFC 9147)</li>
+<li>Perfect Forward Secrecy</li>
+</ul>
+
+<strong>Key Derivation:</strong>
+<ul>
+<li>Use HKDF-SHA256</li>
+<li>Session keys rotated every 10 minutes</li>
+<li>Master key never transmitted</li>
+</ul>
+
+<h3 id="7-3-signaling-encryption">7.3 Signaling Encryption</h3>
+
+<strong>Required:</strong>
+<ul>
+<li>TLS 1.3 for all HTTP/HTTPS</li>
+<li>Certificate pinning (optional but recommended)</li>
+<li>HSTS headers</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="8-emergency-services">8. Emergency Services</h2>
+
+<h3 id="8-1-location-query">8.1 Location Query</h3>
+
+<strong>Endpoint:</strong> <code>POST /pstn2/v1/emergency/location</code>
+
+<strong>Request:</strong>
+<pre><code class="language-json">{
+<p>  &quot;messageId&quot;: &quot;uuid&quot;,</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>  &quot;requestingPSAP&quot;: &quot;UK-999-LONDON-01&quot;,</p>
+<p>  &quot;callerID&quot;: &quot;+441234567890&quot;,</p>
+<p>  &quot;callReference&quot;: &quot;emergency-456&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64&quot;</p>
+<p>}</code></pre></p>
+
+<strong>Response (200 OK):</strong>
+<pre><code class="language-json">{
+<p>  &quot;callReference&quot;: &quot;emergency-456&quot;,</p>
+<p>  &quot;location&quot;: {</p>
+<p>    &quot;latitude&quot;: 51.5074,</p>
+<p>    &quot;longitude&quot;: -0.1278,</p>
+<p>    &quot;accuracy&quot;: 15,</p>
+<p>    &quot;altitude&quot;: 42.5,</p>
+<p>    &quot;source&quot;: &quot;gps&quot;</p>
+<p>  },</p>
+<p>  &quot;address&quot;: {</p>
+<p>    &quot;street&quot;: &quot;10 Downing Street&quot;,</p>
+<p>    &quot;city&quot;: &quot;London&quot;,</p>
+<p>    &quot;postcode&quot;: &quot;SW1A 2AA&quot;,</p>
+<p>    &quot;country&quot;: &quot;GB&quot;</p>
+<p>  },</p>
+<p>  &quot;additionalInfo&quot;: {</p>
+<p>    &quot;cellTowerId&quot;: &quot;310-410-12345-67890&quot;,</p>
+<p>    &quot;wifiAccessPoints&quot;: [&quot;AA:BB:CC:DD:EE:FF&quot;],</p>
+<p>    &quot;lastUpdated&quot;: &quot;2025-11-30T21:30:00.000Z&quot;</p>
+<p>  },</p>
+<p>  &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>  &quot;signature&quot;: &quot;base64&quot;</p>
+<p>}</code></pre></p>
+
+<h3 id="8-2-location-sources">8.2 Location Sources</h3>
+
+<strong>Priority (highest to lowest):</strong>
+<ul>
+<li><strong>GPS</strong>: Most accurate (±5-15m)</li>
+<li><strong>WiFi Triangulation</strong>: Good accuracy (±20-50m)</li>
+<li><strong>Cell Tower</strong>: Moderate accuracy (±100-1000m)</li>
+<li><strong>User-Provided</strong>: Entered by user</li>
+<li><strong>Billing Address</strong>: Fallback only</li>
+</ul>
+
+<h3 id="8-3-psap-authentication">8.3 PSAP Authentication</h3>
+
+<p>PSAPs MUST be authenticated using:</p>
+<ul>
+<li>Pre-registered PSAP IDs in Directory</li>
+<li>TLS client certificates</li>
+<li>Rate limiting: 10 requests/second per PSAP</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="9-directory-service">9. Directory Service</h2>
+
+<h3 id="9-1-directory-entry">9.1 Directory Entry</h3>
+
+<strong>Format:</strong>
+<pre><code class="language-json">{
+<p>  &quot;cpId&quot;: &quot;CP1-UK-0001&quot;,</p>
+<p>  &quot;ranges&quot;: [</p>
+<p>    {</p>
+<p>      &quot;numberRange&quot;: &quot;+4471234567XX&quot;,</p>
+<p>      &quot;status&quot;: &quot;active&quot;,</p>
+<p>      &quot;portedTo&quot;: null,</p>
+<p>      &quot;portedAt&quot;: null</p>
+<p>    },</p>
+<p>    {</p>
+<p>      &quot;numberRange&quot;: &quot;+4471234568XX&quot;,</p>
+<p>      &quot;status&quot;: &quot;ported&quot;,</p>
+<p>      &quot;portedTo&quot;: &quot;CP1-UK-0002&quot;,</p>
+<p>      &quot;portedAt&quot;: &quot;2025-10-15T10:00:00.000Z&quot;</p>
+<p>    }</p>
+<p>  ],</p>
+<p>  &quot;endpoints&quot;: {</p>
+<p>    &quot;auth&quot;: &quot;https://api.cp1.example.com/pstn2/v1/auth&quot;,</p>
+<p>    &quot;routing&quot;: &quot;https://api.cp1.example.com/pstn2/v1/routing&quot;,</p>
+<p>    &quot;emergency&quot;: &quot;https://api.cp1.example.com/pstn2/v1/emergency&quot;</p>
+<p>  },</p>
+<p>  &quot;publicKey&quot;: &quot;base64-ed25519-public-key&quot;,</p>
+<p>  &quot;certificates&quot;: [</p>
+<p>    {</p>
+<p>      &quot;fingerprint&quot;: &quot;sha256:hexadecimal&quot;,</p>
+<p>      &quot;validFrom&quot;: &quot;2025-01-01T00:00:00.000Z&quot;,</p>
+<p>      &quot;validTo&quot;: &quot;2026-01-01T00:00:00.000Z&quot;</p>
+<p>    }</p>
+<p>  ],</p>
+<p>  &quot;lastUpdated&quot;: &quot;2025-11-30T21:00:00.000Z&quot;,</p>
+<p>  &quot;version&quot;: 42</p>
+<p>}</code></pre></p>
+
+<h3 id="9-2-directory-synchronization">9.2 Directory Synchronization</h3>
+
+<strong>Pull Directory:</strong>
+<ul>
+<li><strong>Endpoint:</strong> <code>GET /pstn2/v1/directory/all</code></li>
+<li><strong>Response:</strong> Array of directory entries</li>
+<li><strong>Frequency:</strong> Every 1 hour</li>
+<li><strong>Compression:</strong> GZIP required for large responses</li>
+</ul>
+
+<strong>Push Updates:</strong>
+<ul>
+<li><strong>Endpoint:</strong> <code>POST /pstn2/v1/directory/publish</code></li>
+<li><strong>When:</strong> Number range changes, porting events</li>
+<li><strong>Propagation:</strong> Best-effort, eventual consistency</li>
+</ul>
+
+<h3 id="9-3-number-range-format">9.3 Number Range Format</h3>
+
+<ul>
+<li><strong>Wildcards:</strong> Use <code>X</code> for wildcards</li>
+<li><strong>Examples:</strong></li>
+</ul>
+<p>  - <code>+4471234567XX</code> = 100 numbers (00-99)</p>
+<p>  - <code>+447123456XXX</code> = 1000 numbers (000-999)</p>
+<p>  - <code>+44712345XXXX</code> = 10000 numbers (0000-9999)</p>
+
+<h3 id="9-4-eventual-consistency">9.4 Eventual Consistency</h3>
+
+<ul>
+<li><strong>Propagation Time:</strong> Target 15 minutes, tolerate up to 1 hour</li>
+<li><strong>Version Numbers:</strong> Monotonically increasing</li>
+<li><strong>Conflict Resolution:</strong> Highest version wins</li>
+<li><strong>Cache Invalidation:</strong> Check version before using cached data</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="10-error-handling">10. Error Handling</h2>
+
+<h3 id="10-1-error-response-format">10.1 Error Response Format</h3>
+
+<pre><code class="language-json">{
+<p>  &quot;error&quot;: {</p>
+<p>    &quot;code&quot;: &quot;call<em>not</em>found&quot;,</p>
+<p>    &quot;message&quot;: &quot;No matching call record found&quot;,</p>
+<p>    &quot;timestamp&quot;: &quot;ISO-8601&quot;,</p>
+<p>    &quot;requestId&quot;: &quot;uuid&quot;</p>
+<p>  }</p>
+<p>}</code></pre></p>
+
+<h3 id="10-2-error-codes">10.2 Error Codes</h3>
+
+<strong>Authentication:</strong>
+<ul>
+<li><code>call<em>not</em>found</code>: No matching call record</li>
+<li><code>invalid_signature</code>: Signature verification failed</li>
+<li><code>expired_token</code>: Token has expired</li>
+<li><code>invalid_token</code>: Token not found or invalid</li>
+</ul>
+
+<strong>Routing:</strong>
+<ul>
+<li><code>capacity_exceeded</code>: CP at capacity</li>
+<li><code>unsupported_codec</code>: No common codec</li>
+<li><code>number<em>not</em>found</code>: Destination number not in CP range</li>
+</ul>
+
+<strong>Emergency:</strong>
+<ul>
+<li><code>location_unavailable</code>: Cannot determine location</li>
+<li><code>unauthorized_psap</code>: PSAP not authorized</li>
+</ul>
+
+<strong>General:</strong>
+<ul>
+<li><code>timeout</code>: Request timeout</li>
+<li><code>rate<em>limit</em>exceeded</code>: Too many requests</li>
+<li><code>invalid_request</code>: Malformed request</li>
+<li><code>internal_error</code>: Server error</li>
+</ul>
+
+<h3 id="10-3-retry-logic">10.3 Retry Logic</h3>
+
+<strong>Exponential Backoff:</strong>
+<ul>
+<li>First retry: 100ms</li>
+<li>Second retry: 200ms</li>
+<li>Third retry: 400ms</li>
+<li>Max retries: 3</li>
+<li>Fallback: Use traditional PSTN</li>
+</ul>
+
+<strong>Retry Conditions:</strong>
+<ul>
+<li><code>503 Service Unavailable</code></li>
+<li><code>504 Gateway Timeout</code></li>
+<li>Network timeout (no response)</li>
+</ul>
+
+<strong>Do NOT Retry:</strong>
+<ul>
+<li><code>400 Bad Request</code></li>
+<li><code>401 Unauthorized</code></li>
+<li><code>404 Not Found</code></li>
+</ul>
+
+<p>---</p>
+
+<h2 id="11-security-considerations">11. Security Considerations</h2>
+
+<h3 id="11-1-authentication">11.1 Authentication</h3>
+
+<strong>Message Signing:</strong>
+<pre><code class="language-">signature = Ed25519.sign(privateKey, payload)
+<p>payload = JSON.stringify(messageBody) + timestamp</code></pre></p>
+
+<strong>Verification:</strong>
+<pre><code class="language-">valid = Ed25519.verify(publicKey, signature, payload)</code></pre>
+
+<h3 id="11-2-rate-limiting">11.2 Rate Limiting</h3>
+
+<strong>Per CP:</strong>
+<ul>
+<li>Auth verification: 100 req/sec minimum</li>
+<li>Routing requests: 50 req/sec minimum</li>
+<li>Directory sync: 1 req/hour per CP</li>
+<li>Emergency location: 10 req/sec</li>
+</ul>
+
+<strong>Implementation:</strong>
+<ul>
+<li>Token bucket algorithm</li>
+<li>Sliding window for burst protection</li>
+<li>Return 429 with <code>Retry-After</code> header</li>
+</ul>
+
+<h3 id="11-3-ddos-protection">11.3 DDoS Protection</h3>
+
+<strong>Required:</strong>
+<ul>
+<li>Request size limits (max 100KB)</li>
+<li>Connection limits (max 1000 concurrent)</li>
+<li>IP-based rate limiting</li>
+<li>Geographic filtering (optional)</li>
+</ul>
+
+<strong>Recommended:</strong>
+<ul>
+<li>CDN/WAF integration</li>
+<li>Anycast DNS</li>
+<li>Health checks and failover</li>
+</ul>
+
+<h3 id="11-4-privacy">11.4 Privacy</h3>
+
+<strong>Minimize Data Sharing:</strong>
+<ul>
+<li>Only share data necessary for call setup</li>
+<li>Do not log call content</li>
+<li>Encrypt all location data in transit</li>
+<li>Retain logs for 24 hours only (except legal requirement)</li>
+</ul>
+
+<strong>GDPR Compliance:</strong>
+<ul>
+<li>Support right to erasure</li>
+<li>Data minimization principle</li>
+<li>Lawful basis for processing</li>
+<li>Privacy by design</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="12-implementation-requirements">12. Implementation Requirements</h2>
+
+<h3 id="12-1-mandatory-features">12.1 Mandatory Features</h3>
+
+<strong>All implementations MUST support:</strong>
+<ul>
+<li>✅ Authentication Option 1 (Direct Query)</li>
+<li>✅ Routing discovery and setup</li>
+<li>✅ Directory lookup and caching</li>
+<li>✅ TLS 1.3</li>
+<li>✅ Message signing and verification</li>
+<li>✅ Error handling with fallback</li>
+<li>✅ Porting chain resolution</li>
+<li>✅ Basic encryption (SRTP)</li>
+</ul>
+
+<h3 id="12-2-optional-features">12.2 Optional Features</h3>
+
+<strong>Implementations MAY support:</strong>
+<ul>
+<li>Authentication Option 2 (Token Pool)</li>
+<li>Emergency location services</li>
+<li>Call branding</li>
+<li>Video calling</li>
+<li>Advanced codecs (Opus HD)</li>
+</ul>
+
+<h3 id="12-3-performance-targets">12.3 Performance Targets</h3>
+
+<strong>Latency:</strong>
+<ul>
+<li>Authentication: < 100ms (95th percentile)</li>
+<li>Routing request: < 200ms (95th percentile)</li>
+<li>Directory lookup: < 50ms (cache hit)</li>
+<li>Total call setup: < 1 second</li>
+</ul>
+
+<strong>Throughput:</strong>
+<ul>
+<li>Auth requests: 100/sec minimum per CP</li>
+<li>Concurrent calls: 1000 minimum per CP</li>
+<li>Directory entries: 100,000 ranges cached</li>
+</ul>
+
+<strong>Reliability:</strong>
+<ul>
+<li>Uptime: 99.9% (8.76 hours downtime/year)</li>
+<li>Fallback success: 99.99%</li>
+<li>Message delivery: 99.9%</li>
+</ul>
+
+<h3 id="12-4-testing-requirements">12.4 Testing Requirements</h3>
+
+<strong>Unit Tests:</strong>
+<ul>
+<li>Code coverage: > 80%</li>
+<li>All error conditions tested</li>
+<li>Edge cases covered</li>
+</ul>
+
+<strong>Integration Tests:</strong>
+<ul>
+<li>Multi-CP scenarios</li>
+<li>Porting chain resolution</li>
+<li>Fallback to traditional PSTN</li>
+<li>Network failure scenarios</li>
+</ul>
+
+<strong>Load Tests:</strong>
+<ul>
+<li>Sustained load at target throughput</li>
+<li>Spike handling (10x normal load)</li>
+<li>Resource limits (memory, CPU, connections)</li>
+</ul>
+
+<h3 id="12-5-logging-requirements">12.5 Logging Requirements</h3>
+
+<strong>Required Logs:</strong>
+<ul>
+<li>All authentication requests (success/failure)</li>
+<li>All routing requests</li>
+<li>All errors with stack traces</li>
+<li>Performance metrics (latency, throughput)</li>
+</ul>
+
+<strong>Log Format:</strong>
+<ul>
+<li>Structured JSON</li>
+<li>ISO 8601 timestamps</li>
+<li>Request IDs for tracing</li>
+<li>No PII in logs (except required for debugging)</li>
+</ul>
+
+<strong>Retention:</strong>
+<ul>
+<li>Standard logs: 24 hours</li>
+<li>Error logs: 7 days</li>
+<li>Audit logs: As required by regulation</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="appendix-a-example-call-flow">Appendix A: Example Call Flow</h2>
+
+<h3 id="complete-call-alice-bob">Complete Call: Alice → Bob</h3>
+
+<ul>
+<li><strong>Alice dials Bob's number</strong> (<code>+447700900123</code>)</li>
+<li><strong>CP1 (Alice's CP) looks up Bob's CP</strong> in cached directory</li>
+<li><strong>CP1 requests routing</strong> from CP2 (Bob's CP)</li>
+</ul>
+   <pre><code class="language-json">POST https://api.cp2.example.com/pstn2/v1/routing/request</code></pre>
+<ul>
+<li><strong>CP2 accepts and returns connection details</strong></li>
+<li><strong>CP1 establishes encrypted media</strong> with CP2</li>
+<li><strong>Bob's phone rings</strong> with caller ID and branding</li>
+<li><strong>Bob answers</strong>, encrypted conversation begins</li>
+<li><strong>Call completes</strong>, logs retained for 24 hours</li>
+</ul>
+
+<p>Total time: ~800ms (vs 5-8 seconds traditional PSTN)</p>
+
+<p>---</p>
+
+<h2 id="appendix-b-security-audit-checklist">Appendix B: Security Audit Checklist</h2>
+
+<ul>
+<li>[ ] TLS 1.3 enforced on all endpoints</li>
+<li>[ ] Ed25519 keys properly generated and stored</li>
+<li>[ ] Message signatures verified on all requests</li>
+<li>[ ] Rate limiting implemented per specification</li>
+<li>[ ] Porting chain limits enforced (max 5 hops)</li>
+<li>[ ] Request size limits enforced (max 100KB)</li>
+<li>[ ] Timeouts configured (2s default)</li>
+<li>[ ] Error messages do not leak sensitive information</li>
+<li>[ ] Logs do not contain private keys or passwords</li>
+<li>[ ] PSAP authentication implemented for emergency queries</li>
+</ul>
+
+<p>---</p>
+
+<h2 id="appendix-c-version-history">Appendix C: Version History</h2>
+
+<ul>
+<li><strong>v1.0</strong> (2025-11-30): Initial specification</li>
+</ul>
+<p>  - Core authentication (Option 1 & 2)</p>
+<p>  - Direct routing</p>
+<p>  - Directory service</p>
+<p>  - Emergency services</p>
+<p>  - Encryption</p>
+
+<p>---</p>
+
+<h2 id="appendix-d-references">Appendix D: References</h2>
+
+<ul>
+<li>RFC 3711: SRTP (Secure Real-time Transport Protocol)</li>
+<li>RFC 5764: DTLS-SRTP</li>
+<li>RFC 8032: Ed25519 Signatures</li>
+<li>RFC 9147: DTLS 1.3</li>
+<li>E.164: International telephone numbering plan</li>
+<li>ISO 8601: Date and time format</li>
+</ul>
+
+<p>---</p>
+
+<p><strong>Document Status:</strong> Living Specification</p>
+<p><strong>Feedback:</strong> https://github.com/pstn2/pstn2/issues</p>
+<p><strong>Website:</strong> https://pstn2.org</p>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

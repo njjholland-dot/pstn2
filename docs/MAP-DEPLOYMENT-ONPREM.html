@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAP Deployment On-Premises | PSTN2</title>
+    <link rel="stylesheet" href="../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        <h1>MAP Deployment On-Premises</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#when-to-choose-on-premises">When to Choose On-Premises</a>
+                <a href="#architecture-overview">Architecture Overview</a>
+                <a href="#hardware-requirements">Hardware Requirements</a>
+                <a href="#software-stack">Software Stack</a>
+                <a href="#deployment-steps">Deployment Steps</a>
+                <a href="#performance-tuning">Performance Tuning</a>
+                <a href="#disaster-recovery">Disaster Recovery</a>
+                <a href="#comparison-on-premises-vs-aws">Comparison: On-Premises vs AWS</a>
+                <a href="#conclusion">Conclusion</a>
+                <a href="MAP-DEPLOYMENT-ONPREM.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="map-deployment-on-premises">MAP Deployment On-Premises</h1>
+
+<p><strong>Version:</strong> 1.0</p>
+<p><strong>Date:</strong> 2025-12-01</p>
+<p><strong>Target Audience:</strong> System Administrators, Infrastructure Engineers</p>
+
+<h2 id="overview">Overview</h2>
+
+<p>This guide describes deploying a MAP (Managed Access Provider) on your own infrastructure using open-source components. This approach provides <strong>full control</strong>, <strong>data sovereignty</strong>, and <strong>lower operational costs at scale</strong> compared to cloud deployment.</p>
+
+<h2 id="when-to-choose-on-premises">When to Choose On-Premises</h2>
+
+<strong>✅ Good For:</strong>
+<ul>
+<li>Full Service MAPs with existing data centers</li>
+<li>Large-scale operations (>1M calls/day)</li>
+<li>Regulatory requirements (data residency)</li>
+<li>Organizations with strong in-house operations teams</li>
+<li>Cost-conscious deployments at scale</li>
+</ul>
+
+<strong>❌ Not Ideal For:</strong>
+<ul>
+<li>Startups or small operations</li>
+<li>Limited technical staff</li>
+<li>Rapid time-to-market requirements</li>
+<li>Global multi-region deployments</li>
+<li>Variable/unpredictable load</li>
+</ul>
+
+<h2 id="architecture-overview">Architecture Overview</h2>
+
+<pre><code class="language-">┌────────────────────────────────────────────────────────────────┐
+<p>│                     On-Premises Infrastructure                  │</p>
+<p>│                                                                  │</p>
+<p>│  ┌────────────────────────────────────────────────────────┐    │</p>
+<p>│  │              HAProxy Load Balancer (2x)                 │    │</p>
+<p>│  │          Primary + Backup (VRRP/Keepalived)             │    │</p>
+<p>│  └─────────────────────┬──────────────────────────────────┘    │</p>
+<p>│                        │                                         │</p>
+<p>│  ┌─────────────────────▼──────────────────────────────────┐    │</p>
+<p>│  │          API Servers (3-10x Docker Containers)          │    │</p>
+<p>│  │           nginx + Node.js/Python/Go                     │    │</p>
+<p>│  └──────┬─────────────┬──────────────┬────────────────────┘    │</p>
+<p>│         │             │              │                           │</p>
+<p>│  ┌──────▼─────┐ ┌────▼──────┐ ┌────▼──────┐                   │</p>
+<p>│  │   Redis    │ │PostgreSQL │ │   Redis   │                   │</p>
+<p>│  │  Primary   │ │  Primary  │ │  Replica  │                   │</p>
+<p>│  └──────┬─────┘ └────┬──────┘ └───────────┘                   │</p>
+<p>│         │             │                                          │</p>
+<p>│  ┌──────▼─────┐ ┌────▼──────┐                                  │</p>
+<p>│  │   Redis    │ │PostgreSQL │                                  │</p>
+<p>│  │  Replica   │ │  Replica  │                                  │</p>
+<p>│  └────────────┘ └───────────┘                                  │</p>
+<p>│                                                                  │</p>
+<p>│  ┌──────────────────────────────────────────────────────────┐  │</p>
+<p>│  │          Monitoring (Prometheus + Grafana)                │  │</p>
+<p>│  └──────────────────────────────────────────────────────────┘  │</p>
+<p>│                                                                  │</p>
+<p>│  ┌──────────────────────────────────────────────────────────┐  │</p>
+<p>│  │      Logging (ELK Stack - Elasticsearch/Logstash/Kibana) │  │</p>
+<p>│  └──────────────────────────────────────────────────────────┘  │</p>
+<p>│                                                                  │</p>
+<p>│  ┌──────────────────────────────────────────────────────────┐  │</p>
+<p>│  │             Backup (Bacula/Restic to NAS/S3)             │  │</p>
+<p>│  └──────────────────────────────────────────────────────────┘  │</p>
+<p>│                                                                  │</p>
+<p>└────────────────────────────────────────────────────────────────┘</code></pre></p>
+
+<h2 id="hardware-requirements">Hardware Requirements</h2>
+
+<h3 id="small-deployment-1-50-downstream-cps">Small Deployment (1-50 Downstream CPs)</h3>
+
+<p>| Component | Specs | Quantity | Notes |</p>
+<p>|-----------|-------|----------|-------|</p>
+<p>| <strong>Load Balancer</strong> | 4 CPU, 8GB RAM, 100GB SSD | 2 | HAProxy, high availability |</p>
+<p>| <strong>API Servers</strong> | 8 CPU, 16GB RAM, 200GB SSD | 3 | Docker containers |</p>
+<p>| <strong>Database (Primary)</strong> | 16 CPU, 64GB RAM, 1TB NVMe SSD | 1 | PostgreSQL 15+ |</p>
+<p>| <strong>Database (Replica)</strong> | 16 CPU, 64GB RAM, 1TB NVMe SSD | 1 | Read replica |</p>
+<p>| <strong>Redis Cache</strong> | 8 CPU, 32GB RAM, 500GB SSD | 2 | Primary + replica |</p>
+<p>| <strong>Monitoring</strong> | 4 CPU, 16GB RAM, 500GB SSD | 1 | Prometheus + Grafana |</p>
+<p>| <strong>Logging</strong> | 8 CPU, 32GB RAM, 2TB SSD | 1 | ELK stack |</p>
+<p>| <strong>Total Servers</strong> | - | <strong>11</strong> | - |</p>
+
+<p><strong>Estimated Cost:</strong> $5,000-$15,000 (hardware) + $500-$1,000/month (power, cooling, bandwidth)</p>
+
+<h3 id="medium-deployment-50-500-downstream-cps">Medium Deployment (50-500 Downstream CPs)</h3>
+
+<p>| Component | Specs | Quantity | Notes |</p>
+<p>|-----------|-------|----------|-------|</p>
+<p>| <strong>Load Balancer</strong> | 8 CPU, 16GB RAM, 200GB SSD | 2 | HAProxy |</p>
+<p>| <strong>API Servers</strong> | 16 CPU, 32GB RAM, 500GB SSD | 5-10 | Scale as needed |</p>
+<p>| <strong>Database (Primary)</strong> | 32 CPU, 128GB RAM, 2TB NVMe SSD | 1 | PostgreSQL |</p>
+<p>| <strong>Database (Replicas)</strong> | 32 CPU, 128GB RAM, 2TB NVMe SSD | 2 | Read replicas |</p>
+<p>| <strong>Redis Cache</strong> | 16 CPU, 64GB RAM, 1TB SSD | 3 | 1 primary + 2 replicas |</p>
+<p>| <strong>Monitoring</strong> | 8 CPU, 32GB RAM, 1TB SSD | 2 | HA Prometheus |</p>
+<p>| <strong>Logging</strong> | 16 CPU, 64GB RAM, 5TB SSD | 2 | ELK cluster |</p>
+<p>| <strong>Total Servers</strong> | - | <strong>18-23</strong> | - |</p>
+
+<p><strong>Estimated Cost:</strong> $20,000-$50,000 (hardware) + $2,000-$5,000/month (operations)</p>
+
+<h2 id="software-stack">Software Stack</h2>
+
+<h3 id="core-components">Core Components</h3>
+
+<p>| Component | Software | Version | Purpose |</p>
+<p>|-----------|----------|---------|---------|</p>
+<p>| <strong>Operating System</strong> | Ubuntu Server LTS | 24.04 | Base OS |</p>
+<p>| <strong>Load Balancer</strong> | HAProxy | 2.8+ | Layer 7 load balancing |</p>
+<p>| <strong>High Availability</strong> | Keepalived | 2.2+ | VRRP for failover |</p>
+<p>| <strong>Container Runtime</strong> | Docker + Docker Compose | 24+ | Application containers |</p>
+<p>| <strong>Orchestration (Optional)</strong> | Kubernetes (k3s) | 1.28+ | For larger deployments |</p>
+<p>| <strong>Database</strong> | PostgreSQL | 15.4+ | Primary data store |</p>
+<p>| <strong>Replication</strong> | PostgreSQL Streaming | Built-in | Database replication |</p>
+<p>| <strong>Cache</strong> | Redis | 7.0+ | Session & directory cache |</p>
+<p>| <strong>Web Server</strong> | nginx | 1.24+ | Reverse proxy, static files |</p>
+<p>| <strong>Monitoring</strong> | Prometheus + Grafana | Latest | Metrics & dashboards |</p>
+<p>| <strong>Logging</strong> | ELK Stack | 8.x | Log aggregation |</p>
+<p>| <strong>Backup</strong> | Restic / Bacula | Latest | Automated backups |</p>
+<p>| <strong>TLS Certificates</strong> | Let's Encrypt (certbot) | Latest | Free SSL/TLS |</p>
+
+<h2 id="deployment-steps">Deployment Steps</h2>
+
+<h3 id="step-1-prepare-servers">Step 1: Prepare Servers</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;on-all-servers-as-root&quot;&gt;On all servers (as root)&lt;/h1&gt;
+
+<p>&lt;h1 id=&quot;update-system&quot;&gt;Update system&lt;/h1&gt;</p>
+<p>apt update &amp;&amp; apt upgrade -y</p>
+
+<p>&lt;h1 id=&quot;install-essentials&quot;&gt;Install essentials&lt;/h1&gt;</p>
+<p>apt install -y curl wget git vim htop net-tools</p>
+
+<p>&lt;h1 id=&quot;configure-ntp-for-time-synchronization&quot;&gt;Configure NTP for time synchronization&lt;/h1&gt;</p>
+<p>apt install -y chrony</p>
+<p>systemctl enable chrony</p>
+<p>systemctl start chrony</p>
+
+<p>&lt;h1 id=&quot;configure-firewall-ufw&quot;&gt;Configure firewall (UFW)&lt;/h1&gt;</p>
+<p>ufw allow 22/tcp     # SSH</p>
+<p>ufw allow 80/tcp     # HTTP</p>
+<p>ufw allow 443/tcp    # HTTPS</p>
+<p>ufw enable</p>
+
+<p>&lt;h1 id=&quot;disable-swap-recommended-for-databases&quot;&gt;Disable swap (recommended for databases)&lt;/h1&gt;</p>
+<p>swapoff -a</p>
+<p>sed -i &#039;/swap/d&#039; /etc/fstab</p>
+
+<p>&lt;h1 id=&quot;set-up-log-rotation&quot;&gt;Set up log rotation&lt;/h1&gt;</p>
+<p>cat &gt; /etc/logrotate.d/map &lt;&lt; EOF</p>
+<p>/var/log/map/*.log {</p>
+<p>    daily</p>
+<p>    rotate 30</p>
+<p>    compress</p>
+<p>    delaycompress</p>
+<p>    notifempty</p>
+<p>    create 0640 www-data www-data</p>
+<p>    sharedscripts</p>
+<p>}</p>
+<p>EOF</code></pre></p>
+
+<h3 id="step-2-install-docker">Step 2: Install Docker</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;install-docker&quot;&gt;Install Docker&lt;/h1&gt;
+<p>curl -fsSL https://get.docker.com -o get-docker.sh</p>
+<p>sh get-docker.sh</p>
+
+<p>&lt;h1 id=&quot;add-user-to-docker-group&quot;&gt;Add user to docker group&lt;/h1&gt;</p>
+<p>usermod -aG docker $USER</p>
+
+<p>&lt;h1 id=&quot;install-docker-compose&quot;&gt;Install Docker Compose&lt;/h1&gt;</p>
+<p>apt install -y docker-compose</p>
+
+<p>&lt;h1 id=&quot;enable-docker-service&quot;&gt;Enable Docker service&lt;/h1&gt;</p>
+<p>systemctl enable docker</p>
+<p>systemctl start docker</code></pre></p>
+
+<h3 id="step-3-set-up-postgresql-primary">Step 3: Set Up PostgreSQL (Primary)</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;install-postgresql&quot;&gt;Install PostgreSQL&lt;/h1&gt;
+<p>apt install -y postgresql-15 postgresql-contrib-15</p>
+
+<p>&lt;h1 id=&quot;configure-postgresql&quot;&gt;Configure PostgreSQL&lt;/h1&gt;</p>
+<p>cat &gt; /etc/postgresql/15/main/postgresql.conf &lt;&lt; EOF</p>
+<p>&lt;h1 id=&quot;connection-settings&quot;&gt;Connection settings&lt;/h1&gt;</p>
+<p>listen_addresses = &#039;*&#039;</p>
+<p>max_connections = 500</p>
+
+<p>&lt;h1 id=&quot;memory-settings-adjust-based-on-ram&quot;&gt;Memory settings (adjust based on RAM)&lt;/h1&gt;</p>
+<p>shared_buffers = 16GB           # 25% of RAM</p>
+<p>effective<em>cache</em>size = 48GB     # 75% of RAM</p>
+<p>work_mem = 32MB</p>
+<p>maintenance<em>work</em>mem = 2GB</p>
+
+<p>&lt;h1 id=&quot;write-ahead-log-settings&quot;&gt;Write-ahead log settings&lt;/h1&gt;</p>
+<p>wal_level = replica</p>
+<p>max<em>wal</em>senders = 5</p>
+<p>wal<em>keep</em>size = 1GB</p>
+<p>hot_standby = on</p>
+
+<p>&lt;h1 id=&quot;performance-settings&quot;&gt;Performance settings&lt;/h1&gt;</p>
+<p>random<em>page</em>cost = 1.1          # For SSD</p>
+<p>effective<em>io</em>concurrency = 200  # For SSD</p>
+<p>checkpoint<em>completion</em>target = 0.9</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;configure-authentication&quot;&gt;Configure authentication&lt;/h1&gt;</p>
+<p>cat &gt; /etc/postgresql/15/main/pg_hba.conf &lt;&lt; EOF</p>
+<p>&lt;h1 id=&quot;type-database-user-address-method&quot;&gt;TYPE  DATABASE        USER            ADDRESS                 METHOD&lt;/h1&gt;</p>
+<p>local   all             postgres                                peer</p>
+<p>host    all             all             10.0.0.0/8              scram-sha-256</p>
+<p>host    replication     replicator      10.0.0.0/8              scram-sha-256</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;restart-postgresql&quot;&gt;Restart PostgreSQL&lt;/h1&gt;</p>
+<p>systemctl restart postgresql</p>
+
+<p>&lt;h1 id=&quot;create-replication-user&quot;&gt;Create replication user&lt;/h1&gt;</p>
+<p>sudo -u postgres psql &lt;&lt; EOF</p>
+<p>CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD &#039;secure<em>replication</em>password&#039;;</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;create-map-database&quot;&gt;Create MAP database&lt;/h1&gt;</p>
+<p>sudo -u postgres createdb mapdb</p>
+<p>sudo -u postgres createuser mapadmin</p>
+<p>sudo -u postgres psql &lt;&lt; EOF</p>
+<p>ALTER USER mapadmin WITH ENCRYPTED PASSWORD &#039;secure<em>admin</em>password&#039;;</p>
+<p>GRANT ALL PRIVILEGES ON DATABASE mapdb TO mapadmin;</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;initialize-schema&quot;&gt;Initialize schema&lt;/h1&gt;</p>
+<p>sudo -u postgres psql -d mapdb -f /path/to/schema.sql</code></pre></p>
+
+<h3 id="step-4-set-up-postgresql-replica">Step 4: Set Up PostgreSQL (Replica)</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;on-replica-server&quot;&gt;On replica server&lt;/h1&gt;
+
+<p>&lt;h1 id=&quot;stop-postgresql&quot;&gt;Stop PostgreSQL&lt;/h1&gt;</p>
+<p>systemctl stop postgresql</p>
+
+<p>&lt;h1 id=&quot;remove-existing-data-directory&quot;&gt;Remove existing data directory&lt;/h1&gt;</p>
+<p>rm -rf /var/lib/postgresql/15/main/*</p>
+
+<p>&lt;h1 id=&quot;create-base-backup-from-primary&quot;&gt;Create base backup from primary&lt;/h1&gt;</p>
+<p>sudo -u postgres pg_basebackup -h &lt;primary-ip&gt; -D /var/lib/postgresql/15/main -U replicator -P -v -R -X stream -C -S replica1</p>
+
+<p>&lt;h1 id=&quot;start-postgresql-replica&quot;&gt;Start PostgreSQL replica&lt;/h1&gt;</p>
+<p>systemctl start postgresql</p>
+
+<p>&lt;h1 id=&quot;verify-replication&quot;&gt;Verify replication&lt;/h1&gt;</p>
+<p>sudo -u postgres psql -c &quot;SELECT * FROM pg<em>stat</em>replication;&quot;</code></pre></p>
+
+<h3 id="step-5-set-up-redis-cluster">Step 5: Set Up Redis Cluster</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;on-primary-redis-server&quot;&gt;On primary Redis server&lt;/h1&gt;
+
+<p>&lt;h1 id=&quot;install-redis&quot;&gt;Install Redis&lt;/h1&gt;</p>
+<p>apt install -y redis-server</p>
+
+<p>&lt;h1 id=&quot;configure-redis&quot;&gt;Configure Redis&lt;/h1&gt;</p>
+<p>cat &gt; /etc/redis/redis.conf &lt;&lt; EOF</p>
+<p>&lt;h1 id=&quot;network&quot;&gt;Network&lt;/h1&gt;</p>
+<p>bind 0.0.0.0</p>
+<p>port 6379</p>
+<p>protected-mode yes</p>
+<p>requirepass secure<em>redis</em>password</p>
+
+<p>&lt;h1 id=&quot;memory&quot;&gt;Memory&lt;/h1&gt;</p>
+<p>maxmemory 24gb</p>
+<p>maxmemory-policy allkeys-lru</p>
+
+<p>&lt;h1 id=&quot;persistence&quot;&gt;Persistence&lt;/h1&gt;</p>
+<p>save 900 1</p>
+<p>save 300 10</p>
+<p>save 60 10000</p>
+<p>appendonly yes</p>
+
+<p>&lt;h1 id=&quot;replication&quot;&gt;Replication&lt;/h1&gt;</p>
+<p>replicaof &lt;replica-will-set-this&gt;</p>
+<p>masterauth secure<em>redis</em>password</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;restart-redis&quot;&gt;Restart Redis&lt;/h1&gt;</p>
+<p>systemctl restart redis</p>
+
+<p>&lt;h1 id=&quot;on-replica-redis-servers&quot;&gt;On replica Redis servers&lt;/h1&gt;</p>
+<p>cat &gt;&gt; /etc/redis/redis.conf &lt;&lt; EOF</p>
+<p>replicaof &lt;primary-redis-ip&gt; 6379</p>
+<p>EOF</p>
+
+<p>systemctl restart redis</code></pre></p>
+
+<h3 id="step-6-set-up-load-balancers-haproxy">Step 6: Set Up Load Balancers (HAProxy)</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;on-both-load-balancer-servers&quot;&gt;On both load balancer servers&lt;/h1&gt;
+
+<p>&lt;h1 id=&quot;install-haproxy-and-keepalived&quot;&gt;Install HAProxy and Keepalived&lt;/h1&gt;</p>
+<p>apt install -y haproxy keepalived</p>
+
+<p>&lt;h1 id=&quot;configure-haproxy&quot;&gt;Configure HAProxy&lt;/h1&gt;</p>
+<p>cat &gt; /etc/haproxy/haproxy.cfg &lt;&lt; EOF</p>
+<p>global</p>
+<p>    log /dev/log local0</p>
+<p>    log /dev/log local1 notice</p>
+<p>    chroot /var/lib/haproxy</p>
+<p>    stats socket /run/haproxy/admin.sock mode 660 level admin</p>
+<p>    stats timeout 30s</p>
+<p>    user haproxy</p>
+<p>    group haproxy</p>
+<p>    daemon</p>
+
+<p>    # SSL/TLS settings</p>
+<p>    ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256</p>
+<p>    ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets</p>
+
+<p>defaults</p>
+<p>    log     global</p>
+<p>    mode    http</p>
+<p>    option  httplog</p>
+<p>    option  dontlognull</p>
+<p>    timeout connect 5000</p>
+<p>    timeout client  50000</p>
+<p>    timeout server  50000</p>
+
+<p>&lt;h1 id=&quot;stats-page&quot;&gt;Stats page&lt;/h1&gt;</p>
+<p>listen stats</p>
+<p>    bind *:8404</p>
+<p>    mode http</p>
+<p>    stats enable</p>
+<p>    stats uri /stats</p>
+<p>    stats refresh 30s</p>
+<p>    stats auth admin:secure<em>stats</em>password</p>
+
+<p>&lt;h1 id=&quot;frontend-https&quot;&gt;Frontend (HTTPS)&lt;/h1&gt;</p>
+<p>frontend https_front</p>
+<p>    bind *:443 ssl crt /etc/ssl/certs/map-certificate.pem</p>
+<p>    bind *:80</p>
+<p>    redirect scheme https code 301 if !{ ssl_fc }</p>
+
+<p>    # Rate limiting</p>
+<p>    stick-table type ip size 100k expire 30s store http<em>req</em>rate(10s)</p>
+<p>    http-request track-sc0 src</p>
+<p>    http-request deny deny<em>status 429 if { sc</em>http<em>req</em>rate(0) gt 100 }</p>
+
+<p>    # Security headers</p>
+<p>    http-response set-header Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot;</p>
+<p>    http-response set-header X-Frame-Options &quot;DENY&quot;</p>
+<p>    http-response set-header X-Content-Type-Options &quot;nosniff&quot;</p>
+
+<p>    default<em>backend api</em>servers</p>
+
+<p>&lt;h1 id=&quot;backend-api-servers&quot;&gt;Backend (API Servers)&lt;/h1&gt;</p>
+<p>backend api_servers</p>
+<p>    balance roundrobin</p>
+<p>    option httpchk GET /health</p>
+<p>    http-check expect status 200</p>
+
+<p>    server api1 10.0.1.10:3000 check inter 5s rise 2 fall 3</p>
+<p>    server api2 10.0.1.11:3000 check inter 5s rise 2 fall 3</p>
+<p>    server api3 10.0.1.12:3000 check inter 5s rise 2 fall 3</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;configure-keepalived-primary&quot;&gt;Configure Keepalived (Primary)&lt;/h1&gt;</p>
+<p>cat &gt; /etc/keepalived/keepalived.conf &lt;&lt; EOF</p>
+<p>vrrp<em>script chk</em>haproxy {</p>
+<p>    script &quot;killall -0 haproxy&quot;</p>
+<p>    interval 2</p>
+<p>    weight 2</p>
+<p>}</p>
+
+<p>vrrp<em>instance VI</em>1 {</p>
+<p>    interface eth0</p>
+<p>    state MASTER</p>
+<p>    virtual<em>router</em>id 51</p>
+<p>    priority 101  # Higher on primary</p>
+<p>    advert_int 1</p>
+
+<p>    authentication {</p>
+<p>        auth_type PASS</p>
+<p>        auth<em>pass secure</em>vrrp_password</p>
+<p>    }</p>
+
+<p>    virtual_ipaddress {</p>
+<p>        10.0.0.100/24  # Virtual IP</p>
+<p>    }</p>
+
+<p>    track_script {</p>
+<p>        chk_haproxy</p>
+<p>    }</p>
+<p>}</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;on-backup-load-balancer-set-priority-to-100-instead-of-101&quot;&gt;On backup load balancer, set priority to 100 instead of 101&lt;/h1&gt;</p>
+
+<p>&lt;h1 id=&quot;start-services&quot;&gt;Start services&lt;/h1&gt;</p>
+<p>systemctl enable haproxy keepalived</p>
+<p>systemctl restart haproxy keepalived</code></pre></p>
+
+<h3 id="step-7-deploy-api-servers">Step 7: Deploy API Servers</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;on-each-api-server&quot;&gt;On each API server&lt;/h1&gt;
+
+<p>&lt;h1 id=&quot;create-docker-compose-yml&quot;&gt;Create docker-compose.yml&lt;/h1&gt;</p>
+<p>cat &gt; /opt/map/docker-compose.yml &lt;&lt; EOF</p>
+<p>version: &#039;3.8&#039;</p>
+
+<p>services:</p>
+<p>  api:</p>
+<p>    image: map-api-server:latest</p>
+<p>    container_name: map-api</p>
+<p>    restart: always</p>
+<p>    ports:</p>
+<p>      - &quot;3000:3000&quot;</p>
+<p>    environment:</p>
+<p>      - NODE_ENV=production</p>
+<p>      - PORT=3000</p>
+<p>      - DB_HOST=10.0.2.10</p>
+<p>      - DB_PORT=5432</p>
+<p>      - DB_NAME=mapdb</p>
+<p>      - DB_USER=mapadmin</p>
+<p>      - DB<em>PASSWORD=secure</em>admin_password</p>
+<p>      - REDIS_HOST=10.0.3.10</p>
+<p>      - REDIS_PORT=6379</p>
+<p>      - REDIS<em>PASSWORD=secure</em>redis_password</p>
+<p>      - MASTER<em>KEY</em>FILE=/secrets/master-key.txt</p>
+<p>    volumes:</p>
+<p>      - /opt/map/secrets:/secrets:ro</p>
+<p>      - /var/log/map:/var/log/map</p>
+<p>    logging:</p>
+<p>      driver: &quot;json-file&quot;</p>
+<p>      options:</p>
+<p>        max-size: &quot;10m&quot;</p>
+<p>        max-file: &quot;10&quot;</p>
+
+<p>  nginx:</p>
+<p>    image: nginx:latest</p>
+<p>    container_name: map-nginx</p>
+<p>    restart: always</p>
+<p>    ports:</p>
+<p>      - &quot;80:80&quot;</p>
+<p>    volumes:</p>
+<p>      - /opt/map/nginx.conf:/etc/nginx/nginx.conf:ro</p>
+<p>    depends_on:</p>
+<p>      - api</p>
+
+<p>networks:</p>
+<p>  default:</p>
+<p>    driver: bridge</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;create-nginx-config&quot;&gt;Create nginx config&lt;/h1&gt;</p>
+<p>cat &gt; /opt/map/nginx.conf &lt;&lt; EOF</p>
+<p>worker_processes auto;</p>
+
+<p>events {</p>
+<p>    worker_connections 4096;</p>
+<p>}</p>
+
+<p>http {</p>
+<p>    upstream api_backend {</p>
+<p>        server api:3000;</p>
+<p>    }</p>
+
+<p>    server {</p>
+<p>        listen 80;</p>
+
+<p>        location /health {</p>
+<p>            proxy<em>pass http://api</em>backend/health;</p>
+<p>            proxy<em>http</em>version 1.1;</p>
+<p>            proxy<em>set</em>header Connection &quot;&quot;;</p>
+<p>        }</p>
+
+<p>        location / {</p>
+<p>            proxy<em>pass http://api</em>backend;</p>
+<p>            proxy<em>http</em>version 1.1;</p>
+<p>            proxy<em>set</em>header Host \$host;</p>
+<p>            proxy<em>set</em>header X-Real-IP \$remote_addr;</p>
+<p>            proxy<em>set</em>header X-Forwarded-For \$proxy<em>add</em>x<em>forwarded</em>for;</p>
+<p>            proxy<em>set</em>header X-Forwarded-Proto \$scheme;</p>
+
+<p>            # Timeouts</p>
+<p>            proxy<em>connect</em>timeout 5s;</p>
+<p>            proxy<em>send</em>timeout 60s;</p>
+<p>            proxy<em>read</em>timeout 60s;</p>
+<p>        }</p>
+<p>    }</p>
+<p>}</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;start-services&quot;&gt;Start services&lt;/h1&gt;</p>
+<p>cd /opt/map</p>
+<p>docker-compose up -d</code></pre></p>
+
+<h3 id="step-8-set-up-monitoring-prometheus-grafana">Step 8: Set Up Monitoring (Prometheus + Grafana)</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;create-monitoring-stack&quot;&gt;Create monitoring stack&lt;/h1&gt;
+<p>cat &gt; /opt/monitoring/docker-compose.yml &lt;&lt; EOF</p>
+<p>version: &#039;3.8&#039;</p>
+
+<p>services:</p>
+<p>  prometheus:</p>
+<p>    image: prom/prometheus:latest</p>
+<p>    container_name: prometheus</p>
+<p>    restart: always</p>
+<p>    ports:</p>
+<p>      - &quot;9090:9090&quot;</p>
+<p>    volumes:</p>
+<p>      - ./prometheus.yml:/etc/prometheus/prometheus.yml</p>
+<p>      - prometheus_data:/prometheus</p>
+<p>    command:</p>
+<p>      - &#039;--config.file=/etc/prometheus/prometheus.yml&#039;</p>
+<p>      - &#039;--storage.tsdb.retention.time=30d&#039;</p>
+
+<p>  grafana:</p>
+<p>    image: grafana/grafana:latest</p>
+<p>    container_name: grafana</p>
+<p>    restart: always</p>
+<p>    ports:</p>
+<p>      - &quot;3001:3000&quot;</p>
+<p>    volumes:</p>
+<p>      - grafana_data:/var/lib/grafana</p>
+<p>    environment:</p>
+<p>      - GF<em>SECURITY</em>ADMIN<em>PASSWORD=secure</em>grafana_password</p>
+
+<p>  node_exporter:</p>
+<p>    image: prom/node-exporter:latest</p>
+<p>    container<em>name: node</em>exporter</p>
+<p>    restart: always</p>
+<p>    ports:</p>
+<p>      - &quot;9100:9100&quot;</p>
+
+<p>  postgres_exporter:</p>
+<p>    image: prometheuscommunity/postgres-exporter:latest</p>
+<p>    container<em>name: postgres</em>exporter</p>
+<p>    restart: always</p>
+<p>    ports:</p>
+<p>      - &quot;9187:9187&quot;</p>
+<p>    environment:</p>
+<p>      - DATA<em>SOURCE</em>NAME=postgresql://mapadmin:secure<em>admin</em>password@10.0.2.10:5432/mapdb?sslmode=disable</p>
+
+<p>volumes:</p>
+<p>  prometheus_data:</p>
+<p>  grafana_data:</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;create-prometheus-config&quot;&gt;Create Prometheus config&lt;/h1&gt;</p>
+<p>cat &gt; /opt/monitoring/prometheus.yml &lt;&lt; EOF</p>
+<p>global:</p>
+<p>  scrape_interval: 15s</p>
+
+<p>scrape_configs:</p>
+<p>  - job_name: &#039;prometheus&#039;</p>
+<p>    static_configs:</p>
+<p>      - targets: [&#039;localhost:9090&#039;]</p>
+
+<p>  - job_name: &#039;node&#039;</p>
+<p>    static_configs:</p>
+<p>      - targets:</p>
+<p>        - &#039;10.0.1.10:9100&#039;  # API server 1</p>
+<p>        - &#039;10.0.1.11:9100&#039;  # API server 2</p>
+<p>        - &#039;10.0.1.12:9100&#039;  # API server 3</p>
+
+<p>  - job_name: &#039;postgres&#039;</p>
+<p>    static_configs:</p>
+<p>      - targets: [&#039;postgres_exporter:9187&#039;]</p>
+
+<p>  - job_name: &#039;redis&#039;</p>
+<p>    static_configs:</p>
+<p>      - targets: [&#039;10.0.3.10:9121&#039;]  # Redis exporter</p>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;start-monitoring&quot;&gt;Start monitoring&lt;/h1&gt;</p>
+<p>cd /opt/monitoring</p>
+<p>docker-compose up -d</code></pre></p>
+
+<h3 id="step-9-configure-ssl-tls-certificates">Step 9: Configure SSL/TLS Certificates</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;install-certbot&quot;&gt;Install certbot&lt;/h1&gt;
+<p>apt install -y certbot</p>
+
+<p>&lt;h1 id=&quot;obtain-certificate-use-dns-or-http-challenge&quot;&gt;Obtain certificate (use DNS or HTTP challenge)&lt;/h1&gt;</p>
+<p>certbot certonly --standalone -d api.map.example.com --email ops@example.com --agree-tos</p>
+
+<p>&lt;h1 id=&quot;create-combined-pem-file-for-haproxy&quot;&gt;Create combined PEM file for HAProxy&lt;/h1&gt;</p>
+<p>cat /etc/letsencrypt/live/api.map.example.com/fullchain.pem \</p>
+<p>    /etc/letsencrypt/live/api.map.example.com/privkey.pem \</p>
+<p>    &gt; /etc/ssl/certs/map-certificate.pem</p>
+
+<p>&lt;h1 id=&quot;set-up-auto-renewal&quot;&gt;Set up auto-renewal&lt;/h1&gt;</p>
+<p>cat &gt; /etc/cron.daily/certbot-renew &lt;&lt; EOF</p>
+<p>#!/bin/bash</p>
+<p>certbot renew --quiet --post-hook &quot;cat /etc/letsencrypt/live/api.map.example.com/fullchain.pem /etc/letsencrypt/live/api.map.example.com/privkey.pem &gt; /etc/ssl/certs/map-certificate.pem &amp;&amp; systemctl reload haproxy&quot;</p>
+<p>EOF</p>
+
+<p>chmod +x /etc/cron.daily/certbot-renew</code></pre></p>
+
+<h3 id="step-10-set-up-automated-backups">Step 10: Set Up Automated Backups</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;install-restic&quot;&gt;Install Restic&lt;/h1&gt;
+<p>apt install -y restic</p>
+
+<p>&lt;h1 id=&quot;initialize-backup-repository-to-nas-or-s3&quot;&gt;Initialize backup repository (to NAS or S3)&lt;/h1&gt;</p>
+<p>export RESTIC_REPOSITORY=/mnt/backup/map-backups</p>
+<p>export RESTIC<em>PASSWORD=secure</em>backup_password</p>
+<p>restic init</p>
+
+<p>&lt;h1 id=&quot;create-backup-script&quot;&gt;Create backup script&lt;/h1&gt;</p>
+<p>cat &gt; /usr/local/bin/map-backup.sh &lt;&lt; &#039;EOF&#039;</p>
+<p>#!/bin/bash</p>
+
+<p>export RESTIC_REPOSITORY=/mnt/backup/map-backups</p>
+<p>export RESTIC<em>PASSWORD=secure</em>backup_password</p>
+
+<p>&lt;h1 id=&quot;backup-postgresql&quot;&gt;Backup PostgreSQL&lt;/h1&gt;</p>
+<p>sudo -u postgres pg_dump mapdb | gzip &gt; /tmp/mapdb-$(date +%Y%m%d).sql.gz</p>
+
+<p>&lt;h1 id=&quot;backup-with-restic&quot;&gt;Backup with Restic&lt;/h1&gt;</p>
+<p>restic backup /tmp/mapdb-*.sql.gz \</p>
+<p>              /opt/map/secrets \</p>
+<p>              /etc/haproxy \</p>
+<p>              /etc/postgresql</p>
+
+<p>&lt;h1 id=&quot;cleanup-old-backups-keep-last-30-days&quot;&gt;Cleanup old backups (keep last 30 days)&lt;/h1&gt;</p>
+<p>restic forget --keep-daily 30 --prune</p>
+
+<p>&lt;h1 id=&quot;remove-temp-sql-dump&quot;&gt;Remove temp SQL dump&lt;/h1&gt;</p>
+<p>rm /tmp/mapdb-*.sql.gz</p>
+<p>EOF</p>
+
+<p>chmod +x /usr/local/bin/map-backup.sh</p>
+
+<p>&lt;h1 id=&quot;schedule-daily-backup-at-3-am&quot;&gt;Schedule daily backup at 3 AM&lt;/h1&gt;</p>
+<p>cat &gt; /etc/cron.d/map-backup &lt;&lt; EOF</p>
+<p>0 3 <em> </em> * root /usr/local/bin/map-backup.sh &gt;&gt; /var/log/map-backup.log 2&gt;&amp;1</p>
+<p>EOF</code></pre></p>
+
+<h2 id="performance-tuning">Performance Tuning</h2>
+
+<h3 id="postgresql">PostgreSQL</h3>
+
+<pre><code class="language-sql">-- Create indexes for multi-tenant queries
+<p>CREATE INDEX CONCURRENTLY idx<em>call</em>records<em>cp</em>timestamp</p>
+<p>    ON call<em>records(cp</em>id, timestamp DESC);</p>
+<p>CREATE INDEX CONCURRENTLY idx<em>auth</em>logs<em>cp</em>timestamp</p>
+<p>    ON auth<em>logs(cp</em>id, timestamp DESC);</p>
+<p>CREATE INDEX CONCURRENTLY idx<em>cp</em>numbers<em>cp</em>id</p>
+<p>    ON cp<em>numbers(cp</em>id);</p>
+
+<p>-- Enable parallel queries</p>
+<p>ALTER DATABASE mapdb SET max<em>parallel</em>workers<em>per</em>gather = 4;</p>
+<p>ALTER DATABASE mapdb SET max<em>parallel</em>workers = 8;</p>
+
+<p>-- Connection pooling with PgBouncer</p>
+<p>apt install -y pgbouncer</code></pre></p>
+
+<h3 id="redis">Redis</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;kernel-optimization-for-redis&quot;&gt;Kernel optimization for Redis&lt;/h1&gt;
+<p>cat &gt;&gt; /etc/sysctl.conf &lt;&lt; EOF</p>
+<p>vm.overcommit_memory = 1</p>
+<p>net.core.somaxconn = 65535</p>
+<p>EOF</p>
+
+<p>sysctl -p</code></pre></p>
+
+<h3 id="os-level-tuning">OS-Level Tuning</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;increase-file-descriptor-limits&quot;&gt;Increase file descriptor limits&lt;/h1&gt;
+<p>cat &gt;&gt; /etc/security/limits.conf &lt;&lt; EOF</p>
+<ul>
+<li>soft  nofile  65536</li>
+<li>hard  nofile  65536</li>
+</ul>
+<p>EOF</p>
+
+<p>&lt;h1 id=&quot;tcp-tuning&quot;&gt;TCP tuning&lt;/h1&gt;</p>
+<p>cat &gt;&gt; /etc/sysctl.conf &lt;&lt; EOF</p>
+<p>net.ipv4.tcp<em>fin</em>timeout = 30</p>
+<p>net.ipv4.tcp<em>keepalive</em>time = 300</p>
+<p>net.ipv4.tcp<em>max</em>syn_backlog = 8096</p>
+<p>net.core.netdev<em>max</em>backlog = 5000</p>
+<p>EOF</p>
+
+<p>sysctl -p</code></pre></p>
+
+<h2 id="disaster-recovery">Disaster Recovery</h2>
+
+<h3 id="failover-procedures">Failover Procedures</h3>
+
+<strong>Database Failover:</strong>
+<pre><code class="language-bash">&lt;h1 id=&quot;promote-replica-to-primary&quot;&gt;Promote replica to primary&lt;/h1&gt;
+<p>sudo -u postgres /usr/lib/postgresql/15/bin/pg_ctl promote -D /var/lib/postgresql/15/main</p>
+
+<p>&lt;h1 id=&quot;update-application-config-to-point-to-new-primary&quot;&gt;Update application config to point to new primary&lt;/h1&gt;</code></pre></p>
+
+<strong>Redis Failover:</strong>
+<pre><code class="language-bash">&lt;h1 id=&quot;on-replica-remove-replication-config&quot;&gt;On replica, remove replication config&lt;/h1&gt;
+<p>redis-cli CONFIG SET replicaof no one</code></pre></p>
+
+<h3 id="backup-restoration">Backup Restoration</h3>
+
+<pre><code class="language-bash">&lt;h1 id=&quot;list-available-backups&quot;&gt;List available backups&lt;/h1&gt;
+<p>restic -r /mnt/backup/map-backups snapshots</p>
+
+<p>&lt;h1 id=&quot;restore-database&quot;&gt;Restore database&lt;/h1&gt;</p>
+<p>restic -r /mnt/backup/map-backups restore latest --target /tmp/restore</p>
+
+<p>&lt;h1 id=&quot;load-into-postgresql&quot;&gt;Load into PostgreSQL&lt;/h1&gt;</p>
+<p>gunzip /tmp/restore/mapdb-*.sql.gz</p>
+<p>sudo -u postgres psql mapdb &lt; /tmp/restore/mapdb-*.sql</code></pre></p>
+
+<h2 id="comparison-on-premises-vs-aws">Comparison: On-Premises vs AWS</h2>
+
+<p>| Aspect | On-Premises | AWS |</p>
+<p>|--------|-------------|-----|</p>
+<p>| <strong>Capital Cost</strong> | High ($20K-$50K) | Low (pay-as-you-go) |</p>
+<p>| <strong>Monthly Cost</strong> | Low ($2K-$5K) | Medium ($500-$2.5K) |</p>
+<p>| <strong>Break-Even</strong> | ~12-18 months | N/A |</p>
+<p>| <strong>Time to Deploy</strong> | 1-2 weeks | 2-4 hours |</p>
+<p>| <strong>Scalability</strong> | Manual (buy hardware) | Automatic |</p>
+<p>| <strong>Maintenance</strong> | Your team | AWS managed |</p>
+<p>| <strong>Data Sovereignty</strong> | Complete control | AWS regions |</p>
+<p>| <strong>Customization</strong> | Full control | Limited |</p>
+<p>| <strong>High Availability</strong> | Your responsibility | Built-in |</p>
+
+<strong>Recommendation:</strong>
+<ul>
+<li><strong>< 50 CPs:</strong> Use AWS (faster, easier)</li>
+<li><strong>50-200 CPs:</strong> Either (depends on expertise)</li>
+<li><strong>> 200 CPs:</strong> Consider on-prem (cost savings)</li>
+</ul>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>On-premises deployment provides:</p>
+<ul>
+<li>✅ Full control over infrastructure</li>
+<li>✅ Lower costs at scale (after break-even)</li>
+<li>✅ Data sovereignty and compliance</li>
+<li>✅ Custom hardware optimization</li>
+<li>✅ No cloud vendor lock-in</li>
+</ul>
+
+<p><strong>Deployment Time:</strong> 1-2 weeks</p>
+<p><strong>Break-Even Point:</strong> 12-18 months vs AWS</p>
+<p><strong>Best For:</strong> Established carriers with operations teams</p>
+
+<p>---</p>
+
+<strong>Next Steps:</strong>
+<ul>
+<li>Order hardware</li>
+<li>Set up network infrastructure</li>
+<li>Install base OS and software</li>
+<li>Deploy and test each component</li>
+<li>Load test before production</li>
+<li>Onboard first downstream CP</li>
+</ul>
+
+<p><strong>Support:</strong> nick.holland@8x8.com</p>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

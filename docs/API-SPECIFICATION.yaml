@@ -1,0 +1,1089 @@
+openapi: 3.0.3
+info:
+  title: PSTN2 API
+  description: |
+    Distributed telecommunications protocol API for fraud prevention,
+    direct routing, and enhanced emergency services.
+
+    **Features:**
+    - Real-time caller ID authentication
+    - Direct peer-to-peer routing
+    - End-to-end encryption
+    - Emergency location services
+    - Distributed directory
+
+    **Base URL:** `https://api.{your-cp}.com/pstn2/v1`
+  version: 1.0.0
+  contact:
+    name: PSTN2 Support
+    url: https://pstn2.org
+    email: nick.holland@8x8.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.cp1.example.com/pstn2/v1
+    description: Example CP1 Server
+  - url: https://api.cp2.example.com/pstn2/v1
+    description: Example CP2 Server
+
+tags:
+  - name: Authentication
+    description: Caller ID verification endpoints
+  - name: Routing
+    description: Direct routing discovery
+  - name: Emergency
+    description: Emergency services location
+  - name: Directory
+    description: Distributed directory service
+
+paths:
+  /auth/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify caller ID (Direct Query)
+      description: |
+        Verify that a call originated from the claiming CP.
+        Used by recipient CP to authenticate inbound calls in real-time.
+
+        **Performance Target:** < 100ms response time
+      operationId: verifyCall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallVerificationRequest'
+            examples:
+              basic:
+                $ref: '#/components/examples/VerificationRequestBasic'
+      responses:
+        '200':
+          description: Verification successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallVerificationResponse'
+              examples:
+                verified:
+                  $ref: '#/components/examples/VerificationResponseVerified'
+        '301':
+          description: Number ported to different CP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortingResponse'
+        '404':
+          description: Call not found (potential fraud)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  $ref: '#/components/examples/CallNotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/tokens:
+    post:
+      tags:
+        - Authentication
+      summary: Create authentication token (Token Pool)
+      description: |
+        Create a short-lived token in the shared token pool.
+        Used before placing an outbound call.
+
+        **TTL:** 30-60 seconds typical
+      operationId: createToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+      responses:
+        '201':
+          description: Token created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenCreateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/tokens/{tokenId}:
+    get:
+      tags:
+        - Authentication
+      summary: Verify authentication token
+      description: |
+        Retrieve and verify a token from the shared pool.
+        Used by recipient CP on inbound call.
+      operationId: verifyToken
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^TK-[A-Za-z0-9]{16}$'
+          example: TK-abc123XYZ789def
+      responses:
+        '200':
+          description: Token valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerifyResponse'
+        '404':
+          description: Token not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /routing/request:
+    post:
+      tags:
+        - Routing
+      summary: Request direct routing
+      description: |
+        Request connection details for direct peer-to-peer media.
+        Includes capability negotiation and key exchange.
+
+        **Performance Target:** < 200ms response time
+      operationId: requestRouting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutingRequest'
+            examples:
+              audio:
+                $ref: '#/components/examples/RoutingRequestAudio'
+              video:
+                $ref: '#/components/examples/RoutingRequestVideo'
+      responses:
+        '200':
+          description: Routing accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingResponse'
+              examples:
+                accepted:
+                  $ref: '#/components/examples/RoutingResponseAccepted'
+        '503':
+          description: Service unavailable (capacity/maintenance)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingRejection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Destination number not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /emergency/location:
+    post:
+      tags:
+        - Emergency
+      summary: Query emergency location
+      description: |
+        Retrieve real-time location for emergency call.
+        Restricted to authenticated PSAPs only.
+
+        **Rate Limit:** 10 req/sec per PSAP
+        **Retention:** Location data NOT stored
+      operationId: getEmergencyLocation
+      security:
+        - psapCertificate: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyLocationRequest'
+      responses:
+        '200':
+          description: Location available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyLocationResponse'
+              examples:
+                gps:
+                  $ref: '#/components/examples/EmergencyLocationGPS'
+        '404':
+          description: Location unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not authorized (not a valid PSAP)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /directory/all:
+    get:
+      tags:
+        - Directory
+      summary: Pull entire directory
+      description: |
+        Retrieve all CP directory entries for caching.
+
+        **Update Frequency:** Every 1 hour
+        **Compression:** GZIP required
+        **Size:** ~1-10MB typical
+      operationId: pullDirectory
+      responses:
+        '200':
+          description: Directory retrieved
+          headers:
+            Content-Encoding:
+              schema:
+                type: string
+                enum: [gzip]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryResponse'
+        '304':
+          description: Not modified (use If-None-Match header)
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /directory/publish:
+    post:
+      tags:
+        - Directory
+      summary: Publish directory updates
+      description: |
+        Publish changes to your CP's directory entry.
+
+        **Triggers:** Number range changes, porting events, endpoint updates
+      operationId: publishDirectory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectoryPublishRequest'
+      responses:
+        '202':
+          description: Update accepted, propagating
+        '400':
+          description: Invalid directory entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /directory/lookup/{phoneNumber}:
+    get:
+      tags:
+        - Directory
+      summary: Lookup number range holder
+      description: |
+        Find which CP currently holds a specific number.
+
+        **Performance:** < 50ms (cache hit), < 200ms (cache miss)
+      operationId: lookupNumber
+      parameters:
+        - name: phoneNumber
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PhoneNumber'
+          example: '+441234567890'
+      responses:
+        '200':
+          description: CP found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryLookupResponse'
+        '404':
+          description: Number not found in directory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    cpSignature:
+      type: apiKey
+      in: header
+      name: X-PSTN2-Signature
+      description: Ed25519 signature of request body
+
+    psapCertificate:
+      type: mutualTLS
+      description: PSAP client certificate authentication
+
+    tokenPoolJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT for token pool operations
+
+  schemas:
+    PhoneNumber:
+      type: string
+      pattern: '^\+[1-9]\d{1,14}$'
+      description: E.164 formatted phone number
+      example: '+441234567890'
+
+    RCPID:
+      type: string
+      pattern: '^CP[12]-[A-Z]{2}-\d{4}$'
+      description: Range-CP-ID (e.g., CP1-UK-0001)
+      example: 'CP1-UK-0001'
+
+    CallReference:
+      type: string
+      format: uuid
+      description: UUID v4 call reference
+      example: '550e8400-e29b-41d4-a716-446655440000'
+
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp with timezone
+      example: '2025-11-30T21:30:00.000Z'
+
+    Base64String:
+      type: string
+      format: byte
+      description: Base64 encoded binary data
+
+    CallVerificationRequest:
+      type: object
+      required:
+        - messageId
+        - timestamp
+        - version
+        - requestingCP
+        - callerID
+        - calledID
+        - callReference
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        version:
+          type: string
+          enum: ['1.0']
+        requestingCP:
+          $ref: '#/components/schemas/RCPID'
+        callerID:
+          $ref: '#/components/schemas/PhoneNumber'
+        calledID:
+          $ref: '#/components/schemas/PhoneNumber'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    CallVerificationResponse:
+      type: object
+      required:
+        - verified
+        - callReference
+        - timestamp
+      properties:
+        verified:
+          type: boolean
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        callerName:
+          type: string
+          example: 'John Smith'
+        callerOrg:
+          type: string
+          example: 'ACME Corp'
+        callPurpose:
+          type: string
+          example: 'Account verification'
+        trustLevel:
+          type: string
+          enum: [low, medium, high, verified]
+        branding:
+          $ref: '#/components/schemas/BrandingInfo'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    BrandingInfo:
+      type: object
+      properties:
+        logo:
+          type: string
+          format: uri
+          example: 'https://cdn.acme.com/logo.png'
+        backgroundColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#0066cc'
+        textColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#ffffff'
+        displayName:
+          type: string
+          maxLength: 50
+          example: 'ACME Support'
+        callPurpose:
+          type: string
+          maxLength: 100
+          example: 'Account Security Alert'
+
+    PortingResponse:
+      type: object
+      required:
+        - verified
+        - ported
+        - currentHolder
+        - callReference
+      properties:
+        verified:
+          type: boolean
+          enum: [false]
+        ported:
+          type: boolean
+          enum: [true]
+        currentHolder:
+          $ref: '#/components/schemas/RCPID'
+        portedAt:
+          $ref: '#/components/schemas/Timestamp'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+
+    TokenCreateRequest:
+      type: object
+      required:
+        - messageId
+        - timestamp
+        - originatingCP
+        - callerID
+        - calledID
+        - callReference
+        - ttl
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        originatingCP:
+          $ref: '#/components/schemas/RCPID'
+        callerID:
+          $ref: '#/components/schemas/PhoneNumber'
+        calledID:
+          $ref: '#/components/schemas/PhoneNumber'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        ttl:
+          type: integer
+          minimum: 10
+          maximum: 60
+          description: Time-to-live in seconds
+          example: 30
+        branding:
+          $ref: '#/components/schemas/BrandingInfo'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    TokenCreateResponse:
+      type: object
+      required:
+        - tokenId
+        - expiresAt
+        - callReference
+      properties:
+        tokenId:
+          type: string
+          pattern: '^TK-[A-Za-z0-9]{16}$'
+          example: 'TK-abc123XYZ789def'
+        expiresAt:
+          $ref: '#/components/schemas/Timestamp'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+
+    TokenVerifyResponse:
+      type: object
+      required:
+        - tokenId
+        - originatingCP
+        - callerID
+        - calledID
+        - callReference
+        - verified
+        - expiresAt
+      properties:
+        tokenId:
+          type: string
+        originatingCP:
+          $ref: '#/components/schemas/RCPID'
+        callerID:
+          $ref: '#/components/schemas/PhoneNumber'
+        calledID:
+          $ref: '#/components/schemas/PhoneNumber'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        verified:
+          type: boolean
+        branding:
+          $ref: '#/components/schemas/BrandingInfo'
+        expiresAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    RoutingRequest:
+      type: object
+      required:
+        - messageId
+        - timestamp
+        - requestingCP
+        - callerID
+        - destinationNumber
+        - callReference
+        - mediaCapabilities
+        - publicKey
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        requestingCP:
+          $ref: '#/components/schemas/RCPID'
+        callerID:
+          $ref: '#/components/schemas/PhoneNumber'
+        destinationNumber:
+          $ref: '#/components/schemas/PhoneNumber'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        mediaCapabilities:
+          $ref: '#/components/schemas/MediaCapabilities'
+        publicKey:
+          $ref: '#/components/schemas/Base64String'
+        branding:
+          $ref: '#/components/schemas/BrandingInfo'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    MediaCapabilities:
+      type: object
+      required:
+        - codecs
+        - encryption
+      properties:
+        codecs:
+          type: array
+          items:
+            type: string
+            enum: [opus, g722, pcmu, pcma, g729]
+          example: ['opus', 'g722', 'pcmu']
+        encryption:
+          type: array
+          items:
+            type: string
+            enum: [srtp-aes256, srtp-aes128]
+          example: ['srtp-aes256']
+        video:
+          type: boolean
+          default: false
+        maxBandwidth:
+          type: integer
+          description: Maximum bandwidth in bps
+          example: 128000
+
+    RoutingResponse:
+      type: object
+      required:
+        - accepted
+        - callReference
+        - timestamp
+      properties:
+        accepted:
+          type: boolean
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        connectionDetails:
+          $ref: '#/components/schemas/ConnectionDetails'
+        agreedCapabilities:
+          $ref: '#/components/schemas/MediaCapabilities'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    ConnectionDetails:
+      type: object
+      required:
+        - fqdn
+        - port
+        - protocol
+      properties:
+        fqdn:
+          type: string
+          format: hostname
+          example: 'media.cp2.example.com'
+        ipv4:
+          type: string
+          format: ipv4
+          example: '203.0.113.42'
+        ipv6:
+          type: string
+          format: ipv6
+          example: '2001:db8::42'
+        port:
+          type: integer
+          minimum: 1024
+          maximum: 65535
+          example: 5060
+        protocol:
+          type: string
+          enum: [udp, tcp, tls]
+        publicKey:
+          $ref: '#/components/schemas/Base64String'
+
+    RoutingRejection:
+      type: object
+      required:
+        - accepted
+        - reason
+        - timestamp
+      properties:
+        accepted:
+          type: boolean
+          enum: [false]
+        reason:
+          type: string
+          enum: [capacity_exceeded, maintenance, unsupported_codec]
+        fallbackToTraditional:
+          type: boolean
+          default: true
+        retryAfter:
+          type: integer
+          description: Seconds until retry
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+
+    EmergencyLocationRequest:
+      type: object
+      required:
+        - messageId
+        - timestamp
+        - requestingPSAP
+        - callerID
+        - callReference
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        requestingPSAP:
+          type: string
+          pattern: '^[A-Z]{2}-[0-9]{3}-[A-Z0-9-]+$'
+          example: 'UK-999-LONDON-01'
+        callerID:
+          $ref: '#/components/schemas/PhoneNumber'
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    EmergencyLocationResponse:
+      type: object
+      required:
+        - callReference
+        - location
+        - timestamp
+      properties:
+        callReference:
+          $ref: '#/components/schemas/CallReference'
+        location:
+          $ref: '#/components/schemas/LocationData'
+        address:
+          $ref: '#/components/schemas/AddressData'
+        additionalInfo:
+          type: object
+          properties:
+            cellTowerId:
+              type: string
+            wifiAccessPoints:
+              type: array
+              items:
+                type: string
+            lastUpdated:
+              $ref: '#/components/schemas/Timestamp'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    LocationData:
+      type: object
+      required:
+        - latitude
+        - longitude
+        - accuracy
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 51.5074
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -0.1278
+        accuracy:
+          type: number
+          format: float
+          description: Accuracy in meters
+          example: 15.0
+        altitude:
+          type: number
+          format: float
+          description: Altitude in meters
+        source:
+          type: string
+          enum: [gps, wifi, cell, user, billing]
+
+    AddressData:
+      type: object
+      properties:
+        street:
+          type: string
+          example: '10 Downing Street'
+        city:
+          type: string
+          example: 'London'
+        postcode:
+          type: string
+          example: 'SW1A 2AA'
+        country:
+          type: string
+          format: iso-3166-1-alpha-2
+          example: 'GB'
+
+    DirectoryResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DirectoryEntry'
+        lastModified:
+          $ref: '#/components/schemas/Timestamp'
+        version:
+          type: integer
+
+    DirectoryEntry:
+      type: object
+      required:
+        - cpId
+        - ranges
+        - endpoints
+        - publicKey
+        - lastUpdated
+        - version
+      properties:
+        cpId:
+          $ref: '#/components/schemas/RCPID'
+        ranges:
+          type: array
+          items:
+            $ref: '#/components/schemas/NumberRange'
+        endpoints:
+          type: object
+          properties:
+            auth:
+              type: string
+              format: uri
+            routing:
+              type: string
+              format: uri
+            emergency:
+              type: string
+              format: uri
+        publicKey:
+          $ref: '#/components/schemas/Base64String'
+        certificates:
+          type: array
+          items:
+            type: object
+            properties:
+              fingerprint:
+                type: string
+              validFrom:
+                $ref: '#/components/schemas/Timestamp'
+              validTo:
+                $ref: '#/components/schemas/Timestamp'
+        lastUpdated:
+          $ref: '#/components/schemas/Timestamp'
+        version:
+          type: integer
+
+    NumberRange:
+      type: object
+      required:
+        - numberRange
+        - status
+      properties:
+        numberRange:
+          type: string
+          pattern: '^\+[1-9]\d{1,14}[X]*$'
+          example: '+4471234567XX'
+        status:
+          type: string
+          enum: [active, ported, reserved, deactivated]
+        portedTo:
+          $ref: '#/components/schemas/RCPID'
+        portedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    DirectoryPublishRequest:
+      type: object
+      required:
+        - entry
+      properties:
+        entry:
+          $ref: '#/components/schemas/DirectoryEntry'
+        signature:
+          $ref: '#/components/schemas/Base64String'
+
+    DirectoryLookupResponse:
+      type: object
+      required:
+        - phoneNumber
+        - cpId
+        - endpoints
+      properties:
+        phoneNumber:
+          $ref: '#/components/schemas/PhoneNumber'
+        cpId:
+          $ref: '#/components/schemas/RCPID'
+        endpoints:
+          type: object
+          properties:
+            auth:
+              type: string
+              format: uri
+            routing:
+              type: string
+              format: uri
+        cached:
+          type: boolean
+          description: Whether result came from cache
+        cachedAt:
+          $ref: '#/components/schemas/Timestamp'
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - timestamp
+          properties:
+            code:
+              type: string
+              enum:
+                - call_not_found
+                - invalid_signature
+                - expired_token
+                - invalid_token
+                - capacity_exceeded
+                - unsupported_codec
+                - number_not_found
+                - location_unavailable
+                - unauthorized_psap
+                - timeout
+                - rate_limit_exceeded
+                - invalid_request
+                - internal_error
+            message:
+              type: string
+            timestamp:
+              $ref: '#/components/schemas/Timestamp'
+            requestId:
+              type: string
+              format: uuid
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - Invalid signature or credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    RateLimited:
+      description: Too many requests
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until retry allowed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  examples:
+    VerificationRequestBasic:
+      summary: Basic verification request
+      value:
+        messageId: '550e8400-e29b-41d4-a716-446655440000'
+        timestamp: '2025-11-30T21:30:00.000Z'
+        version: '1.0'
+        requestingCP: 'CP1-UK-0002'
+        callerID: '+441234567890'
+        calledID: '+447700900123'
+        callReference: 'abc-123-def-456'
+        signature: 'base64-encoded-signature-here'
+
+    VerificationResponseVerified:
+      summary: Call verified successfully
+      value:
+        verified: true
+        callReference: 'abc-123-def-456'
+        callerName: 'John Smith'
+        callerOrg: 'ACME Corp'
+        callPurpose: 'Account verification'
+        trustLevel: 'verified'
+        branding:
+          displayName: 'ACME Support'
+          logo: 'https://cdn.acme.com/logo.png'
+          backgroundColor: '#0066cc'
+          textColor: '#ffffff'
+        timestamp: '2025-11-30T21:30:00.050Z'
+        signature: 'base64-signature'
+
+    CallNotFound:
+      summary: Call not found (potential fraud)
+      value:
+        error:
+          code: 'call_not_found'
+          message: 'No matching call record found'
+          timestamp: '2025-11-30T21:30:00.050Z'
+          requestId: '123e4567-e89b-12d3-a456-426614174000'
+
+    RoutingRequestAudio:
+      summary: Audio call routing request
+      value:
+        messageId: '123e4567-e89b-12d3-a456-426614174000'
+        timestamp: '2025-11-30T21:30:00.000Z'
+        requestingCP: 'CP1-UK-0001'
+        callerID: '+441234567890'
+        destinationNumber: '+447700900123'
+        callReference: 'xyz-789'
+        mediaCapabilities:
+          codecs: ['opus', 'g722']
+          encryption: ['srtp-aes256']
+          video: false
+        publicKey: 'base64-ed25519-key'
+        signature: 'base64-signature'
+
+    RoutingRequestVideo:
+      summary: Video call routing request
+      value:
+        messageId: '123e4567-e89b-12d3-a456-426614174000'
+        timestamp: '2025-11-30T21:30:00.000Z'
+        requestingCP: 'CP1-UK-0001'
+        callerID: '+441234567890'
+        destinationNumber: '+447700900123'
+        callReference: 'xyz-789'
+        mediaCapabilities:
+          codecs: ['opus', 'h264']
+          encryption: ['srtp-aes256']
+          video: true
+          maxBandwidth: 2000000
+        publicKey: 'base64-ed25519-key'
+        signature: 'base64-signature'
+
+    RoutingResponseAccepted:
+      summary: Routing accepted
+      value:
+        accepted: true
+        callReference: 'xyz-789'
+        connectionDetails:
+          fqdn: 'media.cp2.example.com'
+          ipv4: '203.0.113.42'
+          ipv6: '2001:db8::42'
+          port: 5060
+          protocol: 'udp'
+          publicKey: 'base64-ed25519-key'
+        agreedCapabilities:
+          codecs: ['opus']
+          encryption: ['srtp-aes256']
+          video: false
+        timestamp: '2025-11-30T21:30:00.150Z'
+        signature: 'base64-signature'
+
+    EmergencyLocationGPS:
+      summary: GPS location for emergency call
+      value:
+        callReference: 'emergency-456'
+        location:
+          latitude: 51.5074
+          longitude: -0.1278
+          accuracy: 15.0
+          altitude: 42.5
+          source: 'gps'
+        address:
+          street: '10 Downing Street'
+          city: 'London'
+          postcode: 'SW1A 2AA'
+          country: 'GB'
+        additionalInfo:
+          cellTowerId: '234-10-12345-67890'
+          wifiAccessPoints: ['AA:BB:CC:DD:EE:FF', '11:22:33:44:55:66']
+          lastUpdated: '2025-11-30T21:29:58.000Z'
+        timestamp: '2025-11-30T21:30:00.000Z'
+        signature: 'base64-signature'

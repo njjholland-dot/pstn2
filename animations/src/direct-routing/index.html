@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 - Direct Routing with Encryption</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="animation-container">
+        <!-- Scene 1: The Transit Provider Problem -->
+        <div class="scene" id="scene-1">
+            <h1 class="scene-title">The Transit Provider Problem</h1>
+            <div class="visual-content">
+                <svg id="scene-1-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Traditional PSTN routing relies on multiple transit providers between CPs. Each hop adds cost, latency, and points of failure. Transit providers charge for carrying traffic. This makes calls expensive and slow.">
+                Traditional PSTN routing relies on multiple transit providers between CPs. Each hop adds cost, latency, and points of failure. Transit providers charge for carrying traffic. This makes calls expensive and slow.
+            </div>
+        </div>
+
+        <!-- Scene 2: PSTN2 Direct Routing -->
+        <div class="scene" id="scene-2" style="display: none;">
+            <h1 class="scene-title">PSTN2 Direct Routing</h1>
+            <div class="visual-content">
+                <svg id="scene-2-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="PSTN2 enables CPs to connect directly, eliminating middlemen. When CP1 wants to call CP2, they establish a direct media connection. No transit providers needed. No extra hops. Just source to destination.">
+                PSTN2 enables CPs to connect directly, eliminating middlemen. When CP1 wants to call CP2, they establish a direct media connection. No transit providers needed. No extra hops. Just source to destination.
+            </div>
+        </div>
+
+        <!-- Scene 3: Discovery Mechanism -->
+        <div class="scene" id="scene-3" style="display: none;">
+            <h1 class="scene-title">Discovery Mechanism</h1>
+            <div class="visual-content">
+                <svg id="scene-3-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="How does CP1 find CP2? The PSTN2 directory provides this information. CP1 looks up the destination number, receives CP2's IP address and port, and connects directly. The directory is distributed, so queries are fast and reliable.">
+                How does CP1 find CP2? The PSTN2 directory provides this information. CP1 looks up the destination number, receives CP2's IP address and port, and connects directly. The directory is distributed, so queries are fast and reliable.
+            </div>
+        </div>
+
+        <!-- Scene 4: Cost Reduction -->
+        <div class="scene" id="scene-4" style="display: none;">
+            <h1 class="scene-title">Cost Reduction</h1>
+            <div class="visual-content">
+                <svg id="scene-4-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Direct routing eliminates transit fees. In tests, this reduced per-minute costs by 75%. For high-volume carriers, this means millions in savings annually. For consumers, it means lower prices. The savings are immediate and substantial.">
+                Direct routing eliminates transit fees. In tests, this reduced per-minute costs by 75%. For high-volume carriers, this means millions in savings annually. For consumers, it means lower prices. The savings are immediate and substantial.
+            </div>
+        </div>
+
+        <!-- Scene 5: Latency Improvement -->
+        <div class="scene" id="scene-5" style="display: none;">
+            <h1 class="scene-title">Latency Improvement</h1>
+            <div class="visual-content">
+                <svg id="scene-5-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Removing transit hops reduces latency by 75% or more. Traditional routing might traverse 5 to 7 hops. Direct routing uses 1 hop. Lower latency means better call quality, especially for real-time conversations and video calls.">
+                Removing transit hops reduces latency by 75% or more. Traditional routing might traverse 5 to 7 hops. Direct routing uses 1 hop. Lower latency means better call quality, especially for real-time conversations and video calls.
+            </div>
+        </div>
+
+        <!-- Scene 6: Encryption Key Exchange -->
+        <div class="scene" id="scene-6" style="display: none;">
+            <h1 class="scene-title">Encryption Key Exchange</h1>
+            <div class="visual-content">
+                <svg id="scene-6-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="During call setup, CPs exchange encryption keys. Each call gets unique SRTP keys generated fresh. The keys are negotiated using standard protocols. Once exchanged, all media is encrypted end-to-end between the CPs.">
+                During call setup, CPs exchange encryption keys. Each call gets unique SRTP keys generated fresh. The keys are negotiated using standard protocols. Once exchanged, all media is encrypted end-to-end between the CPs.
+            </div>
+        </div>
+
+        <!-- Scene 7: Media Path Security -->
+        <div class="scene" id="scene-7" style="display: none;">
+            <h1 class="scene-title">Media Path Security</h1>
+            <div class="visual-content">
+                <svg id="scene-7-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="With direct routing and encryption, media never passes through untrusted networks unencrypted. Transit providers can't intercept calls. Governments can't wiretap without CP cooperation. Users get privacy by default, not as an optional add-on.">
+                With direct routing and encryption, media never passes through untrusted networks unencrypted. Transit providers can't intercept calls. Governments can't wiretap without CP cooperation. Users get privacy by default, not as an optional add-on.
+            </div>
+        </div>
+
+        <!-- Scene 8: Quality of Service -->
+        <div class="scene" id="scene-8" style="display: none;">
+            <h1 class="scene-title">Quality of Service</h1>
+            <div class="visual-content">
+                <svg id="scene-8-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Direct connections allow better QoS management. CPs can negotiate codecs, bandwidth, and quality parameters directly. There's no lowest-common-denominator imposed by transit providers. This enables HD voice and video as standard features.">
+                Direct connections allow better QoS management. CPs can negotiate codecs, bandwidth, and quality parameters directly. There's no lowest-common-denominator imposed by transit providers. This enables HD voice and video as standard features.
+            </div>
+        </div>
+
+        <!-- Scene 9: Network Effects -->
+        <div class="scene" id="scene-9" style="display: none;">
+            <h1 class="scene-title">Network Effects</h1>
+            <div class="visual-content">
+                <svg id="scene-9-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="As more CPs adopt PSTN2, the benefits multiply. A network of 10 CPs enables 90 direct connections. A network of 100 CPs enables nearly 10,000 connections. Each new participant makes the network exponentially more valuable.">
+                As more CPs adopt PSTN2, the benefits multiply. A network of 10 CPs enables 90 direct connections. A network of 100 CPs enables nearly 10,000 connections. Each new participant makes the network exponentially more valuable.
+            </div>
+        </div>
+
+        <!-- Scene 10: Fallback to Traditional -->
+        <div class="scene" id="scene-10" style="display: none;">
+            <h1 class="scene-title">Fallback to Traditional</h1>
+            <div class="visual-content">
+                <svg id="scene-10-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="If a CP doesn't support PSTN2, calls fall back to traditional PSTN routing automatically. There's no failure mode. Users don't notice. But when both sides support PSTN2, they get the benefits: lower cost, lower latency, better quality, end-to-end encryption.">
+                If a CP doesn't support PSTN2, calls fall back to traditional PSTN routing automatically. There's no failure mode. Users don't notice. But when both sides support PSTN2, they get the benefits: lower cost, lower latency, better quality, end-to-end encryption.
+            </div>
+        </div>
+
+        <!-- Scene 11: Peering Agreements -->
+        <div class="scene" id="scene-11" style="display: none;">
+            <h1 class="scene-title">Peering Agreements</h1>
+            <div class="visual-content">
+                <svg id="scene-11-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="CPs can establish formal peering agreements for direct routing, just like internet peering. These agreements specify technical details, SLAs, and settlement rates if any. But unlike traditional telecom agreements, PSTN2 makes peering easy and automated.">
+                CPs can establish formal peering agreements for direct routing, just like internet peering. These agreements specify technical details, SLAs, and settlement rates if any. But unlike traditional telecom agreements, PSTN2 makes peering easy and automated.
+            </div>
+        </div>
+
+        <!-- Scene 12: Geographic Optimization -->
+        <div class="scene" id="scene-12" style="display: none;">
+            <h1 class="scene-title">Geographic Optimization</h1>
+            <div class="visual-content">
+                <svg id="scene-12-diagram" width="700" height="400"></svg>
+            </div>
+            <div class="narration" data-speech="Direct routing enables geographic optimization. If CP1 and CP2 both have presence in London, they can route calls through London even if their headquarters are elsewhere. This reduces international transit costs and improves quality.">
+                Direct routing enables geographic optimization. If CP1 and CP2 both have presence in London, they can route calls through London even if their headquarters are elsewhere. This reduces international transit costs and improves quality.
+            </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="controls">
+            <button id="prev-btn" class="control-btn">← Previous</button>
+            <div class="scene-indicator">
+                <span id="current-scene">1</span> / <span id="total-scenes">12</span>
+            </div>
+            <button id="next-btn" class="control-btn">Next →</button>
+            <button id="play-btn" class="control-btn primary">▶ Play</button>
+            <button id="audio-btn" class="control-btn">🔊 Audio On</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="animation.js"></script>
+</body>
+</html>

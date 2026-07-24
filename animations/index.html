@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 - Next Generation Phone Network</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-orange: #E25F07;
+            --accent-orange: #ff6600;
+            --dark-navy: #1e3a5f;
+            --dark-gray: #1a202c;
+            --medium-gray: #4a5568;
+            --light-gray: #e5e7eb;
+            --danger-red: #dc2626;
+            --gradient: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-gray);
+        }
+
+        /* Header with Logo */
+        .site-header {
+            background: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-link {
+            display: block;
+        }
+
+        .logo {
+            height: 60px;
+            width: auto;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: var(--gradient);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 4em;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            letter-spacing: -1px;
+        }
+
+        .hero .tagline {
+            font-size: 1.8em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2em;
+            max-width: 900px;
+            margin: 0 auto 40px;
+            opacity: 0.9;
+            line-height: 1.8;
+        }
+
+        .hero-features {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 60px;
+            max-width: 900px;
+            margin: 30px auto 40px;
+        }
+
+        .hero-features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+
+        .hero-features-list li {
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+            opacity: 0.95;
+        }
+
+        .hero-features-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary-orange);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Stats Section */
+        .stats {
+            background: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        .stat-box {
+            padding: 30px;
+        }
+
+        .stat-value {
+            font-size: 3.5em;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            color: var(--medium-gray);
+            font-weight: 600;
+        }
+
+        .stat-description {
+            font-size: 0.9em;
+            color: var(--medium-gray);
+            margin-top: 10px;
+        }
+
+        /* Problem Section */
+        .problem {
+            background: #fee;
+            padding: 80px 20px;
+            border-top: 4px solid var(--danger-red);
+            border-bottom: 4px solid var(--danger-red);
+        }
+
+        .section-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            font-size: 1.3em;
+            text-align: center;
+            color: var(--medium-gray);
+            margin-bottom: 50px;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .problem-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .problem-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: var(--danger-red);
+        }
+
+        .problem-card p {
+            color: var(--medium-gray);
+        }
+
+        /* Solution Section */
+        .solution {
+            background: white;
+            padding: 80px 20px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid var(--light-gray);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-orange);
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: var(--dark-gray);
+        }
+
+        .feature-card p {
+            color: var(--medium-gray);
+        }
+
+        /* Architecture Section */
+        .architecture {
+            background: white;
+            padding: 80px 20px;
+        }
+
+        .architecture-diagram {
+            max-width: 1400px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .architecture-diagram svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .architecture-features {
+            max-width: 1200px;
+            margin: 60px auto 0;
+        }
+
+        .architecture-feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .arch-feature-card {
+            background: linear-gradient(135deg, rgba(226, 95, 7, 0.05) 0%, rgba(255, 102, 0, 0.05) 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid var(--light-gray);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .arch-feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(226, 95, 7, 0.15);
+            border-color: var(--primary-orange);
+        }
+
+        .arch-feature-icon {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+        }
+
+        .arch-feature-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: var(--dark-gray);
+            font-weight: 700;
+        }
+
+        .arch-feature-card p {
+            color: var(--medium-gray);
+            line-height: 1.6;
+        }
+
+        /* Presentations Section */
+        .presentations {
+            background: #f9fafb;
+            padding: 80px 20px;
+        }
+
+        .presentation-categories {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .category-section {
+            margin-bottom: 60px;
+        }
+
+        .category-header {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary-orange);
+        }
+
+        .presentation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .presentation-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .presentation-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+        }
+
+        .presentation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .presentation-content {
+            padding: 30px;
+        }
+
+        .presentation-number {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 1.5em;
+            line-height: 50px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .presentation-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--dark-gray);
+        }
+
+        .presentation-meta {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            color: var(--medium-gray);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .presentation-description {
+            color: var(--medium-gray);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .presentation-link {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .presentation-link:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        /* Code Samples Section */
+        .code-samples {
+            background: white;
+            padding: 80px 20px;
+        }
+
+        .code-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .code-card {
+            background: var(--dark-gray);
+            color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .code-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .code-header {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%);
+            padding: 20px;
+        }
+
+        .code-language {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .code-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .code-subtitle {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .code-body {
+            padding: 30px;
+        }
+
+        .code-features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .code-features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .code-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--accent-orange);
+            font-weight: bold;
+        }
+
+        .code-status {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .code-status.coming-soon {
+            background: rgba(234, 179, 8, 0.2);
+            color: #eab308;
+        }
+
+        .code-status.available {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .code-link {
+            display: inline-block;
+            padding: 10px 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .code-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark-gray);
+            color: white;
+            padding: 60px 20px 30px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-section h3 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 12px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero .tagline {
+                font-size: 1.3em;
+            }
+
+            .hero-features {
+                flex-direction: column;
+                gap: 20px;
+                align-items: center;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .section-title {
+                font-size: 2em;
+            }
+
+            .presentation-grid,
+            .code-grid,
+            .features-grid,
+            .architecture-feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .architecture-diagram {
+                padding: 10px;
+                margin: 30px auto;
+            }
+
+            .arch-feature-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with Comms Council Logo -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="https://commscouncil.uk/" class="logo-link" target="_blank" rel="noopener">
+                <img src="https://commscouncil.uk/wp-content/uploads/comms-council-uk-logo-01.svg" alt="Comms Council UK" class="logo">
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>PSTN2</h1>
+            <p class="tagline">Next Generation Phone Network</p>
+            <p class="subtitle">
+                PSTN2 is what is missing from the Internet - a safe, regulated, private, person to person multi-media communication platform.
+                PSTN2 is a shared-nothing, fully distributed architecture where all operators have equal status.
+            </p>
+            <div class="hero-features">
+                <ul class="hero-features-list">
+                    <li>Identification</li>
+                    <li>Authentication</li>
+                    <li>Encryption</li>
+                </ul>
+                <ul class="hero-features-list">
+                    <li>Routing</li>
+                    <li>Porting</li>
+                    <li>Realtime 999</li>
+                </ul>
+            </div>
+            <p class="subtitle">
+                This website comprises free to download and use software, documentation, and a Directory of other participants.
+            </p>
+            <div class="cta-buttons">
+                <a href="#architecture" class="btn btn-primary">View Architecture</a>
+                <a href="#presentations" class="btn btn-secondary">View Presentations</a>
+                <a href="#code-samples" class="btn btn-secondary">Explore Code</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-value">$38B</div>
+                <div class="stat-label">Annual Fraud Losses</div>
+                <p class="stat-description">Authentication reduces identification fraud and provides tracing</p>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">90%+</div>
+                <div class="stat-label">Cost Reduction</div>
+                <p class="stat-description">Eliminating transit providers and intermediaries</p>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Life-Saving Service</div>
+                <p class="stat-description">Enhanced emergency location accuracy</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem">
+        <div class="section-content">
+            <h2 class="section-title">The Problem with Current PSTN</h2>
+            <p class="section-subtitle">Today's all-IP PSTN not only has critical vulnerabilities, but has also not yet become the defacto person to person signalling solution for all-IP communications.</p>
+
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <h3>🚨 Rampant Fraud</h3>
+                    <p>
+                        Caller ID can be trivially spoofed, enabling scammers to impersonate banks,
+                        government agencies, and trusted organizations. $38 billion lost annually to phone fraud.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <h3>📍 Legacy Emergency Services</h3>
+                    <p>
+                        Emergency service systems are based on legacy technologies, with inaccurate or missing location data,
+                        costing precious minutes in life-threatening situations and leading to preventable deaths.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <h3>💰 High Costs</h3>
+                    <p>
+                        Multiple intermediaries to reach a destination create unnecessary complexity and expense.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <h3>🔒 No Real Authentication</h3>
+                    <p>
+                        The current system has no reliable way to verify where a call originated,
+                        creating challenges for law enforcement.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <h3>📋 Lack of standards</h3>
+                    <p>
+                        No standard way to communicate between industry participants meaning automation challenging and adding to industry costs.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <h3>🛡️ Poor future protection</h3>
+                    <p>
+                        The industry invests little in its future; buying from, rather than selling to, over-the-top technology plays.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution">
+        <div class="section-content">
+            <h2 class="section-title">The PSTN2 Solution</h2>
+            <p class="section-subtitle">A revolutionary architecture built on distributed messaging, cryptographic authentication, and direct communication</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h3>Cryptographic Authentication</h3>
+                    <p>
+                        Every call is cryptographically signed by the originating carrier,
+                        making spoofing mathematically impossible. Trust is built into the protocol.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Distributed Architecture</h3>
+                    <p>
+                        No single point of failure. The network uses eventual consistency across
+                        distributed databases, ensuring high availability and global scalability.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Direct Routing</h3>
+                    <p>
+                        Carriers connect directly to each other for reduced costs, lower latency, multi-media calls, and ability to exchange any other data package.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚑</div>
+                    <h3>Enhanced Emergency Services</h3>
+                    <p>
+                        Accurate location data sent directly to emergency services with every 911 call,
+                        saving lives through faster, more precise response.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Small CP Support</h3>
+                    <p>
+                        Low barrier to entry via MAPs (Managed Access Providers) who, like today's wholesalers, deal with the systems that smaller providers do not have the expertise to deal with.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Backward Compatible</h3>
+                    <p>
+                        Seamless interoperability with existing PSTN. Incremental deployment
+                        allows carriers to adopt PSTN2 features and functions at their own pace.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Presentations Section -->
+    <section id="presentations" class="presentations">
+        <div class="presentation-categories">
+            <h2 class="section-title">Animated Presentations</h2>
+            <p class="section-subtitle">Comprehensive visual explanations of PSTN2 architecture and benefits</p>
+
+            <!-- Core Presentations -->
+            <div class="category-section">
+                <h3 class="category-header">Core Presentations</h3>
+                <div class="presentation-grid">
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">1</div>
+                            <h4 class="presentation-title">Problem Statement</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 8 scenes</span>
+                                <span class="meta-item">⏱️ ~8 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Explores current PSTN limitations, the caller ID spoofing crisis,
+                                and the $38 billion in annual fraud losses affecting consumers and businesses.
+                            </p>
+                            <a href="src/problem-statement/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">2</div>
+                            <h4 class="presentation-title">Solution Overview</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 12 scenes</span>
+                                <span class="meta-item">⏱️ ~12 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Introduces PSTN2 architecture with distributed messaging, cryptographic authentication,
+                                and comprehensive benefits comparison against legacy PSTN.
+                            </p>
+                            <a href="src/solution-overview/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Deep Dives -->
+            <div class="category-section">
+                <h3 class="category-header">Technical Deep Dives</h3>
+                <div class="presentation-grid">
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">3</div>
+                            <h4 class="presentation-title">Authentication Option 1</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 10 scenes</span>
+                                <span class="meta-item">⏱️ ~10 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Direct query verification mechanism with real-time fraud prevention,
+                                performance analysis, and privacy considerations.
+                            </p>
+                            <a href="src/authentication-option1/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">4</div>
+                            <h4 class="presentation-title">Authentication Option 2</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 11 scenes</span>
+                                <span class="meta-item">⏱️ ~11 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Token pool alternative with query reduction strategy, privacy trade-offs,
+                                and scalability analysis for high-volume scenarios.
+                            </p>
+                            <a href="src/authentication-option2/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">5</div>
+                            <h4 class="presentation-title">Direct Routing</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 12 scenes</span>
+                                <span class="meta-item">⏱️ ~12 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Eliminating transit providers to achieve massive cost savings,
+                                reduced latency, enhanced security, and simplified billing.
+                            </p>
+                            <a href="src/direct-routing/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">6</div>
+                            <h4 class="presentation-title">Emergency Services</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 9 scenes</span>
+                                <span class="meta-item">⏱️ ~9 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Enhanced location data accuracy for life-saving emergency response,
+                                overcoming current system limitations.
+                            </p>
+                            <a href="src/emergency-services/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">7</div>
+                            <h4 class="presentation-title">Distributed Database</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 12 scenes</span>
+                                <span class="meta-item">⏱️ ~12 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Eventual consistency model ensuring scalability, eliminating single points of failure,
+                                and enabling global distribution.
+                            </p>
+                            <a href="src/distributed-database/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">8</div>
+                            <h4 class="presentation-title">MAP Architecture</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 11 scenes</span>
+                                <span class="meta-item">⏱️ ~11 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Enabling small CP participation with low barriers to entry,
+                                lightweight requirements, and full interoperability standards.
+                            </p>
+                            <a href="src/map-architecture/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complete Walkthrough -->
+            <div class="category-section">
+                <h3 class="category-header">Complete Walkthrough</h3>
+                <div class="presentation-grid">
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">9</div>
+                            <h4 class="presentation-title">End-to-End Scenario</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 15 scenes</span>
+                                <span class="meta-item">⏱️ ~15 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                Complete call flow from Alice to Bob demonstrating all PSTN2 features
+                                working together in a real-world scenario with step-by-step explanation.
+                            </p>
+                            <a href="src/end-to-end-scenario/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">10</div>
+                            <h4 class="presentation-title">Law Enforcement Access</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 8 scenes</span>
+                                <span class="meta-item">⏱️ ~8 min</span>
+                            </div>
+                            <p class="presentation-description">
+                                How law enforcement can query subscriber information directly from Communication Providers
+                                using a web browser, with validation options for legal requests.
+                            </p>
+                            <a href="src/law-enforcement/index.html" class="presentation-link">Watch Presentation →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Diagram Section -->
+    <section id="architecture" class="architecture">
+        <div class="section-content">
+            <h2 class="section-title">PSTN2 Architecture Overview</h2>
+            <p class="section-subtitle">How Communication Providers connect to both legacy PSTN and modern PSTN2 networks</p>
+
+            <div class="architecture-diagram">
+                <svg id="mainArchitectureDiagram" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Definitions for gradients and filters -->
+                    <defs>
+                        <!-- Gradients -->
+                        <linearGradient id="cpGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#E25F07;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff6600;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="pstnGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#dc2626;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#991b1b;stop-opacity:0.8" />
+                        </linearGradient>
+                        <linearGradient id="pstn2Gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="phoneGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+                        </linearGradient>
+
+                        <!-- Arrow markers -->
+                        <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#dc2626" />
+                        </marker>
+                        <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#10b981" />
+                        </marker>
+                        <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#E25F07" />
+                        </marker>
+
+                        <!-- Shadows -->
+                        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.2"/>
+                        </filter>
+                    </defs>
+
+                    <!-- Background layers -->
+                    <rect x="0" y="0" width="1400" height="900" fill="#f9fafb"/>
+
+                    <!-- Network zones -->
+                    <rect x="50" y="150" width="400" height="650" rx="20" fill="#fee" stroke="#dc2626" stroke-width="3" opacity="0.3" filter="url(#shadow)"/>
+                    <text x="250" y="190" text-anchor="middle" font-size="28" font-weight="bold" fill="#dc2626">Legacy PSTN</text>
+
+                    <rect x="950" y="150" width="400" height="650" rx="20" fill="#d1fae5" stroke="#10b981" stroke-width="3" opacity="0.3" filter="url(#shadow)"/>
+                    <text x="1150" y="190" text-anchor="middle" font-size="28" font-weight="bold" fill="#10b981">PSTN2 Network</text>
+
+                    <!-- Central CP (Main focus) -->
+                    <g id="centralCP">
+                        <rect x="550" y="350" width="300" height="200" rx="15" fill="url(#cpGradient)" filter="url(#shadow)"/>
+                        <text x="700" y="390" text-anchor="middle" font-size="24" font-weight="bold" fill="white">Communication</text>
+                        <text x="700" y="420" text-anchor="middle" font-size="24" font-weight="bold" fill="white">Provider (CP)</text>
+                        <text x="700" y="455" text-anchor="middle" font-size="16" fill="white" opacity="0.9">Your Network</text>
+
+                        <!-- CP features -->
+                        <g transform="translate(570, 475)">
+                            <text x="0" y="0" font-size="13" fill="white">🔐 Authentication Engine</text>
+                            <text x="0" y="20" font-size="13" fill="white">🔒 Encryption (SRTP/DTLS)</text>
+                            <text x="0" y="40" font-size="13" fill="white">📊 Directory Service</text>
+                            <text x="0" y="60" font-size="13" fill="white">🚑 Emergency Handler</text>
+                        </g>
+                    </g>
+
+                    <!-- Legacy PSTN CP (left side) -->
+                    <g id="legacyCP">
+                        <rect x="100" y="450" width="180" height="120" rx="10" fill="url(#pstnGradient)" filter="url(#shadow)"/>
+                        <text x="190" y="485" text-anchor="middle" font-size="16" font-weight="bold" fill="white">CP on PSTN</text>
+                        <text x="190" y="505" text-anchor="middle" font-size="14" fill="white" opacity="0.9">(Legacy Only)</text>
+                        <text x="190" y="535" text-anchor="middle" font-size="11" fill="white">❌ No Authentication</text>
+                        <text x="190" y="550" text-anchor="middle" font-size="11" fill="white">❌ No Encryption</text>
+                    </g>
+
+                    <!-- PSTN2 CP (right side) -->
+                    <g id="pstn2CP">
+                        <rect x="1120" y="450" width="180" height="150" rx="10" fill="url(#pstn2Gradient)" filter="url(#shadow)"/>
+                        <text x="1210" y="485" text-anchor="middle" font-size="16" font-weight="bold" fill="white">CP on PSTN2</text>
+                        <text x="1210" y="505" text-anchor="middle" font-size="14" fill="white" opacity="0.9">(Modern)</text>
+                        <text x="1210" y="530" text-anchor="middle" font-size="11" fill="white">✓ Authenticated</text>
+                        <text x="1210" y="545" text-anchor="middle" font-size="11" fill="white">✓ Encrypted</text>
+                        <text x="1210" y="560" text-anchor="middle" font-size="11" fill="white">✓ Direct Routing</text>
+                        <text x="1210" y="575" text-anchor="middle" font-size="11" fill="white">✓ Real-time 999</text>
+                        <text x="1210" y="590" text-anchor="middle" font-size="11" fill="white">✓ Porting</text>
+                    </g>
+
+                    <!-- End User Phones -->
+                    <g id="leftPhone">
+                        <rect x="110" y="250" width="160" height="140" rx="15" fill="url(#phoneGradient)" filter="url(#shadow)"/>
+                        <circle cx="190" cy="290" r="15" fill="white" opacity="0.3"/>
+                        <text x="190" y="325" text-anchor="middle" font-size="14" font-weight="bold" fill="white">Alice's Phone</text>
+                        <text x="190" y="345" text-anchor="middle" font-size="10" fill="white">📱 Legacy PSTN</text>
+                        <text x="190" y="365" text-anchor="middle" font-size="9" fill="white" opacity="0.9">Limited Features</text>
+                    </g>
+
+                    <g id="rightPhone">
+                        <rect x="1130" y="250" width="160" height="180" rx="15" fill="url(#phoneGradient)" filter="url(#shadow)"/>
+                        <circle cx="1210" cy="290" r="15" fill="white" opacity="0.3"/>
+                        <text x="1210" y="325" text-anchor="middle" font-size="14" font-weight="bold" fill="white">Bob's Phone</text>
+                        <text x="1210" y="345" text-anchor="middle" font-size="10" fill="white">📱 PSTN2 Enabled</text>
+                        <g transform="translate(1145, 355)">
+                            <text x="0" y="0" font-size="8" fill="white">✓ Caller ID Verified</text>
+                            <text x="0" y="12" font-size="8" fill="white">✓ Call Encrypted</text>
+                            <text x="0" y="24" font-size="8" fill="white">✓ HD Voice</text>
+                            <text x="0" y="36" font-size="8" fill="white">✓ GPS for 999</text>
+                            <text x="0" y="48" font-size="8" fill="white">✓ Rich Branding</text>
+                            <text x="0" y="60" font-size="8" fill="white">✓ Number Porting</text>
+                        </g>
+                    </g>
+
+                    <!-- Connection Lines and Call Flows -->
+
+                    <!-- Legacy PSTN path (red dashed) -->
+                    <path d="M 270 310 L 350 350 L 550 400" stroke="#dc2626" stroke-width="4" stroke-dasharray="10,5" fill="none" marker-end="url(#arrowRed)" opacity="0.7"/>
+                    <text x="350" y="320" font-size="12" fill="#dc2626" font-weight="bold">Legacy Call</text>
+                    <text x="350" y="335" font-size="10" fill="#dc2626">No Authentication</text>
+
+                    <path d="M 280 510 L 450 510 L 550 480" stroke="#dc2626" stroke-width="4" fill="none" marker-end="url(#arrowRed)" opacity="0.7"/>
+                    <text x="350" y="500" font-size="12" fill="#dc2626" font-weight="bold">Unencrypted</text>
+
+                    <!-- Central CP to Legacy CP connection -->
+                    <path d="M 550 450 L 350 480 L 280 510" stroke="#dc2626" stroke-width="3" stroke-dasharray="5,3" fill="none" marker-end="url(#arrowRed)" opacity="0.5"/>
+
+                    <!-- PSTN2 paths (green solid) -->
+                    <path d="M 1130 330 L 1000 380 L 850 420" stroke="#10b981" stroke-width="4" fill="none" marker-end="url(#arrowGreen)"/>
+                    <text x="1000" y="360" font-size="12" fill="#10b981" font-weight="bold">PSTN2 Call</text>
+                    <text x="1000" y="375" font-size="10" fill="#10b981">✓ Authenticated</text>
+
+                    <path d="M 1120 525 L 950 510 L 850 480" stroke="#10b981" stroke-width="4" fill="none" marker-end="url(#arrowGreen)"/>
+                    <text x="980" y="500" font-size="12" fill="#10b981" font-weight="bold">Direct Route</text>
+                    <text x="980" y="515" font-size="10" fill="#10b981">✓ Encrypted</text>
+
+                    <!-- Central CP to PSTN2 CP connection -->
+                    <path d="M 850 500 L 1000 520 L 1120 525" stroke="#10b981" stroke-width="4" fill="none" marker-end="url(#arrowGreen)"/>
+
+                    <!-- Phone to CP connections -->
+                    <path d="M 190 390 L 190 420 L 180 450" stroke="#3b82f6" stroke-width="3" fill="none" opacity="0.6"/>
+                    <path d="M 1210 430 L 1210 450" stroke="#3b82f6" stroke-width="3" fill="none" opacity="0.6"/>
+
+                    <!-- Key Features Callouts -->
+                    <g id="featureCallouts">
+                        <!-- Authentication (above CP) -->
+                        <g transform="translate(520, 200)">
+                            <rect x="0" y="0" width="160" height="70" rx="8" fill="white" stroke="#E25F07" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="80" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#E25F07">🔐 Authentication</text>
+                            <text x="80" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Ed25519 Digital</text>
+                            <text x="80" y="50" text-anchor="middle" font-size="10" fill="#1a202c">Signatures</text>
+                            <text x="80" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Prevents Spoofing</text>
+                        </g>
+                        <path d="M 600 270 L 620 350" stroke="#E25F07" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+
+                        <!-- Encryption (above CP) -->
+                        <g transform="translate(720, 200)">
+                            <rect x="0" y="0" width="160" height="70" rx="8" fill="white" stroke="#E25F07" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="80" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#E25F07">🔒 Encryption</text>
+                            <text x="80" y="38" text-anchor="middle" font-size="10" fill="#1a202c">SRTP/DTLS</text>
+                            <text x="80" y="50" text-anchor="middle" font-size="10" fill="#1a202c">End-to-End</text>
+                            <text x="80" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Privacy Protected</text>
+                        </g>
+                        <path d="M 800 270 L 780 350" stroke="#E25F07" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+
+                        <!-- Direct Routing (below CP, moved inward) -->
+                        <g transform="translate(470, 600)">
+                            <rect x="0" y="0" width="140" height="70" rx="8" fill="white" stroke="#10b981" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="70" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#10b981">⚡ Direct Routing</text>
+                            <text x="70" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Peer-to-Peer</text>
+                            <text x="70" y="50" text-anchor="middle" font-size="10" fill="#1a202c">No Transit Fees</text>
+                            <text x="70" y="64" text-anchor="middle" font-size="9" fill="#4a5568">90%+ Cost Savings</text>
+                        </g>
+                        <path d="M 540 600 L 580 550" stroke="#10b981" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+
+                        <!-- Realtime 999 (below CP, moved inward) -->
+                        <g transform="translate(790, 600)">
+                            <rect x="0" y="0" width="140" height="70" rx="8" fill="white" stroke="#dc2626" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="70" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#dc2626">🚑 Realtime 999</text>
+                            <text x="70" y="38" text-anchor="middle" font-size="10" fill="#1a202c">GPS Location</text>
+                            <text x="70" y="50" text-anchor="middle" font-size="10" fill="#1a202c">Instant Transfer</text>
+                            <text x="70" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Life-Saving Accuracy</text>
+                        </g>
+                        <path d="M 860 600 L 820 550" stroke="#dc2626" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+
+                        <!-- Porting (centered above CP, above Authentication and Encryption) -->
+                        <g transform="translate(635, 100)">
+                            <rect x="0" y="0" width="130" height="60" rx="8" fill="white" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="65" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#3b82f6">🔄 Porting</text>
+                            <text x="65" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Distributed DB</text>
+                            <text x="65" y="52" text-anchor="middle" font-size="9" fill="#4a5568">Real-time Updates</text>
+                        </g>
+                        <path d="M 700 160 L 700 350" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+
+                        <!-- Identification (below CP, moved from top) -->
+                        <g transform="translate(470, 700)">
+                            <rect x="0" y="0" width="160" height="70" rx="8" fill="white" stroke="#E25F07" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="80" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#E25F07">🎯 Identification</text>
+                            <text x="80" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Verified Caller ID</text>
+                            <text x="80" y="50" text-anchor="middle" font-size="10" fill="#1a202c">Branding Info</text>
+                            <text x="80" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Trust Indicators</text>
+                        </g>
+                        <path d="M 550 700 L 600 550" stroke="#E25F07" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+
+                        <!-- Message Protocol (below CP, moved from top) -->
+                        <g transform="translate(770, 700)">
+                            <rect x="0" y="0" width="160" height="70" rx="8" fill="white" stroke="#E25F07" stroke-width="2" filter="url(#shadow)"/>
+                            <text x="80" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#E25F07">📋 Message Protocol</text>
+                            <text x="80" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Standardized API</text>
+                            <text x="80" y="50" text-anchor="middle" font-size="10" fill="#1a202c">REST/JSON</text>
+                            <text x="80" y="64" text-anchor="middle" font-size="9" fill="#4a5568">Easy Integration</text>
+                        </g>
+                        <path d="M 850 700 L 800 550" stroke="#E25F07" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+                    </g>
+
+                    <!-- Legend -->
+                    <g transform="translate(50, 50)">
+                        <rect x="0" y="0" width="300" height="80" rx="8" fill="white" stroke="#4a5568" stroke-width="2" filter="url(#shadow)"/>
+                        <text x="150" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a202c">Network Connections</text>
+
+                        <line x1="20" y1="45" x2="80" y2="45" stroke="#dc2626" stroke-width="3" stroke-dasharray="10,5"/>
+                        <text x="90" y="50" font-size="11" fill="#1a202c">Legacy PSTN (Unencrypted)</text>
+
+                        <line x1="20" y1="65" x2="80" y2="65" stroke="#10b981" stroke-width="3"/>
+                        <text x="90" y="70" font-size="11" fill="#1a202c">PSTN2 (Authenticated & Encrypted)</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="architecture-features">
+                <div class="architecture-feature-grid">
+                    <div class="arch-feature-card">
+                        <div class="arch-feature-icon">🔐</div>
+                        <h3>Authentication</h3>
+                        <p>Ed25519 digital signatures cryptographically verify every call's origin, making caller ID spoofing mathematically impossible.</p>
+                    </div>
+                    <div class="arch-feature-card">
+                        <div class="arch-feature-icon">🎯</div>
+                        <h3>Identification</h3>
+                        <p>Verified caller ID with rich branding information displays trust indicators on end-user phones.</p>
+                    </div>
+                    <div class="arch-feature-card">
+                        <div class="arch-feature-icon">🔒</div>
+                        <h3>Encryption</h3>
+                        <p>SRTP and DTLS protocols provide end-to-end encryption for all voice and media, ensuring complete privacy.</p>
+                    </div>
+                    <div class="arch-feature-card">
+                        <div class="arch-feature-icon">⚡</div>
+                        <h3>Direct Routing</h3>
+                        <p>Peer-to-peer connections eliminate transit providers, reducing costs by 90%+ and improving call quality.</p>
+                    </div>
+                    <div class="arch-feature-card">
+                        <div class="arch-feature-icon">🔄</div>
+                        <h3>Number Porting</h3>
+                        <p>Distributed database with eventual consistency enables real-time number portability across all carriers.</p>
+                    </div>
+                    <div class="arch-feature-card">
+                        <div class="arch-feature-icon">🚑</div>
+                        <h3>Realtime 999</h3>
+                        <p>GPS location data transmitted instantly with emergency calls for life-saving location accuracy.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 60px; text-align: center;">
+                <a href="#code-samples" class="btn btn-primary">Explore Code Samples →</a>
+                <a href="#presentations" class="btn btn-secondary" style="margin-left: 20px;">View Detailed Presentations →</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Samples Section -->
+    <section id="code-samples" class="code-samples">
+        <div class="section-content">
+            <h2 class="section-title">Sample Implementations</h2>
+            <p class="section-subtitle">Working code examples in TypeScript, Python, and Go - ready to use</p>
+
+            <div class="code-grid">
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">🔷</div>
+                        <h3 class="code-title">TypeScript</h3>
+                        <p class="code-subtitle">Modern, type-safe implementation</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li>5 complete working examples</li>
+                            <li>Authentication (Direct Query & Token Pool)</li>
+                            <li>Direct routing with media negotiation</li>
+                            <li>Emergency services integration</li>
+                            <li>Complete end-to-end call flow</li>
+                            <li>Full SDK documentation</li>
+                        </ul>
+                        <span class="code-status available">✓ Available Now</span>
+                        <a href="/code/typescript/README.html" class="code-link">View Documentation →</a>
+                        <a href="/code/typescript/README.md" class="code-link" style="margin-left: 10px;">Markdown</a>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">🐍</div>
+                        <h3 class="code-title">Python</h3>
+                        <p class="code-subtitle">Async/await with type hints</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li>5 async Python examples</li>
+                            <li>Type-safe with Pydantic models</li>
+                            <li>FastAPI integration patterns</li>
+                            <li>Emergency location services</li>
+                            <li>Complete call flow demonstration</li>
+                            <li>Testing with pytest</li>
+                        </ul>
+                        <span class="code-status available">✓ Available Now</span>
+                        <a href="/code/python/README.html" class="code-link">View Documentation →</a>
+                        <a href="/code/python/README.md" class="code-link" style="margin-left: 10px;">Markdown</a>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">🔷</div>
+                        <h3 class="code-title">Go</h3>
+                        <p class="code-subtitle">High-performance production-ready</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li>5 production-ready Go examples</li>
+                            <li>Full context.Context support</li>
+                            <li>Concurrent authentication handling</li>
+                            <li>HTTP server & gRPC integration</li>
+                            <li>Benchmark tests included</li>
+                            <li>Connection pooling & retries</li>
+                        </ul>
+                        <span class="code-status available">✓ Available Now</span>
+                        <a href="/code/go/README.html" class="code-link">View Documentation →</a>
+                        <a href="/code/go/README.md" class="code-link" style="margin-left: 10px;">Markdown</a>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">📚</div>
+                        <h3 class="code-title">Documentation</h3>
+                        <p class="code-subtitle">Complete specifications & guides</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li>Complete protocol specification</li>
+                            <li>OpenAPI 3.0 REST API spec</li>
+                            <li>Implementation guide (3 languages)</li>
+                            <li>Testing & certification guide</li>
+                            <li>All examples explained in detail</li>
+                            <li>Integration patterns & best practices</li>
+                        </ul>
+                        <span class="code-status available">✓ Available Now</span>
+                        <a href="/docs/EXAMPLES.html" class="code-link">View Documentation →</a>
+                        <a href="/docs/EXAMPLES.md" class="code-link" style="margin-left: 10px;">Markdown</a>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">📦</div>
+                        <h3 class="code-title">Complete Download</h3>
+                        <p class="code-subtitle">Everything in one package (256KB)</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li>All 9 animations + website source</li>
+                            <li>15 code examples (TypeScript/Python/Go)</li>
+                            <li>Complete documentation & specs</li>
+                            <li>Claude.md AI guidance file</li>
+                            <li>Deployment scripts included</li>
+                            <li>No license restrictions - use freely!</li>
+                        </ul>
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.15); border-radius: 8px; border: 2px solid rgba(16, 185, 129, 0.4);">
+                            <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.9); margin: 0 0 10px 0; line-height: 1.6;">
+                                <strong>Open Source / Public Domain</strong><br>
+                                No commercial owner (apart from CCUK logo). Feel free to download, use, modify, and run in your own environment. This website was created using <strong>Claude Code AI</strong> - the relevant files are included in this download.
+                            </p>
+                        </div>
+                        <span class="code-status available">✓ Available Now</span>
+                        <a href="/pstn2-complete.zip" class="code-link" style="background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%); border: none;">📥 Download ZIP (256KB) →</a>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">🏢</div>
+                        <h3 class="code-title">Being a MAP</h3>
+                        <p class="code-subtitle">Managed Access Provider Documentation</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li><strong>Pure PSTN2 MAP:</strong> PSTN2-only services</li>
+                            <li><strong>Full Service MAP:</strong> Bridge PSTN + PSTN2</li>
+                            <li>Multi-tenant architecture patterns</li>
+                            <li>AWS cloud deployment guide</li>
+                            <li>On-premises infrastructure guide</li>
+                            <li>Complete specifications & code examples</li>
+                        </ul>
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(59, 130, 246, 0.15); border-radius: 8px; border: 2px solid rgba(59, 130, 246, 0.4);">
+                            <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.9); margin: 0 0 10px 0; line-height: 1.6;">
+                                <strong>Two MAP Types:</strong><br>
+                                <strong>Pure PSTN2 MAP</strong> - Modern VoIP providers wanting PSTN2 features only<br>
+                                <strong>Full Service MAP</strong> - Existing PSTN wholesalers adding PSTN2 to their portfolio
+                            </p>
+                        </div>
+                        <span class="code-status available">✓ Available Now</span>
+                        <a href="/docs/MAP-OVERVIEW.html" class="code-link">View MAP Documentation →</a>
+                        <a href="/docs/MAP-OVERVIEW.md" class="code-link" style="margin-left: 10px;">Markdown</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links Section -->
+            <div style="margin-top: 60px; text-align: center; padding: 40px; background: rgba(251, 146, 60, 0.05); border-radius: 12px; border: 2px solid rgba(251, 146, 60, 0.2);">
+                <h3 style="font-size: 1.8em; margin-bottom: 20px; color: var(--primary-orange);">Quick Links to Code & Documentation</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
+                    <a href="/docs/EXAMPLES.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">📖 Examples Guide</a>
+                    <a href="/docs/SPECIFICATION.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">📋 Protocol Spec</a>
+                    <a href="/docs/API-SPECIFICATION.yaml" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🔌 API Reference</a>
+                    <a href="/docs/IMPLEMENTATION-GUIDE.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🛠️ Implementation Guide</a>
+                    <a href="/docs/MAP-OVERVIEW.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🏢 MAP Overview</a>
+                    <a href="/docs/MAP-MULTITENANT-DESIGN.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🏗️ Multi-Tenant Design</a>
+                    <a href="/docs/MAP-DEPLOYMENT-AWS.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">☁️ AWS Deployment</a>
+                    <a href="/docs/MAP-DEPLOYMENT-ONPREM.html" style="padding: 15px 25px; background: white; border-radius: 8px; text-decoration: none; color: var(--primary-orange); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s;">🖥️ On-Premises Deployment</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>PSTN2</h3>
+                <p style="color: rgba(255, 255, 255, 0.7); margin-top: 10px;">
+                    Next generation telecommunications infrastructure eliminating fraud,
+                    reducing costs, and saving lives through enhanced emergency services.
+                </p>
+            </div>
+            <div class="footer-section">
+                <h3>Presentations</h3>
+                <ul class="footer-links">
+                    <li><a href="src/problem-statement/index.html">Problem Statement</a></li>
+                    <li><a href="src/solution-overview/index.html">Solution Overview</a></li>
+                    <li><a href="src/authentication-option1/index.html">Authentication</a></li>
+                    <li><a href="src/direct-routing/index.html">Direct Routing</a></li>
+                    <li><a href="src/emergency-services/index.html">Emergency Services</a></li>
+                    <li><a href="src/law-enforcement/index.html">Law Enforcement Access</a></li>
+                    <li><a href="animations/index.html">All Presentations</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Code Samples</h3>
+                <ul class="footer-links">
+                    <li><a href="code/typescript/">TypeScript Implementation</a></li>
+                    <li><a href="code/python/">Python Implementation</a></li>
+                    <li><a href="code/go/">Go Implementation</a></li>
+                    <li><a href="test-environment/">Test Environment</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Documentation</h3>
+                <ul class="footer-links">
+                    <li><a href="animations/README.html">Animation Guide</a> | <a href="animations/README.md">MD</a></li>
+                    <li><a href="animations/QUICKSTART.html">Quick Start</a> | <a href="animations/QUICKSTART.md">MD</a></li>
+                    <li><a href="animations/DELIVERY_COMPLETE.html">Delivery Report</a> | <a href="animations/DELIVERY_COMPLETE.md">MD</a></li>
+                    <li><a href="animations/TESTING_CHECKLIST.html">Testing Checklist</a> | <a href="animations/TESTING_CHECKLIST.md">MD</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 PSTN2 Project. Built to eliminate fraud and save lives. A project initiated by <a href="https://commscouncil.uk/" target="_blank" rel="noopener" style="color: var(--primary-orange); text-decoration: underline;">Comms Council UK</a></p>
+            <p style="margin-top: 20px;">
+                <a href="/forum/" style="display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">💬 Join the Community Forum</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

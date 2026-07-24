@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # MySQL database for CP1
+  mysql-cp1:
+    image: mysql:8.0
+    container_name: pstn2-mysql-cp1
+    environment:
+      MYSQL_ROOT_PASSWORD: pstn2_root_pass
+      MYSQL_DATABASE: CP1
+      MYSQL_USER: pstn2
+      MYSQL_PASSWORD: pstn2_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-cp1-data:/var/lib/mysql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./database/seeds/seed_cp1.sql:/docker-entrypoint-initdb.d/seed.sql
+    networks:
+      - pstn2-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppstn2_root_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL database for CP2
+  mysql-cp2:
+    image: mysql:8.0
+    container_name: pstn2-mysql-cp2
+    environment:
+      MYSQL_ROOT_PASSWORD: pstn2_root_pass
+      MYSQL_DATABASE: CP2
+      MYSQL_USER: pstn2
+      MYSQL_PASSWORD: pstn2_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-cp2-data:/var/lib/mysql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./database/seeds/seed_cp2.sql:/docker-entrypoint-initdb.d/seed.sql
+    networks:
+      - pstn2-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppstn2_root_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL database for CP3
+  mysql-cp3:
+    image: mysql:8.0
+    container_name: pstn2-mysql-cp3
+    environment:
+      MYSQL_ROOT_PASSWORD: pstn2_root_pass
+      MYSQL_DATABASE: CP3
+      MYSQL_USER: pstn2
+      MYSQL_PASSWORD: pstn2_pass
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-cp3-data:/var/lib/mysql
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./database/seeds/seed_cp3.sql:/docker-entrypoint-initdb.d/seed.sql
+    networks:
+      - pstn2-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppstn2_root_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pstn2-backend
+    environment:
+      NODE_ENV: development
+      # CP1 Database
+      CP1_DB_HOST: mysql-cp1
+      CP1_DB_PORT: 3306
+      CP1_DB_NAME: CP1
+      CP1_DB_USER: pstn2
+      CP1_DB_PASSWORD: pstn2_pass
+      CP1_API_PORT: 3001
+      # CP2 Database
+      CP2_DB_HOST: mysql-cp2
+      CP2_DB_PORT: 3306
+      CP2_DB_NAME: CP2
+      CP2_DB_USER: pstn2
+      CP2_DB_PASSWORD: pstn2_pass
+      CP2_API_PORT: 3002
+      # CP3 Database
+      CP3_DB_HOST: mysql-cp3
+      CP3_DB_PORT: 3306
+      CP3_DB_NAME: CP3
+      CP3_DB_USER: pstn2
+      CP3_DB_PASSWORD: pstn2_pass
+      CP3_API_PORT: 3003
+      # Simulator API
+      SIMULATOR_PORT: 3000
+    ports:
+      - "3000:3000"  # Simulator API
+      - "3001:3001"  # CP1 API
+      - "3002:3002"  # CP2 API
+      - "3003:3003"  # CP3 API
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      mysql-cp1:
+        condition: service_healthy
+      mysql-cp2:
+        condition: service_healthy
+      mysql-cp3:
+        condition: service_healthy
+    networks:
+      - pstn2-network
+    command: npm run dev
+
+  # Frontend web portal
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pstn2-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:3000
+      REACT_APP_CP1_API_URL: http://localhost:3001
+      REACT_APP_CP2_API_URL: http://localhost:3002
+      REACT_APP_CP3_API_URL: http://localhost:3003
+    ports:
+      - "5173:5173"  # Vite dev server
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - pstn2-network
+    command: npm run dev
+
+networks:
+  pstn2-network:
+    driver: bridge
+
+volumes:
+  mysql-cp1-data:
+  mysql-cp2-data:
+  mysql-cp3-data:

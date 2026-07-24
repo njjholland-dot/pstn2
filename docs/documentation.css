@@ -1,0 +1,318 @@
+/* PSTN2 Documentation Styles */
+
+:root {
+    --primary-orange: #E25F07;
+    --primary-blue: #3b82f6;
+    --dark-blue: #1e3a8a;
+    --light-gray: #f3f4f6;
+    --dark-gray: #1f2937;
+    --border-gray: #d1d5db;
+    --success-green: #10b981;
+    --code-bg: #1e293b;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: var(--dark-gray);
+    background: #ffffff;
+    padding: 0;
+    margin: 0;
+}
+
+/* Header */
+.doc-header {
+    background: linear-gradient(135deg, var(--primary-orange) 0%, #ff8c42 100%);
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.doc-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.doc-header .subtitle {
+    font-size: 1.2em;
+    opacity: 0.95;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 15px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.3s;
+}
+
+.back-link:hover {
+    opacity: 0.8;
+}
+
+/* Navigation */
+.doc-nav {
+    background: white;
+    border-bottom: 2px solid var(--border-gray);
+    padding: 15px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.doc-nav-links {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.doc-nav-links a {
+    color: var(--primary-orange);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.doc-nav-links a:hover {
+    background: var(--light-gray);
+}
+
+/* Container */
+.doc-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--dark-blue);
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 700;
+}
+
+h1 { font-size: 2.5em; border-bottom: 3px solid var(--primary-orange); padding-bottom: 10px; }
+h2 { font-size: 2em; border-bottom: 2px solid var(--border-gray); padding-bottom: 8px; margin-top: 2em; }
+h3 { font-size: 1.5em; color: var(--primary-orange); }
+h4 { font-size: 1.25em; }
+h5 { font-size: 1.1em; }
+h6 { font-size: 1em; font-weight: 600; }
+
+p {
+    margin: 1em 0;
+    line-height: 1.8;
+}
+
+/* Links */
+a {
+    color: var(--primary-blue);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s;
+}
+
+a:hover {
+    color: var(--primary-orange);
+    border-bottom-color: var(--primary-orange);
+}
+
+/* Lists */
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+li {
+    margin: 0.5em 0;
+}
+
+/* Code */
+code {
+    background: var(--light-gray);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    color: #c7254e;
+}
+
+pre {
+    background: var(--code-bg);
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: 0.95em;
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid var(--primary-orange);
+    padding-left: 20px;
+    margin: 1.5em 0;
+    font-style: italic;
+    color: #555;
+    background: var(--light-gray);
+    padding: 15px 20px;
+    border-radius: 0 8px 8px 0;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+thead {
+    background: var(--primary-orange);
+    color: white;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+th {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
+}
+
+tbody tr:hover {
+    background: var(--light-gray);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Info boxes */
+.info-box {
+    padding: 20px;
+    margin: 1.5em 0;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.info-box.note {
+    background: #eff6ff;
+    border-color: var(--primary-blue);
+}
+
+.info-box.warning {
+    background: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.info-box.success {
+    background: #d1fae5;
+    border-color: var(--success-green);
+}
+
+.info-box.danger {
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+/* Horizontal Rule */
+hr {
+    border: none;
+    border-top: 2px solid var(--border-gray);
+    margin: 2em 0;
+}
+
+/* Images */
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: 1.5em 0;
+}
+
+/* Footer */
+.doc-footer {
+    background: var(--dark-gray);
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    margin-top: 60px;
+}
+
+.doc-footer a {
+    color: var(--primary-orange);
+    border-bottom-color: transparent;
+}
+
+.doc-footer a:hover {
+    border-bottom-color: var(--primary-orange);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .doc-header h1 {
+        font-size: 2em;
+    }
+
+    .doc-container {
+        padding: 20px 15px;
+    }
+
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.6em; }
+    h3 { font-size: 1.3em; }
+
+    .doc-nav-links {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Syntax highlighting for code blocks */
+.language-typescript .keyword { color: #c792ea; }
+.language-typescript .string { color: #c3e88d; }
+.language-typescript .function { color: #82aaff; }
+.language-typescript .comment { color: #546e7a; }
+
+.language-python .keyword { color: #c792ea; }
+.language-python .string { color: #c3e88d; }
+.language-python .function { color: #82aaff; }
+.language-python .comment { color: #546e7a; }
+
+.language-go .keyword { color: #c792ea; }
+.language-go .string { color: #c3e88d; }
+.language-go .function { color: #82aaff; }
+.language-go .comment { color: #546e7a; }
+
+.language-bash .command { color: #82aaff; }
+.language-bash .string { color: #c3e88d; }
+.language-bash .comment { color: #546e7a; }

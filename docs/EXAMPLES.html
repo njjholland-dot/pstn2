@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 Code Examples | PSTN2</title>
+    <link rel="stylesheet" href="../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        <h1>PSTN2 Code Examples</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#directory-structure">Directory Structure</a>
+                <a href="#prerequisites">Prerequisites</a>
+                <a href="#example-descriptions">Example Descriptions</a>
+                <a href="#running-the-examples">Running the Examples</a>
+                <a href="#common-patterns">Common Patterns</a>
+                <a href="#testing">Testing</a>
+                <a href="#integration-patterns">Integration Patterns</a>
+                <a href="#performance-considerations">Performance Considerations</a>
+                <a href="#security-best-practices">Security Best Practices</a>
+                <a href="#troubleshooting">Troubleshooting</a>
+                <a href="#further-reading">Further Reading</a>
+                <a href="#support">Support</a>
+                <a href="#license">License</a>
+                <a href="EXAMPLES.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="pstn2-code-examples">PSTN2 Code Examples</h1>
+
+<p>This directory contains working code examples demonstrating how to use the PSTN2 protocol in TypeScript, Python, and Go.</p>
+
+<h2 id="overview">Overview</h2>
+
+<p>All examples demonstrate the same functionality across three languages:</p>
+
+<ul>
+<li><strong>Basic Authentication</strong> - Verify inbound calls using Direct Query authentication</li>
+<li><strong>Direct Routing</strong> - Request peer-to-peer routing with media capability negotiation</li>
+<li><strong>Token Pool</strong> - Use Token Pool authentication for high-volume scenarios</li>
+<li><strong>Emergency Services</strong> - Query real-time location data for emergency calls (PSAP perspective)</li>
+<li><strong>Complete Call Flow</strong> - End-to-end scenario showing all PSTN2 features working together</li>
+</ul>
+
+<h2 id="directory-structure">Directory Structure</h2>
+
+<pre><code class="language-">code/
+<p>├── typescript/</p>
+<p>│   └── examples/</p>
+<p>│       ├── 01-basic-authentication.ts</p>
+<p>│       ├── 02-direct-routing.ts</p>
+<p>│       ├── 03-token-pool.ts</p>
+<p>│       ├── 04-emergency-services.ts</p>
+<p>│       └── 05-complete-call-flow.ts</p>
+<p>├── python/</p>
+<p>│   └── examples/</p>
+<p>│       ├── 01<em>basic</em>authentication.py</p>
+<p>│       ├── 02<em>direct</em>routing.py</p>
+<p>│       ├── 03<em>token</em>pool.py</p>
+<p>│       ├── 04<em>emergency</em>services.py</p>
+<p>│       └── 05<em>complete</em>call_flow.py</p>
+<p>└── go/</p>
+<p>    └── examples/</p>
+<p>        ├── 01-basic-authentication.go</p>
+<p>        ├── 02-direct-routing.go</p>
+<p>        ├── 03-token-pool.go</p>
+<p>        ├── 04-emergency-services.go</p>
+<p>        └── 05-complete-call-flow.go</code></pre></p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<h3 id="all-languages">All Languages</h3>
+
+<p>Before running any examples, you need:</p>
+
+<ul>
+<li><strong>PSTN2 Account</strong>: Register as a Communications Provider (CP) and obtain:</li>
+</ul>
+<p>   - CP ID (e.g., <code>CP1-UK-0001</code>)</p>
+<p>   - API endpoint URL</p>
+<p>   - Private key for Ed25519 signing</p>
+
+<ul>
+<li><strong>Environment Variables</strong>: Set up the following:</li>
+</ul>
+   <pre><code class="language-bash">export PSTN2<em>PRIVATE</em>KEY=&quot;your-private-key-here&quot;
+<p>   export CP1<em>PRIVATE</em>KEY=&quot;your-private-key-here&quot;  # For complete call flow</p>
+<p>   export PSAP<em>PRIVATE</em>KEY=&quot;your-psap-key-here&quot;     # For emergency services</p>
+<p>   export TOKEN<em>POOL</em>JWT=&quot;your-jwt-token-here&quot;      # For token pool example</code></pre></p>
+
+<h3 id="language-specific-setup">Language-Specific Setup</h3>
+
+<p>See the README.md file in each language directory for setup instructions:</p>
+<ul>
+<li><a href="typescript/README.md">TypeScript README</a></li>
+<li><a href="python/README.md">Python README</a></li>
+<li><a href="go/README.md">Go README</a></li>
+</ul>
+
+<h2 id="example-descriptions">Example Descriptions</h2>
+
+<h3 id="example-1-basic-authentication">Example 1: Basic Authentication</h3>
+
+<p><strong>Purpose</strong>: Demonstrates how to verify an inbound call's authenticity using PSTN2 Direct Query authentication.</p>
+
+<p><strong>What it shows</strong>:</p>
+<ul>
+<li>Client initialization with configuration</li>
+<li>Verifying caller ID authenticity</li>
+<li>Accessing caller information (name, organization)</li>
+<li>Viewing call branding details</li>
+<li>Handling porting chains (number portability)</li>
+<li>Error handling and PSTN fallback</li>
+</ul>
+
+<p><strong>Use case</strong>: When you receive an incoming call and want to verify the caller ID is legitimate before presenting it to your end user.</p>
+
+<p><strong>Expected output</strong>:</p>
+<pre><code class="language-">PSTN2 Client initialized
+<p>CP ID: CP1-UK-0001</p>
+<p>Auth Mode: DirectQuery</p>
+<p>---</p>
+<p>Verifying inbound call...</p>
+<p>✓ Call verified successfully!</p>
+<p>  Caller Name: John Smith</p>
+<p>  Organization: ACME Corp</p>
+<p>  Call Purpose: Customer Service</p>
+<p>  Trust Level: verified</p>
+<p>  Branding:</p>
+<p>    Display Name: ACME Support</p>
+<p>    Logo: https://cdn.acme.com/logo.png</p>
+<p>    Colors: #0066cc</code></pre></p>
+
+<h3 id="example-2-direct-routing">Example 2: Direct Routing</h3>
+
+<p><strong>Purpose</strong>: Shows how to request direct peer-to-peer routing for an outbound call, eliminating transit providers.</p>
+
+<p><strong>What it shows</strong>:</p>
+<ul>
+<li>Requesting routing with media capabilities</li>
+<li>Codec negotiation (Opus, G.722, PCMU)</li>
+<li>Encryption preferences (SRTP-AES256)</li>
+<li>Call branding configuration</li>
+<li>Connection details for media setup</li>
+<li>Public key exchange for encryption</li>
+</ul>
+
+<p><strong>Use case</strong>: When placing an outbound call and you want to establish a direct connection to the destination CP for better quality and lower costs.</p>
+
+<p><strong>Expected output</strong>:</p>
+<pre><code class="language-">Requesting direct routing for outbound call...
+<p>---</p>
+<p>✓ Routing accepted!</p>
+
+<p>Connection Details:</p>
+<p>  FQDN: media1.cp2.example.com</p>
+<p>  IPv4: 203.0.113.42</p>
+<p>  IPv6: 2001:db8::1</p>
+<p>  Port: 5060</p>
+<p>  Protocol: SIP/TLS</p>
+
+<p>Agreed Capabilities:</p>
+<p>  Codecs: opus, g722</p>
+<p>  Encryption: srtp-aes256</p>
+<p>  Video: No</p>
+
+<p>Ready to establish encrypted media connection!</code></pre></p>
+
+<h3 id="example-3-token-pool">Example 3: Token Pool</h3>
+
+<p><strong>Purpose</strong>: Demonstrates Token Pool authentication, an alternative to Direct Query that reduces query load.</p>
+
+<p><strong>What it shows</strong>:</p>
+<ul>
+<li>Creating authentication tokens before placing calls</li>
+<li>Including tokens in SIP headers</li>
+<li>Verifying tokens on the recipient side</li>
+<li>Token expiration (TTL)</li>
+<li>Benefits of centralized token pool</li>
+</ul>
+
+<p><strong>Use case</strong>: High-volume call centers that want to reduce the authentication query load on their infrastructure.</p>
+
+<p><strong>Expected output</strong>:</p>
+<pre><code class="language-">Token Pool Authentication Example
+<p>---</p>
+<p>Step 1: Creating authentication token...</p>
+<p>✓ Token created successfully</p>
+<p>  Token ID: tok_1234567890abcdef</p>
+<p>  Expires: 2025-11-30T12:30:45Z</p>
+<p>  Call Reference: token-call-123</p>
+
+<p>Step 2: Placing call with token...</p>
+<p>  SIP INVITE Header:</p>
+<p>    X-PSTN2-Token: tok_1234567890abcdef</p>
+
+<p>Step 3: Recipient CP verifying token...</p>
+<p>✓ Token verified successfully</p>
+<p>  Originating CP: CP1-UK-0001</p>
+<p>  Caller ID: +441234567890</p>
+<p>  Verified: true</code></pre></p>
+
+<h3 id="example-4-emergency-services">Example 4: Emergency Services</h3>
+
+<p><strong>Purpose</strong>: Shows how PSAPs (Public Safety Answering Points) query real-time location data for emergency calls.</p>
+
+<p><strong>What it shows</strong>:</p>
+<ul>
+<li>PSAP client initialization</li>
+<li>Emergency location query</li>
+<li>GPS coordinates and accuracy</li>
+<li>Address information</li>
+<li>Additional context (cell towers, WiFi APs)</li>
+<li>Dispatch recommendations based on accuracy</li>
+<li>Comparison with traditional PSTN location</li>
+</ul>
+
+<p><strong>Use case</strong>: When a 999/112/911 call is received and the PSAP needs to determine the caller's exact location.</p>
+
+<p><strong>Expected output</strong>:</p>
+<pre><code class="language-">Emergency Services Location Query
+<p>PSAP: London Central 999</p>
+<p>---</p>
+<p>Emergency call received:</p>
+<p>  From: +441234567890</p>
+<p>  Time: 2025-11-30T12:15:30Z</p>
+
+<p>Querying real-time location...</p>
+<p>✓ Location retrieved successfully</p>
+
+<p>GPS Coordinates:</p>
+<p>  Latitude: 51.507351</p>
+<p>  Longitude: -0.127758</p>
+<p>  Accuracy: 8.5 meters</p>
+<p>  Source: gps</p>
+
+<p>Address:</p>
+<p>  Street: 10 Downing Street</p>
+<p>  City: London</p>
+<p>  Postcode: SW1A 2AA</p>
+<p>  Country: United Kingdom</p>
+
+<p>Dispatch Recommendations:</p>
+<p>  ✓ Excellent accuracy - dispatch to exact location</p>
+<p>  ✓ GPS lock strong</code></pre></p>
+
+<h3 id="example-5-complete-call-flow">Example 5: Complete Call Flow</h3>
+
+<p><strong>Purpose</strong>: End-to-end demonstration of a complete PSTN2 call from Alice to Bob, showing all features working together.</p>
+
+<p><strong>What it shows</strong>:</p>
+<ul>
+<li>All 7 phases of PSTN2 call setup:</li>
+</ul>
+<p>  1. Directory lookup (finding recipient's CP)</p>
+<p>  2. Authentication (verifying caller identity)</p>
+<p>  3. Direct routing (negotiating peer-to-peer connection)</p>
+<p>  4. Key exchange (DTLS/SRTP setup)</p>
+<p>  5. Media setup (RTP session establishment)</p>
+<p>  6. Call branding (caller display on recipient phone)</p>
+<p>  7. Call connected (encrypted conversation)</p>
+<ul>
+<li>Timing breakdown for each phase</li>
+<li>Visual representation of caller display</li>
+<li>Comparison with traditional PSTN</li>
+<li>Complete feature and security summary</li>
+</ul>
+
+<p><strong>Use case</strong>: Understanding the complete PSTN2 call flow and seeing how all components work together in a real-world scenario.</p>
+
+<p><strong>Expected output</strong>:</p>
+<pre><code class="language-">============================================================
+<p>COMPLETE PSTN2 CALL FLOW</p>
+<p>Alice (CP1) → Bob (CP2)</p>
+<p>============================================================</p>
+
+<p>📱 Phase 1: Alice dials Bob&#039;s number</p>
+<p>   Alice: +441234567890</p>
+<p>   Bob:   +447700900123</p>
+
+<p>🔍 Looking up Bob&#039;s CP in directory...</p>
+<p>   ✓ Found: CP1-UK-0002</p>
+<p>   ✓ Endpoint: https://api.cp2.example.com/pstn2/v1</p>
+<p>   ⏱  Time: 45ms</p>
+
+<p>🔐 Phase 2: Authenticating call with Bob&#039;s CP...</p>
+<p>   ✓ Call authenticated</p>
+<p>   ✓ Trust Level: verified</p>
+<p>   ⏱  Time: 78ms</p>
+
+<p>🔄 Phase 3: Requesting direct routing...</p>
+<p>   ✓ Routing accepted</p>
+<p>   ✓ Media Server: media1.cp2.example.com</p>
+<p>   ✓ Codec: opus</p>
+<p>   ✓ Encryption: srtp-aes256</p>
+<p>   ⏱  Time: 92ms</p>
+
+<p>[... remaining phases ...]</p>
+
+<p>============================================================</p>
+<p>CALL SUMMARY</p>
+<p>============================================================</p>
+
+<p>Timing Breakdown:</p>
+<p>  Directory Lookup:     45ms</p>
+<p>  Authentication:       78ms</p>
+<p>  Routing Request:      92ms</p>
+<p>  Key Exchange:         35ms</p>
+<p>  Media Setup:          50ms</p>
+<p>  -----------------------------------</p>
+<p>  Total Setup Time:     300ms</p>
+
+<p>Traditional PSTN Comparison:</p>
+<p>  PSTN2:        ~300ms setup time</p>
+<p>  Traditional:  5,000-8,000ms setup time</p>
+<p>  Improvement:  16x faster! 🚀</p>
+
+<p>Features Enabled:</p>
+<p>  ✓ Caller ID verification (fraud prevention)</p>
+<p>  ✓ Direct routing (cost reduction)</p>
+<p>  ✓ End-to-end encryption (privacy)</p>
+<p>  ✓ Call branding (trust)</p>
+<p>  ✓ HD audio quality (Opus codec)</p>
+
+<p>💚 Call in progress - Alice and Bob are talking!</code></pre></p>
+
+<h2 id="running-the-examples">Running the Examples</h2>
+
+<h3 id="quick-start">Quick Start</h3>
+
+<ul>
+<li>Choose your preferred language</li>
+<li>Navigate to that directory:</li>
+</ul>
+   <pre><code class="language-bash">cd typescript  # or python, or go</code></pre>
+<ul>
+<li>Follow the setup instructions in the language-specific README</li>
+<li>Set environment variables</li>
+<li>Run an example:</li>
+</ul>
+   <pre><code class="language-bash"># TypeScript
+<p>   npm run example:01</p>
+
+<p>   # Python</p>
+<p>   python examples/01<em>basic</em>authentication.py</p>
+
+<p>   # Go</p>
+<p>   go run examples/01-basic-authentication.go</code></pre></p>
+
+<h2 id="common-patterns">Common Patterns</h2>
+
+<h3 id="error-handling">Error Handling</h3>
+
+<p>All examples include proper error handling with fallback to traditional PSTN:</p>
+
+<p><strong>TypeScript</strong>:</p>
+<pre><code class="language-typescript">try {
+<p>  const verification = await client.auth.verifyCall({...});</p>
+<p>  // Handle success</p>
+<p>} catch (error) {</p>
+<p>  console.error(&#039;Error:&#039;, error);</p>
+<p>  console.log(&#039;Falling back to traditional PSTN&#039;);</p>
+<p>}</code></pre></p>
+
+<p><strong>Python</strong>:</p>
+<pre><code class="language-python">try:
+<p>    verification = await client.auth.verify_call(...)</p>
+<p>    # Handle success</p>
+<p>except Exception as error:</p>
+<p>    print(f&#039;Error: {error}&#039;)</p>
+<p>    print(&#039;Falling back to traditional PSTN&#039;)</code></pre></p>
+
+<p><strong>Go</strong>:</p>
+<pre><code class="language-go">verification, err := client.Auth().VerifyCall(ctx, &amp;types.VerifyCallRequest{...})
+<p>if err != nil {</p>
+<p>    fmt.Printf(&quot;Error: %v\n&quot;, err)</p>
+<p>    fmt.Println(&quot;Falling back to traditional PSTN&quot;)</p>
+<p>    return</p>
+<p>}</code></pre></p>
+
+<h3 id="configuration">Configuration</h3>
+
+<p>All examples use environment variables for sensitive configuration:</p>
+
+<pre><code class="language-typescript">// TypeScript
+<p>privateKey: process.env.PSTN2<em>PRIVATE</em>KEY!</p>
+
+<p>&lt;h1 id=&quot;python&quot;&gt;Python&lt;/h1&gt;</p>
+<p>private<em>key=os.environ[&#039;PSTN2</em>PRIVATE_KEY&#039;]</p>
+
+<p>// Go</p>
+<p>PrivateKey: os.Getenv(&quot;PSTN2<em>PRIVATE</em>KEY&quot;)</code></pre></p>
+
+<h3 id="client-cleanup">Client Cleanup</h3>
+
+<p>Always close clients when done:</p>
+
+<pre><code class="language-typescript">// TypeScript - use finally or defer-like pattern
+<p>await client.close();</p>
+
+<p>&lt;h1 id=&quot;python-use-finally&quot;&gt;Python - use finally&lt;/h1&gt;</p>
+<p>await client.close()</p>
+
+<p>// Go - use defer</p>
+<p>defer client.Close()</code></pre></p>
+
+<h2 id="testing">Testing</h2>
+
+<p>For testing examples without a real PSTN2 account, you can:</p>
+
+<ul>
+<li><strong>Use Mock Responses</strong>: Modify examples to use mock data</li>
+<li><strong>Run a Local Test Server</strong>: Set up a local PSTN2-compatible API server</li>
+<li><strong>Use Test Credentials</strong>: Some PSTN2 providers offer sandbox environments</li>
+</ul>
+
+<p>See <a href="../TESTING-SPECIFICATION.md">TESTING-SPECIFICATION.md</a> for more details.</p>
+
+<h2 id="integration-patterns">Integration Patterns</h2>
+
+<h3 id="sip-integration">SIP Integration</h3>
+
+<p>PSTN2 is designed to work alongside existing SIP infrastructure:</p>
+
+<ul>
+<li><strong>Inbound Calls</strong>: When receiving a SIP INVITE:</li>
+</ul>
+<p>   - Extract caller ID and call reference from SIP headers</p>
+<p>   - Call <code>verifyCall()</code> to authenticate</p>
+<p>   - Add verification results to SIP headers</p>
+<p>   - Route call to destination</p>
+
+<ul>
+<li><strong>Outbound Calls</strong>: When placing a SIP INVITE:</li>
+</ul>
+<p>   - Call <code>requestRouting()</code> to find direct path</p>
+<p>   - If accepted, establish media connection to returned endpoint</p>
+<p>   - If rejected, route via traditional PSTN</p>
+
+<ul>
+<li><strong>Emergency Calls</strong>: When receiving 999/112/911:</li>
+</ul>
+<p>   - Route to appropriate PSAP</p>
+<p>   - PSAP calls <code>getLocation()</code> immediately</p>
+<p>   - Display location to operator</p>
+<p>   - Dispatch emergency services</p>
+
+<h3 id="backward-compatibility">Backward Compatibility</h3>
+
+<p>All examples demonstrate graceful fallback to traditional PSTN when PSTN2 features are unavailable:</p>
+
+<pre><code class="language-typescript">if (routing.accepted) {
+<p>  // Use PSTN2 direct routing</p>
+<p>  await connectToPeer(routing.connectionDetails);</p>
+<p>} else {</p>
+<p>  // Fall back to traditional PSTN</p>
+<p>  await routeViaPSTN(destinationNumber);</p>
+<p>}</code></pre></p>
+
+<h2 id="performance-considerations">Performance Considerations</h2>
+
+<p>Based on the examples:</p>
+
+<ul>
+<li><strong>Directory Lookup</strong>: 20-50ms typical</li>
+<li><strong>Authentication</strong>: 50-100ms typical</li>
+<li><strong>Routing Request</strong>: 80-120ms typical</li>
+<li><strong>Total Call Setup</strong>: 200-500ms typical (vs. 5-8 seconds traditional PSTN)</li>
+</ul>
+
+<p>Performance tips:</p>
+<ul>
+<li>Cache directory results (with TTL)</li>
+<li>Use Token Pool for high-volume scenarios</li>
+<li>Implement connection pooling for HTTP clients</li>
+<li>Use exponential backoff for retries</li>
+</ul>
+
+<h2 id="security-best-practices">Security Best Practices</h2>
+
+<p>All examples demonstrate:</p>
+
+<ul>
+<li><strong>Private Key Protection</strong>: Never hardcode keys, use environment variables</li>
+<li><strong>TLS Everywhere</strong>: All API calls use HTTPS/TLS 1.3</li>
+<li><strong>Signature Verification</strong>: All messages are cryptographically signed</li>
+<li><strong>Short TTLs</strong>: Token Pool tokens expire in 30 seconds</li>
+<li><strong>Error Information</strong>: Never expose sensitive data in error messages</li>
+</ul>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<p>Common issues and solutions:</p>
+
+<h3 id="authentication-failed">"Authentication failed"</h3>
+<ul>
+<li>Check your private key is correct</li>
+<li>Verify your CP ID matches your account</li>
+<li>Ensure your API endpoint URL is correct</li>
+<li>Check network connectivity to PSTN2 API</li>
+</ul>
+
+<h3 id="directory-lookup-failed">"Directory lookup failed"</h3>
+<ul>
+<li>Number may not be in PSTN2 directory yet</li>
+<li>Try with a known PSTN2-enabled number</li>
+<li>Check directory endpoint is accessible</li>
+</ul>
+
+<h3 id="routing-rejected">"Routing rejected"</h3>
+<ul>
+<li>Destination CP may not support direct routing</li>
+<li>Media capabilities may not match</li>
+<li>Fallback to traditional PSTN is normal</li>
+</ul>
+
+<h3 id="token-expired">"Token expired"</h3>
+<ul>
+<li>Default TTL is 30 seconds</li>
+<li>Increase TTL if needed for longer call setup times</li>
+<li>Ensure clocks are synchronized (use NTP)</li>
+</ul>
+
+<h2 id="further-reading">Further Reading</h2>
+
+<ul>
+<li><a href="../SPECIFICATION.md">SPECIFICATION.md</a> - Complete PSTN2 protocol specification</li>
+<li><a href="../API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> - REST API documentation</li>
+<li><a href="../IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> - Implementation patterns and best practices</li>
+<li><a href="../TESTING-SPECIFICATION.md">TESTING-SPECIFICATION.md</a> - Testing strategies and certification</li>
+</ul>
+
+<h2 id="support">Support</h2>
+
+<p>For issues with the examples:</p>
+<ul>
+<li>Check the language-specific README</li>
+<li>Review the troubleshooting section above</li>
+<li>Consult the main specification documents</li>
+<li>Contact your PSTN2 provider for API support</li>
+</ul>
+
+<h2 id="license">License</h2>
+
+<p>These examples are provided as reference implementations for the PSTN2 protocol. See the main project LICENSE file for details.</p>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>

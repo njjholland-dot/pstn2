@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSTN2 - Problem Statement Animation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="animation-container">
+        <!-- Scene 1: The Vulnerable PSTN -->
+        <div class="scene" id="scene-1">
+            <h1 class="scene-title">The Vulnerable PSTN</h1>
+            <div class="visual-content">
+                <div class="scene-1-layout">
+                    <svg id="network-diagram" width="600" height="400"></svg>
+                    <div class="statistics-right">
+                        <div class="stat" id="fraud-stat">
+                            <span class="stat-label">Annual Fraud Losses</span>
+                            <span class="stat-value" id="fraud-value">£0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="narration" data-speech="Today's Public Switched Telephone Network is highly vulnerable. The migration to all-IP did not come with compensating controls, and now struggles against modern threats. The consumer's trust in what was the most trustworthy network has reduced to where people have stopped answering the phone - and that is a threat both to the industry and the greater economy.">
+                Today's Public Switched Telephone Network is highly vulnerable. The migration to all-IP did not come with compensating controls, and now struggles against modern threats. The consumer's trust in what was the most trustworthy network has reduced to where people have stopped answering the phone - and that is a threat both to the industry and the greater economy.
+            </div>
+        </div>
+
+        <!-- Scene 2: The Fraud Problem -->
+        <div class="scene" id="scene-2" style="display: none;">
+            <h1 class="scene-title">The Fraud Problem</h1>
+            <div class="visual-content">
+                <div class="split-screen">
+                    <div class="left-panel">
+                        <div class="fraudster">
+                            <div class="icon fraudster-icon">🎭</div>
+                            <div class="label">Fraudster</div>
+                            <div class="action">Spoofing Caller ID</div>
+                            <div class="fake-screen">
+                                <div class="caller-id">+44 20 3123 4567</div>
+                                <div class="caller-name">Big Bank Ltd</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="money-flow" id="money-flow"></div>
+                    <div class="right-panel">
+                        <div class="victim">
+                            <div class="icon victim-icon">👴</div>
+                            <div class="label">Victim</div>
+                            <div class="trust">✓ Trusts the Display</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="narration" data-speech="Fraudsters thrive in an environment with almost no risk of being caught. Caller ID spoofing is technically trivial, and Victims who trust what their phone tells them can end up with their Lives getting destroyed. As the public become ever more educated about this spoofing risk, the historic Trust in the PSTN continues to be eroded.">
+                Fraudsters thrive in an environment with almost no risk of being caught. Caller ID spoofing is technically trivial, and Victims who trust what their phone tells them can end up with their Lives getting destroyed. As the public become ever more educated about this spoofing risk, the historic Trust in the PSTN continues to be eroded.
+            </div>
+        </div>
+
+        <!-- Scene 3: The Innovation Problem -->
+        <div class="scene" id="scene-3" style="display: none;">
+            <h1 class="scene-title">The Innovation Problem</h1>
+            <div class="visual-content">
+                <div class="timeline-container">
+                    <svg id="timeline" width="800" height="350"></svg>
+                </div>
+            </div>
+            <div class="narration" data-speech="Industry effort is focused on regulatory compliance rather than advancing privacy, security and consumer protection. When consumers are harmed, the sector's long-term credibility gets weakened. The industry must work with regulators to restore trust in the PSTN whilst enabling innovation to flourish safely. In the all-IP era, the greatest gains have gone to social networks and over-the-top messaging platforms, not to the industry that built and continues to maintain the Internet and should have benefitted.">
+                Industry effort is focused on regulatory compliance rather than advancing privacy, security and consumer protection. When consumers are harmed, the sector's long-term credibility gets weakened. The industry must work with regulators to restore trust in the PSTN whilst enabling innovation to flourish safely. In the all-IP era, the greatest gains have gone to social networks and over-the-top messaging platforms, not to the industry that built and continues to maintain the Internet and should have benefitted.
+            </div>
+        </div>
+
+        <!-- Scene 4: The Regulatory Gap -->
+        <div class="scene" id="scene-4" style="display: none;">
+            <h1 class="scene-title">The Regulatory Gap</h1>
+            <div class="visual-content">
+                <svg id="regulatory-gap" width="800" height="350"></svg>
+            </div>
+            <div class="narration" data-speech="All-IP has outpaced Regulations, leaving critical gaps that allow large-scale criminal activity. To protect consumers, and the integrity of communications, Regulators must act to combat this existential threat. Mandatory technical safeguards which recognise and leverage the shift from physical to digital sources of truth are needed to keep pace with threat levels. The most recent pace of technology change driven by Artificial Intelligence makes action more urgent than ever.">
+                All-IP has outpaced Regulations, leaving critical gaps that allow large-scale criminal activity. To protect consumers, and the integrity of communications, Regulators must act to combat this existential threat. Mandatory technical safeguards which recognise and leverage the shift from physical to digital sources of truth are needed to keep pace with threat levels. The most recent pace of technology change driven by Artificial Intelligence makes action more urgent than ever.
+            </div>
+        </div>
+
+        <!-- Scene 5: The Central Database Dilemma -->
+        <div class="scene" id="scene-5" style="display: none;">
+            <h1 class="scene-title">The Central Database Dilemma</h1>
+            <div class="visual-content">
+                <div class="cdb-container">
+                    <div class="cdb-building" id="cdb">
+                        <div class="cost-tag">£m's to build</div>
+                        <div class="timeline-tag">Years</div>
+                        <div class="rejection-stamps">
+                            <div class="stamp">REJECTED</div>
+                            <div class="reason">"Too costly"</div>
+                            <div class="reason">"unclear ROI"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="narration" data-speech="An example of not keeping up with technology was the Central Numbering Database proposal, now recognised as a key enabler needed to address many of today's challenges. It was not progressed at the time due to economic, technical, and time to value concerns raised by industry. OTS caused similar concerns, but was forced through due to the Regulator mandating action, and future innovations may need similar Regulatory enforcement.">
+                An example of not keeping up with technology was the Central Numbering Database proposal, now recognised as a key enabler needed to address many of today's challenges. It was not progressed at the time due to economic, technical, and time to value concerns raised by industry. OTS caused similar concerns, but was forced through due to the Regulator mandating action, and future innovations may need similar Regulatory enforcement.
+            </div>
+        </div>
+
+        <!-- Scene 6: The Capability Gap -->
+        <div class="scene" id="scene-6" style="display: none;">
+            <h1 class="scene-title">Missing Capabilities and Policies</h1>
+            <div class="visual-content">
+                <div class="capabilities-grid">
+                    <div class="capability-box" data-delay="0">
+                        <span class="icon">🔒</span>
+                        <span class="text">Privacy for all Communications</span>
+                    </div>
+                    <div class="capability-box" data-delay="100">
+                        <span class="icon">✅</span>
+                        <span class="text">Trust in counter party identification</span>
+                    </div>
+                    <div class="capability-box" data-delay="200">
+                        <span class="icon">💰</span>
+                        <span class="text">Clear paths to cost reduction</span>
+                    </div>
+                    <div class="capability-box" data-delay="300">
+                        <span class="icon">⚖️</span>
+                        <span class="text">Level playing field</span>
+                    </div>
+                    <div class="capability-box" data-delay="400">
+                        <span class="icon">🔧</span>
+                        <span class="text">Common access tooling</span>
+                    </div>
+                    <div class="capability-box" data-delay="500">
+                        <span class="icon">📊</span>
+                        <span class="text">Access to sources of truth</span>
+                    </div>
+                </div>
+            </div>
+            <div class="narration" data-speech="Industry lacks effective fraud-prevention tools, and essential safeguards for all-IP remain absent from regulatory policy. An assertive regulatory strategy for the all-IP PSTN is needed to maintain commercial viability and consumer trust. The all-IP migration should have unlocked meaningful innovation for what remains the only global public access communication network, yet treating all-IP as if it were just a PSTN 'back-end' replacement has stifled innovation. Regulation needs a policy shift; from focus on competition via switching, to encouraging competition through innovation that takes advantage of all-IP.">
+                Industry lacks effective fraud-prevention tools, and essential safeguards for all-IP remain absent from regulatory policy. An assertive regulatory strategy for the all-IP PSTN is needed to maintain commercial viability and consumer trust. The all-IP migration should have unlocked meaningful innovation for what remains the only global public access communication network, yet treating all-IP as if it were just a PSTN 'back-end' replacement has stifled innovation. Regulation needs a policy shift; from focus on competition via switching, to encouraging competition through innovation that takes advantage of all-IP.
+            </div>
+        </div>
+
+        <!-- Scene 7: The Challenge -->
+        <div class="scene" id="scene-7" style="display: none;">
+            <h1 class="scene-title">New Strategy</h1>
+            <div class="visual-content">
+                <div class="challenge-container">
+                    <div class="question-mark">?</div>
+                    <div class="paths" id="paths"></div>
+                    <div class="what-if">What if there was another way?</div>
+                </div>
+            </div>
+            <div class="narration" data-speech="But what if there was another way? What if we could achieve all these capabilities without a central database, without big bang changes, without unjustifiable investments, without waiting for everyone to agree, and potentially without waiting for the Regulator to acquire current technology skills?">
+                But what if there was another way? What if we could achieve all these capabilities without a central database, without big bang changes, without unjustifiable investments, without waiting for everyone to agree, and potentially without waiting for the Regulator to acquire current technology skills?
+            </div>
+        </div>
+
+        <!-- Scene 8: Transition to Solution -->
+        <div class="scene" id="scene-8" style="display: none;">
+            <h1 class="scene-title fade-in">Introducing</h1>
+            <div class="visual-content">
+                <div class="logo-container">
+                    <div class="pstn2-logo">PSTN2</div>
+                    <div class="tagline">
+                        <span class="tag">Distributed</span>
+                        <span class="tag">Secure</span>
+                        <span class="tag">Optional</span>
+                    </div>
+                </div>
+            </div>
+            <div class="narration" data-speech="Introducing PSTN2.  PSTN2 is a set of free to use software libraries and documentation that enables CPs to add Privacy and Security to their customer's communications with other PSTN2 participants.  Finally adding value back into person to person communication instead of just joining the race to the bottom of commodity pricing.">
+                Introducing PSTN2.  PSTN2 is a set of free to use software libraries and documentation that enables CPs to add Privacy and Security to their customer's communications with other PSTN2 participants.  Finally adding value back into person to person communication instead of just joining the race to the bottom of commodity pricing.
+            </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="controls">
+            <button id="prev-btn" class="control-btn">← Previous</button>
+            <div class="scene-indicator">
+                <span id="current-scene">1</span> / <span id="total-scenes">8</span>
+            </div>
+            <button id="next-btn" class="control-btn">Next →</button>
+            <button id="play-btn" class="control-btn primary">▶ Play</button>
+            <button id="audio-btn" class="control-btn">🔊 Audio On</button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="animation.js"></script>
+</body>
+</html>

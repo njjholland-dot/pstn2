@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAP Multi-Tenant Architecture Design | PSTN2</title>
+    <link rel="stylesheet" href="../docs/documentation.css">
+</head>
+<body>
+    <header class="doc-header">
+        <a href="../index.html" class="back-link">← Back to Home</a>
+        <h1>MAP Multi-Tenant Architecture Design</h1>
+    </header>
+
+        <nav class="doc-nav">
+            <div class="doc-nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#core-principles">Core Principles</a>
+                <a href="#architecture-components">Architecture Components</a>
+                <a href="#multi-tenancy-patterns">Multi-Tenancy Patterns</a>
+                <a href="#implementation-example-row-level-security-">Implementation Example (Row-Level Security)</a>
+                <a href="#scalability-considerations">Scalability Considerations</a>
+                <a href="#security-considerations">Security Considerations</a>
+                <a href="#monitoring-observability">Monitoring & Observability</a>
+                <a href="#disaster-recovery">Disaster Recovery</a>
+                <a href="#onboarding-new-downstream-cp">Onboarding New Downstream CP</a>
+                <a href="#conclusion">Conclusion</a>
+                <a href="MAP-MULTITENANT-DESIGN.md">View Markdown</a>
+            </div>
+        </nav>
+    <main class="doc-container">
+        <h1 id="map-multi-tenant-architecture-design">MAP Multi-Tenant Architecture Design</h1>
+
+<p><strong>Version:</strong> 1.0</p>
+<p><strong>Date:</strong> 2025-12-01</p>
+<p><strong>Target Audience:</strong> MAP Operators, System Architects</p>
+
+<h2 id="overview">Overview</h2>
+
+<p>This document describes the multi-tenant architecture required for operating a MAP (Managed Access Provider) that serves multiple downstream Communication Providers (CPs). The design ensures <strong>isolation</strong>, <strong>scalability</strong>, <strong>security</strong>, and <strong>performance</strong> while sharing infrastructure costs across tenants.</p>
+
+<h2 id="core-principles">Core Principles</h2>
+
+<h3 id="1-tenant-isolation">1. Tenant Isolation</h3>
+
+<p><strong>Definition:</strong> Each downstream CP's data, credentials, and configuration are completely isolated from other CPs.</p>
+
+<strong>Requirements:</strong>
+<ul>
+<li>Separate database schemas or partitions per CP</li>
+<li>Unique cryptographic keys per CP</li>
+<li>Independent API rate limits and quotas</li>
+<li>Isolated audit logs and metrics</li>
+<li>No cross-tenant data leakage</li>
+</ul>
+
+<strong>Implementation:</strong>
+<ul>
+<li>Database: Row-level security with <code>cp_id</code> column</li>
+<li>Application: Middleware validates tenant context on every request</li>
+<li>Keys: Separate key vault namespaces per tenant</li>
+<li>Logs: Tenant ID in every log entry</li>
+</ul>
+
+<h3 id="2-scalability">2. Scalability</h3>
+
+<p><strong>Definition:</strong> System grows horizontally to accommodate additional CPs without architectural changes.</p>
+
+<strong>Requirements:</strong>
+<ul>
+<li>Stateless application servers (no session affinity)</li>
+<li>Horizontally scalable databases</li>
+<li>Load balancing across multiple instances</li>
+<li>Auto-scaling based on demand</li>
+<li>No hardcoded tenant limits</li>
+</ul>
+
+<strong>Targets:</strong>
+<ul>
+<li>Support 1,000+ downstream CPs on single deployment</li>
+<li>Linear performance scaling with infrastructure</li>
+<li>Add new CP in <5 minutes (automated)</li>
+<li>Handle 10,000 concurrent calls per CP</li>
+</ul>
+
+<h3 id="3-performance">3. Performance</h3>
+
+<p><strong>Definition:</strong> Meet PSTN2 latency requirements for all tenants regardless of load.</p>
+
+<strong>Requirements:</strong>
+<ul>
+<li>Authentication: <500ms (p95)</li>
+<li>Directory lookup: <100ms (p95)</li>
+<li>Emergency location: <200ms (p95)</li>
+<li>API response: <300ms (p95)</li>
+</ul>
+
+<strong>Techniques:</strong>
+<ul>
+<li>Connection pooling</li>
+<li>Query optimization and indexing</li>
+<li>Caching (Redis/Memcached)</li>
+<li>CDN for static content</li>
+<li>Asynchronous processing for non-critical paths</li>
+</ul>
+
+<h3 id="4-security">4. Security</h3>
+
+<p><strong>Definition:</strong> Protect tenant data and prevent unauthorized access.</p>
+
+<strong>Requirements:</strong>
+<ul>
+<li>TLS 1.3 for all communications</li>
+<li>Ed25519 signatures for authentication</li>
+<li>API keys with expiration and rotation</li>
+<li>Audit logging for all operations</li>
+<li>Regular security scanning and updates</li>
+</ul>
+
+<h2 id="architecture-components">Architecture Components</h2>
+
+<h3 id="1-api-gateway">1. API Gateway</h3>
+
+<p><strong>Purpose:</strong> Single entry point for all downstream CP API calls</p>
+
+<strong>Responsibilities:</strong>
+<ul>
+<li>TLS termination</li>
+<li>Authentication (API key validation)</li>
+<li>Rate limiting per tenant</li>
+<li>Request routing to backend services</li>
+<li>Response aggregation</li>
+<li>Metrics collection</li>
+</ul>
+
+<strong>Technology Options:</strong>
+<ul>
+<li>AWS API Gateway</li>
+<li>Kong Gateway</li>
+<li>nginx with custom modules</li>
+<li>Envoy Proxy</li>
+</ul>
+
+<strong>Configuration Example:</strong>
+<pre><code class="language-yaml">tenants:
+<p>  - cp_id: &quot;CP1-UK-0001&quot;</p>
+<p>    api<em>key</em>hash: &quot;sha256:...&quot;</p>
+<p>    rate_limit: &quot;1000 req/min&quot;</p>
+<p>    endpoints:</p>
+<p>      - /auth/verify</p>
+<p>      - /routing/request</p>
+<p>      - /emergency/location</p>
+
+<p>  - cp_id: &quot;CP2-US-0042&quot;</p>
+<p>    api<em>key</em>hash: &quot;sha256:...&quot;</p>
+<p>    rate_limit: &quot;5000 req/min&quot;</p>
+<p>    endpoints:</p>
+<p>      - /auth/verify</p>
+<p>      - /auth/tokens</p>
+<p>      - /routing/request</code></pre></p>
+
+<h3 id="2-authentication-service">2. Authentication Service</h3>
+
+<p><strong>Purpose:</strong> Handle PSTN2 authentication requests on behalf of downstream CPs</p>
+
+<strong>Responsibilities:</strong>
+<ul>
+<li>Receive authentication requests via API</li>
+<li>Sign requests with downstream CP's private key</li>
+<li>Query originating CP (Direct Query mode)</li>
+<li>Manage token pools (Token Pool mode)</li>
+<li>Return verification results</li>
+<li>Log all authentication attempts</li>
+</ul>
+
+<strong>Data Model:</strong>
+<pre><code class="language-sql">-- CP Configuration
+<p>CREATE TABLE cp_tenants (</p>
+<p>    cp_id VARCHAR(50) PRIMARY KEY,</p>
+<p>    cp_name VARCHAR(255) NOT NULL,</p>
+<p>    private<em>key</em>encrypted TEXT NOT NULL,  -- Ed25519 private key</p>
+<p>    public_key TEXT NOT NULL,              -- Ed25519 public key</p>
+<p>    auth<em>mode VARCHAR(20) NOT NULL,        -- &#039;direct</em>query&#039; or &#039;token_pool&#039;</p>
+<p>    api<em>key</em>hash VARCHAR(128) NOT NULL,</p>
+<p>    rate<em>limit</em>per_min INTEGER DEFAULT 1000,</p>
+<p>    created_at TIMESTAMP DEFAULT NOW(),</p>
+<p>    updated_at TIMESTAMP DEFAULT NOW(),</p>
+<p>    status VARCHAR(20) DEFAULT &#039;active&#039;    -- &#039;active&#039;, &#039;suspended&#039;, &#039;terminated&#039;</p>
+<p>);</p>
+
+<p>-- Authentication Logs</p>
+<p>CREATE TABLE auth_logs (</p>
+<p>    log_id BIGSERIAL PRIMARY KEY,</p>
+<p>    cp<em>id VARCHAR(50) NOT NULL REFERENCES cp</em>tenants(cp_id),</p>
+<p>    call_reference VARCHAR(100) NOT NULL,</p>
+<p>    caller_id VARCHAR(20) NOT NULL,</p>
+<p>    called_id VARCHAR(20) NOT NULL,</p>
+<p>    originating_cp VARCHAR(50) NOT NULL,</p>
+<p>    verification_result VARCHAR(20) NOT NULL, -- &#039;verified&#039;, &#039;rejected&#039;, &#039;error&#039;</p>
+<p>    response<em>time</em>ms INTEGER NOT NULL,</p>
+<p>    timestamp TIMESTAMP DEFAULT NOW(),</p>
+<p>    INDEX idx<em>cp</em>timestamp (cp_id, timestamp),</p>
+<p>    INDEX idx<em>call</em>ref (call_reference)</p>
+<p>);</code></pre></p>
+
+<strong>API Endpoint:</strong>
+<pre><code class="language-http">POST /api/v1/auth/verify
+<p>Authorization: Bearer {api_key}</p>
+<p>Content-Type: application/json</p>
+
+<p>{</p>
+<p>    &quot;caller_id&quot;: &quot;+441234567890&quot;,</p>
+<p>    &quot;called_id&quot;: &quot;+447700900123&quot;,</p>
+<p>    &quot;call_reference&quot;: &quot;call-abc-123-def-456&quot;,</p>
+<p>    &quot;originating_cp&quot;: &quot;CP3-UK-0007&quot;</p>
+<p>}</p>
+
+<p>Response:</p>
+<p>{</p>
+<p>    &quot;verified&quot;: true,</p>
+<p>    &quot;verification<em>method&quot;: &quot;direct</em>query&quot;,</p>
+<p>    &quot;response<em>time</em>ms&quot;: 234,</p>
+<p>    &quot;timestamp&quot;: &quot;2025-12-01T10:30:45Z&quot;,</p>
+<p>    &quot;signature&quot;: &quot;base64-encoded-signature&quot;</p>
+<p>}</code></pre></p>
+
+<h3 id="3-directory-service">3. Directory Service</h3>
+
+<p><strong>Purpose:</strong> Provide PSTN2 directory access to downstream CPs</p>
+
+<strong>Responsibilities:</strong>
+<ul>
+<li>Synchronize with global PSTN2 directory</li>
+<li>Maintain local cache for performance</li>
+<li>Handle number lookup requests</li>
+<li>Manage number porting updates</li>
+<li>Propagate CP's number changes to global directory</li>
+</ul>
+
+<strong>Data Model:</strong>
+<pre><code class="language-sql">-- Local Directory Cache
+<p>CREATE TABLE directory_cache (</p>
+<p>    phone_number VARCHAR(20) PRIMARY KEY,</p>
+<p>    current_cp VARCHAR(50) NOT NULL,</p>
+<p>    pstn2_enabled BOOLEAN DEFAULT true,</p>
+<p>    routing_endpoint VARCHAR(255) NOT NULL,</p>
+<p>    last_updated TIMESTAMP NOT NULL,</p>
+<p>    cache_expires TIMESTAMP NOT NULL,</p>
+<p>    INDEX idx<em>cp (current</em>cp)</p>
+<p>);</p>
+
+<p>-- CP Number Assignments</p>
+<p>CREATE TABLE cp_numbers (</p>
+<p>    phone_number VARCHAR(20) PRIMARY KEY,</p>
+<p>    cp<em>id VARCHAR(50) NOT NULL REFERENCES cp</em>tenants(cp_id),</p>
+<p>    routing_endpoint VARCHAR(255) NOT NULL,</p>
+<p>    emergency_enabled BOOLEAN DEFAULT true,</p>
+<p>    assigned_date TIMESTAMP DEFAULT NOW(),</p>
+<p>    INDEX idx<em>cp</em>id (cp_id)</p>
+<p>);</code></pre></p>
+
+<strong>API Endpoints:</strong>
+<pre><code class="language-http">&lt;h1 id=&quot;lookup-number&quot;&gt;Lookup Number&lt;/h1&gt;
+<p>GET /api/v1/directory/lookup/{phone_number}</p>
+<p>Authorization: Bearer {api_key}</p>
+
+<p>Response:</p>
+<p>{</p>
+<p>    &quot;phone_number&quot;: &quot;+447700900123&quot;,</p>
+<p>    &quot;current_cp&quot;: &quot;CP5-UK-0012&quot;,</p>
+<p>    &quot;pstn2_enabled&quot;: true,</p>
+<p>    &quot;routing_endpoint&quot;: &quot;sip:cp5@pstn2.example.com&quot;,</p>
+<p>    &quot;cached&quot;: true,</p>
+<p>    &quot;cache<em>age</em>seconds&quot;: 120</p>
+<p>}</p>
+
+<p>&lt;h1 id=&quot;register-number&quot;&gt;Register Number&lt;/h1&gt;</p>
+<p>POST /api/v1/directory/register</p>
+<p>Authorization: Bearer {api_key}</p>
+<p>Content-Type: application/json</p>
+
+<p>{</p>
+<p>    &quot;phone_number&quot;: &quot;+441234567890&quot;,</p>
+<p>    &quot;routing_endpoint&quot;: &quot;sip:tenant1@map.example.com&quot;,</p>
+<p>    &quot;emergency_enabled&quot;: true</p>
+<p>}</code></pre></p>
+
+<h3 id="4-emergency-services-handler">4. Emergency Services Handler</h3>
+
+<p><strong>Purpose:</strong> Process emergency call location data</p>
+
+<strong>Responsibilities:</strong>
+<ul>
+<li>Receive GPS location from downstream CP's customer</li>
+<li>Validate location data format</li>
+<li>Store location temporarily (for call duration + 24 hours)</li>
+<li>Forward location to appropriate PSAP (Public Safety Answering Point)</li>
+<li>Log all emergency calls for regulatory compliance</li>
+</ul>
+
+<strong>Data Model:</strong>
+<pre><code class="language-sql">-- Emergency Call Locations
+<p>CREATE TABLE emergency_locations (</p>
+<p>    call_reference VARCHAR(100) PRIMARY KEY,</p>
+<p>    cp<em>id VARCHAR(50) NOT NULL REFERENCES cp</em>tenants(cp_id),</p>
+<p>    caller_id VARCHAR(20) NOT NULL,</p>
+<p>    latitude DECIMAL(10, 8) NOT NULL,</p>
+<p>    longitude DECIMAL(11, 8) NOT NULL,</p>
+<p>    accuracy_meters DECIMAL(10, 2),</p>
+<p>    altitude_meters DECIMAL(10, 2),</p>
+<p>    timestamp TIMESTAMP NOT NULL,</p>
+<p>    psap_notified BOOLEAN DEFAULT false,</p>
+<p>    psap_id VARCHAR(50),</p>
+<p>    created_at TIMESTAMP DEFAULT NOW(),</p>
+<p>    expires_at TIMESTAMP NOT NULL,  -- 24 hours after call</p>
+<p>    INDEX idx<em>cp</em>timestamp (cp_id, timestamp)</p>
+<p>);</code></pre></p>
+
+<strong>API Endpoint:</strong>
+<pre><code class="language-http">POST /api/v1/emergency/location
+<p>Authorization: Bearer {api_key}</p>
+<p>Content-Type: application/json</p>
+
+<p>{</p>
+<p>    &quot;call_reference&quot;: &quot;emerg-999-xyz-789&quot;,</p>
+<p>    &quot;caller_id&quot;: &quot;+447700900123&quot;,</p>
+<p>    &quot;emergency_number&quot;: &quot;999&quot;,</p>
+<p>    &quot;location&quot;: {</p>
+<p>        &quot;latitude&quot;: 51.5074,</p>
+<p>        &quot;longitude&quot;: -0.1278,</p>
+<p>        &quot;accuracy_meters&quot;: 10.5,</p>
+<p>        &quot;altitude_meters&quot;: 25.0,</p>
+<p>        &quot;timestamp&quot;: &quot;2025-12-01T10:45:23Z&quot;</p>
+<p>    }</p>
+<p>}</p>
+
+<p>Response:</p>
+<p>{</p>
+<p>    &quot;location_stored&quot;: true,</p>
+<p>    &quot;psap_notified&quot;: true,</p>
+<p>    &quot;psap_id&quot;: &quot;LONDON-PSAP-001&quot;,</p>
+<p>    &quot;call_reference&quot;: &quot;emerg-999-xyz-789&quot;</p>
+<p>}</code></pre></p>
+
+<h3 id="5-routing-coordinator">5. Routing Coordinator</h3>
+
+<p><strong>Purpose:</strong> Facilitate direct routing between CPs</p>
+
+<strong>Responsibilities:</strong>
+<ul>
+<li>Coordinate SIP session setup</li>
+<li>Exchange routing endpoints between CPs</li>
+<li>Negotiate codec and encryption parameters</li>
+<li>Handle NAT traversal (STUN/TURN)</li>
+<li>Provide fallback routing</li>
+</ul>
+
+<strong>Data Model:</strong>
+<pre><code class="language-sql">-- Active Calls
+<p>CREATE TABLE active_calls (</p>
+<p>    call_reference VARCHAR(100) PRIMARY KEY,</p>
+<p>    originating_cp VARCHAR(50) NOT NULL,</p>
+<p>    terminating_cp VARCHAR(50) NOT NULL,</p>
+<p>    caller_id VARCHAR(20) NOT NULL,</p>
+<p>    called_id VARCHAR(20) NOT NULL,</p>
+<p>    routing<em>method VARCHAR(20) NOT NULL, -- &#039;direct&#039;, &#039;relay&#039;, &#039;pstn</em>fallback&#039;</p>
+<p>    call_started TIMESTAMP DEFAULT NOW(),</p>
+<p>    call_ended TIMESTAMP,</p>
+<p>    duration_seconds INTEGER,</p>
+<p>    INDEX idx<em>orig</em>cp (originating<em>cp, call</em>started),</p>
+<p>    INDEX idx<em>term</em>cp (terminating<em>cp, call</em>started)</p>
+<p>);</code></pre></p>
+
+<h3 id="6-billing-usage-tracking">6. Billing & Usage Tracking</h3>
+
+<p><strong>Purpose:</strong> Track usage for each downstream CP for billing purposes</p>
+
+<strong>Responsibilities:</strong>
+<ul>
+<li>Count API calls per endpoint</li>
+<li>Measure authentication requests</li>
+<li>Track emergency calls</li>
+<li>Record call durations (if acting as Full Service MAP)</li>
+<li>Generate monthly invoices</li>
+<li>Provide usage dashboards</li>
+</ul>
+
+<strong>Data Model:</strong>
+<pre><code class="language-sql">-- Usage Metrics (Aggregated)
+<p>CREATE TABLE usage_metrics (</p>
+<p>    metric_id BIGSERIAL PRIMARY KEY,</p>
+<p>    cp<em>id VARCHAR(50) NOT NULL REFERENCES cp</em>tenants(cp_id),</p>
+<p>    metric<em>type VARCHAR(50) NOT NULL, -- &#039;auth</em>verify&#039;, &#039;directory_lookup&#039;, &#039;emergency&#039;, &#039;routing&#039;</p>
+<p>    metric_count INTEGER NOT NULL,</p>
+<p>    period_start TIMESTAMP NOT NULL,</p>
+<p>    period_end TIMESTAMP NOT NULL,</p>
+<p>    INDEX idx<em>cp</em>period (cp<em>id, period</em>start)</p>
+<p>);</p>
+
+<p>-- Billing Records</p>
+<p>CREATE TABLE billing_records (</p>
+<p>    invoice_id BIGSERIAL PRIMARY KEY,</p>
+<p>    cp<em>id VARCHAR(50) NOT NULL REFERENCES cp</em>tenants(cp_id),</p>
+<p>    billing<em>period</em>start TIMESTAMP NOT NULL,</p>
+<p>    billing<em>period</em>end TIMESTAMP NOT NULL,</p>
+<p>    total_calls INTEGER NOT NULL,</p>
+<p>    total_minutes DECIMAL(12, 2),</p>
+<p>    base_fee DECIMAL(10, 2) NOT NULL,</p>
+<p>    usage_fee DECIMAL(10, 2) NOT NULL,</p>
+<p>    total_amount DECIMAL(10, 2) NOT NULL,</p>
+<p>    currency VARCHAR(3) DEFAULT &#039;GBP&#039;,</p>
+<p>    status VARCHAR(20) DEFAULT &#039;pending&#039;, -- &#039;pending&#039;, &#039;sent&#039;, &#039;paid&#039;, &#039;overdue&#039;</p>
+<p>    created_at TIMESTAMP DEFAULT NOW(),</p>
+<p>    INDEX idx<em>cp</em>period (cp<em>id, billing</em>period_start)</p>
+<p>);</code></pre></p>
+
+<strong>API Endpoint:</strong>
+<pre><code class="language-http">GET /api/v1/usage/current-month
+<p>Authorization: Bearer {api_key}</p>
+
+<p>Response:</p>
+<p>{</p>
+<p>    &quot;cp_id&quot;: &quot;CP1-UK-0001&quot;,</p>
+<p>    &quot;period_start&quot;: &quot;2025-12-01T00:00:00Z&quot;,</p>
+<p>    &quot;period_end&quot;: &quot;2025-12-31T23:59:59Z&quot;,</p>
+<p>    &quot;metrics&quot;: {</p>
+<p>        &quot;auth_verifications&quot;: 45820,</p>
+<p>        &quot;directory_lookups&quot;: 12340,</p>
+<p>        &quot;emergency_calls&quot;: 12,</p>
+<p>        &quot;routing_requests&quot;: 45820</p>
+<p>    },</p>
+<p>    &quot;estimated_charges&quot;: {</p>
+<p>        &quot;base_fee&quot;: 500.00,</p>
+<p>        &quot;usage_fee&quot;: 91.64,</p>
+<p>        &quot;total&quot;: 591.64,</p>
+<p>        &quot;currency&quot;: &quot;GBP&quot;</p>
+<p>    }</p>
+<p>}</code></pre></p>
+
+<h2 id="multi-tenancy-patterns">Multi-Tenancy Patterns</h2>
+
+<h3 id="pattern-1-database-per-tenant-highest-isolation">Pattern 1: Database Per Tenant (Highest Isolation)</h3>
+
+<p><strong>Approach:</strong> Each CP gets a dedicated database instance</p>
+
+<strong>Pros:</strong>
+<ul>
+<li>Complete data isolation</li>
+<li>Independent schema evolution</li>
+<li>Easy to backup/restore per tenant</li>
+<li>Can move tenant to different server</li>
+</ul>
+
+<strong>Cons:</strong>
+<ul>
+<li>Higher infrastructure costs</li>
+<li>Complex cross-tenant queries</li>
+<li>More operational overhead</li>
+<li>Connection pool limits</li>
+</ul>
+
+<p><strong>Best For:</strong> High-security environments, regulated industries, VIP customers</p>
+
+<h3 id="pattern-2-schema-per-tenant-moderate-isolation">Pattern 2: Schema Per Tenant (Moderate Isolation)</h3>
+
+<p><strong>Approach:</strong> Single database with separate schema per CP</p>
+
+<strong>Pros:</strong>
+<ul>
+<li>Good isolation</li>
+<li>Moderate costs</li>
+<li>Easier cross-tenant analytics</li>
+<li>Simpler operations than DB-per-tenant</li>
+</ul>
+
+<strong>Cons:</strong>
+<ul>
+<li>Schema proliferation</li>
+<li>Some connection overhead</li>
+<li>Migration complexity</li>
+</ul>
+
+<p><strong>Best For:</strong> Medium-scale MAPs (50-200 CPs)</p>
+
+<h3 id="pattern-3-row-level-security-shared-schema-low-cost">Pattern 3: Row-Level Security (Shared Schema, Low Cost)</h3>
+
+<p><strong>Approach:</strong> Single schema with <code>cp_id</code> column and RLS policies</p>
+
+<strong>Pros:</strong>
+<ul>
+<li>Lowest infrastructure costs</li>
+<li>Simple schema management</li>
+<li>Easy cross-tenant queries</li>
+<li>Best performance</li>
+</ul>
+
+<strong>Cons:</strong>
+<ul>
+<li>Requires careful query validation</li>
+<li>Risk of data leakage if bugs</li>
+<li>All tenants affected by schema changes</li>
+</ul>
+
+<p><strong>Best For:</strong> Large-scale MAPs (500+ CPs), cost-sensitive deployments</p>
+
+<p><strong>Recommended for Most MAPs:</strong> Pattern 3 (Row-Level Security)</p>
+
+<h2 id="implementation-example-row-level-security">Implementation Example (Row-Level Security)</h2>
+
+<h3 id="database-setup-postgresql">Database Setup (PostgreSQL)</h3>
+
+<pre><code class="language-sql">-- Enable Row-Level Security
+<p>CREATE TABLE cp_tenants (</p>
+<p>    cp_id VARCHAR(50) PRIMARY KEY,</p>
+<p>    cp_name VARCHAR(255) NOT NULL,</p>
+<p>    private<em>key</em>encrypted TEXT NOT NULL,</p>
+<p>    public_key TEXT NOT NULL,</p>
+<p>    created_at TIMESTAMP DEFAULT NOW()</p>
+<p>);</p>
+
+<p>CREATE TABLE call_records (</p>
+<p>    call_id BIGSERIAL PRIMARY KEY,</p>
+<p>    cp<em>id VARCHAR(50) NOT NULL REFERENCES cp</em>tenants(cp_id),</p>
+<p>    call_reference VARCHAR(100) NOT NULL,</p>
+<p>    caller_id VARCHAR(20) NOT NULL,</p>
+<p>    called_id VARCHAR(20) NOT NULL,</p>
+<p>    timestamp TIMESTAMP DEFAULT NOW()</p>
+<p>);</p>
+
+<p>-- Enable RLS on call_records</p>
+<p>ALTER TABLE call_records ENABLE ROW LEVEL SECURITY;</p>
+
+<p>-- Policy: Users can only see their own tenant&#039;s data</p>
+<p>CREATE POLICY tenant<em>isolation</em>policy ON call_records</p>
+<p>    USING (cp<em>id = current</em>setting(&#039;app.current_tenant&#039;)::VARCHAR);</p>
+
+<p>-- Set current tenant in session</p>
+<p>SET app.current_tenant = &#039;CP1-UK-0001&#039;;</p>
+
+<p>-- Now queries only return rows for CP1-UK-0001</p>
+<p>SELECT * FROM call_records;  -- Only sees CP1&#039;s records</code></pre></p>
+
+<h3 id="application-middleware-node-js-example">Application Middleware (Node.js Example)</h3>
+
+<pre><code class="language-typescript">// middleware/tenant-context.ts
+<p>import { Request, Response, NextFunction } from &#039;express&#039;;</p>
+<p>import { db } from &#039;../db&#039;;</p>
+
+<p>export async function tenantContext(</p>
+<p>  req: Request,</p>
+<p>  res: Response,</p>
+<p>  next: NextFunction</p>
+<p>) {</p>
+<p>  // Extract API key from Authorization header</p>
+<p>  const apiKey = req.headers.authorization?.replace(&#039;Bearer &#039;, &#039;&#039;);</p>
+
+<p>  if (!apiKey) {</p>
+<p>    return res.status(401).json({ error: &#039;Missing API key&#039; });</p>
+<p>  }</p>
+
+<p>  // Look up tenant by API key</p>
+<p>  const tenant = await db.query(</p>
+<p>    &#039;SELECT cp<em>id FROM cp</em>tenants WHERE api<em>key</em>hash = $1 AND status = $2&#039;,</p>
+<p>    [hashApiKey(apiKey), &#039;active&#039;]</p>
+<p>  );</p>
+
+<p>  if (tenant.rows.length === 0) {</p>
+<p>    return res.status(401).json({ error: &#039;Invalid API key&#039; });</p>
+<p>  }</p>
+
+<p>  // Set tenant context for this request</p>
+<p>  const cpId = tenant.rows[0].cp_id;</p>
+<p>  await db.query(&#039;SET app.current_tenant = $1&#039;, [cpId]);</p>
+
+<p>  // Store tenant ID in request for later use</p>
+<p>  req.tenantId = cpId;</p>
+
+<p>  next();</p>
+<p>}</p>
+
+<p>// Apply middleware to all API routes</p>
+<p>app.use(&#039;/api/v1&#039;, tenantContext);</code></pre></p>
+
+<h3 id="api-route-example">API Route Example</h3>
+
+<pre><code class="language-typescript">// routes/auth.ts
+<p>import { Router } from &#039;express&#039;;</p>
+<p>import { db } from &#039;../db&#039;;</p>
+<p>import { signRequest } from &#039;../crypto&#039;;</p>
+
+<p>const router = Router();</p>
+
+<p>router.post(&#039;/auth/verify&#039;, async (req, res) =&gt; {</p>
+<p>  const { caller<em>id, called</em>id, call<em>reference, originating</em>cp } = req.body;</p>
+
+<p>  // Tenant context already set by middleware</p>
+<p>  const cpId = req.tenantId;</p>
+
+<p>  // Get tenant&#039;s private key</p>
+<p>  const tenant = await db.query(</p>
+<p>    &#039;SELECT private<em>key</em>encrypted FROM cp<em>tenants WHERE cp</em>id = $1&#039;,</p>
+<p>    [cpId]</p>
+<p>  );</p>
+
+<p>  const privateKey = decrypt(tenant.rows[0].private<em>key</em>encrypted);</p>
+
+<p>  // Sign authentication request</p>
+<p>  const signature = signRequest(privateKey, {</p>
+<p>    caller_id,</p>
+<p>    called_id,</p>
+<p>    call_reference,</p>
+<p>    originating_cp,</p>
+<p>    timestamp: new Date().toISOString(),</p>
+<p>  });</p>
+
+<p>  // Query originating CP for verification</p>
+<p>  const verification = await queryOriginatingCP(</p>
+<p>    originating_cp,</p>
+<p>    caller_id,</p>
+<p>    called_id,</p>
+<p>    call_reference,</p>
+<p>    signature</p>
+<p>  );</p>
+
+<p>  // Log the authentication attempt (automatically isolated by RLS)</p>
+<p>  await db.query(</p>
+    <code>INSERT INTO auth_logs
+<p>     (cp<em>id, call</em>reference, caller<em>id, called</em>id, originating<em>cp, verification</em>result, response<em>time</em>ms)</p>
+<p>     VALUES ($1, $2, $3, $4, $5, $6, $7)</code>,</p>
+<p>    [cpId, call<em>reference, caller</em>id, called<em>id, originating</em>cp,</p>
+<p>     verification.verified ? &#039;verified&#039; : &#039;rejected&#039;, verification.response_time]</p>
+<p>  );</p>
+
+<p>  res.json({</p>
+<p>    verified: verification.verified,</p>
+<p>    verification<em>method: &#039;direct</em>query&#039;,</p>
+<p>    response<em>time</em>ms: verification.response_time,</p>
+<p>    timestamp: new Date().toISOString(),</p>
+<p>  });</p>
+<p>});</p>
+
+<p>export default router;</code></pre></p>
+
+<h2 id="scalability-considerations">Scalability Considerations</h2>
+
+<h3 id="horizontal-scaling">Horizontal Scaling</h3>
+
+<strong>Application Tier:</strong>
+<pre><code class="language-yaml">&lt;h1 id=&quot;kubernetes-deployment&quot;&gt;Kubernetes deployment&lt;/h1&gt;
+<p>apiVersion: apps/v1</p>
+<p>kind: Deployment</p>
+<p>metadata:</p>
+<p>  name: map-api-server</p>
+<p>spec:</p>
+<p>  replicas: 10  # Scale to 10+ instances</p>
+<p>  selector:</p>
+<p>    matchLabels:</p>
+<p>      app: map-api</p>
+<p>  template:</p>
+<p>    metadata:</p>
+<p>      labels:</p>
+<p>        app: map-api</p>
+<p>    spec:</p>
+<p>      containers:</p>
+<p>      - name: api-server</p>
+<p>        image: map-api:latest</p>
+<p>        resources:</p>
+<p>          requests:</p>
+<p>            memory: &quot;512Mi&quot;</p>
+<p>            cpu: &quot;500m&quot;</p>
+<p>          limits:</p>
+<p>            memory: &quot;1Gi&quot;</p>
+<p>            cpu: &quot;1000m&quot;</p>
+<p>        env:</p>
+<p>        - name: DATABASE_URL</p>
+<p>          valueFrom:</p>
+<p>            secretKeyRef:</p>
+<p>              name: db-credentials</p>
+<p>              key: url</p>
+<p>---</p>
+<p>apiVersion: autoscaling/v2</p>
+<p>kind: HorizontalPodAutoscaler</p>
+<p>metadata:</p>
+<p>  name: map-api-hpa</p>
+<p>spec:</p>
+<p>  scaleTargetRef:</p>
+<p>    apiVersion: apps/v1</p>
+<p>    kind: Deployment</p>
+<p>    name: map-api-server</p>
+<p>  minReplicas: 5</p>
+<p>  maxReplicas: 50</p>
+<p>  metrics:</p>
+<p>  - type: Resource</p>
+<p>    resource:</p>
+<p>      name: cpu</p>
+<p>      target:</p>
+<p>        type: Utilization</p>
+<p>        averageUtilization: 70</code></pre></p>
+
+<strong>Database Tier:</strong>
+<ul>
+<li>Use PostgreSQL with read replicas (1 primary + 3-5 read replicas)</li>
+<li>Route read-only queries to replicas</li>
+<li>Connection pooling with PgBouncer (max 10,000 connections)</li>
+<li>Partitioning for large tables (by month or cp_id)</li>
+</ul>
+
+<strong>Caching Layer:</strong>
+<ul>
+<li>Redis cluster for directory lookups</li>
+<li>15-minute TTL for number-to-CP mappings</li>
+<li>5-minute TTL for CP configuration</li>
+<li>Memcached for session data</li>
+</ul>
+
+<h3 id="performance-optimization">Performance Optimization</h3>
+
+<strong>Database Indexing:</strong>
+<pre><code class="language-sql">-- Critical indexes for multi-tenant queries
+<p>CREATE INDEX idx<em>call</em>records<em>cp</em>timestamp ON call<em>records(cp</em>id, timestamp);</p>
+<p>CREATE INDEX idx<em>auth</em>logs<em>cp</em>timestamp ON auth<em>logs(cp</em>id, timestamp);</p>
+<p>CREATE INDEX idx<em>cp</em>numbers<em>cp</em>id ON cp<em>numbers(cp</em>id);</p>
+<p>CREATE INDEX idx<em>directory</em>cache<em>number ON directory</em>cache(phone_number);</p>
+
+<p>-- Partial indexes for active tenants only</p>
+<p>CREATE INDEX idx<em>active</em>tenants ON cp<em>tenants(cp</em>id) WHERE status = &#039;active&#039;;</code></pre></p>
+
+<strong>Query Optimization:</strong>
+<pre><code class="language-sql">-- Bad: Full table scan
+<p>SELECT * FROM call<em>records WHERE caller</em>id = &#039;+441234567890&#039;;</p>
+
+<p>-- Good: Uses tenant context and index</p>
+<p>SELECT * FROM call_records</p>
+<p>WHERE cp_id = &#039;CP1-UK-0001&#039;</p>
+<p>  AND caller_id = &#039;+441234567890&#039;</p>
+<p>  AND timestamp &gt; NOW() - INTERVAL &#039;7 days&#039;;</code></pre></p>
+
+<strong>Connection Pooling:</strong>
+<pre><code class="language-typescript">// pg-pool configuration
+<p>const pool = new Pool({</p>
+<p>  max: 100,                    // Maximum connections</p>
+<p>  min: 10,                     // Minimum idle connections</p>
+<p>  idleTimeoutMillis: 30000,    // Close idle connections after 30s</p>
+<p>  connectionTimeoutMillis: 2000, // Fail if can&#039;t connect in 2s</p>
+<p>});</code></pre></p>
+
+<h2 id="security-considerations">Security Considerations</h2>
+
+<h3 id="api-key-management">API Key Management</h3>
+
+<strong>Generation:</strong>
+<pre><code class="language-typescript">import crypto from &#039;crypto&#039;;
+
+<p>function generateApiKey(): { key: string; hash: string } {</p>
+<p>  // Generate 256-bit random key</p>
+<p>  const key = crypto.randomBytes(32).toString(&#039;base64&#039;);</p>
+
+<p>  // Hash for storage (never store plaintext)</p>
+<p>  const hash = crypto.createHash(&#039;sha256&#039;).update(key).digest(&#039;hex&#039;);</p>
+
+<p>  return { key, hash };</p>
+<p>}</p>
+
+<p>// Usage</p>
+<p>const { key, hash } = generateApiKey();</p>
+<p>// Give &#039;key&#039; to customer (one time only)</p>
+<p>// Store &#039;hash&#039; in database</code></pre></p>
+
+<strong>Rotation Policy:</strong>
+<ul>
+<li>Rotate API keys every 90 days</li>
+<li>Support multiple active keys during rotation period</li>
+<li>Revoke old keys after 30-day grace period</li>
+</ul>
+
+<h3 id="private-key-storage">Private Key Storage</h3>
+
+<strong>Encryption at Rest:</strong>
+<pre><code class="language-typescript">import { createCipheriv, createDecipheriv, randomBytes } from &#039;crypto&#039;;
+
+<p>function encryptPrivateKey(privateKey: string, masterKey: string): string {</p>
+<p>  const iv = randomBytes(16);</p>
+<p>  const cipher = createCipheriv(&#039;aes-256-gcm&#039;, Buffer.from(masterKey, &#039;hex&#039;), iv);</p>
+
+<p>  let encrypted = cipher.update(privateKey, &#039;utf8&#039;, &#039;base64&#039;);</p>
+<p>  encrypted += cipher.final(&#039;base64&#039;);</p>
+
+<p>  const authTag = cipher.getAuthTag();</p>
+
+<p>  // Return: IV + AuthTag + Encrypted data</p>
+<p>  return iv.toString(&#039;base64&#039;) + &#039;:&#039; + authTag.toString(&#039;base64&#039;) + &#039;:&#039; + encrypted;</p>
+<p>}</p>
+
+<p>function decryptPrivateKey(encryptedKey: string, masterKey: string): string {</p>
+<p>  const [ivB64, authTagB64, encrypted] = encryptedKey.split(&#039;:&#039;);</p>
+
+<p>  const iv = Buffer.from(ivB64, &#039;base64&#039;);</p>
+<p>  const authTag = Buffer.from(authTagB64, &#039;base64&#039;);</p>
+<p>  const decipher = createDecipheriv(&#039;aes-256-gcm&#039;, Buffer.from(masterKey, &#039;hex&#039;), iv);</p>
+
+<p>  decipher.setAuthTag(authTag);</p>
+
+<p>  let decrypted = decipher.update(encrypted, &#039;base64&#039;, &#039;utf8&#039;);</p>
+<p>  decrypted += decipher.final(&#039;utf8&#039;);</p>
+
+<p>  return decrypted;</p>
+<p>}</code></pre></p>
+
+<strong>Master Key Management:</strong>
+<ul>
+<li>Store master key in AWS KMS, Azure Key Vault, or HashiCorp Vault</li>
+<li>Never commit master key to source control</li>
+<li>Rotate master key annually</li>
+<li>Re-encrypt all private keys when rotating master key</li>
+</ul>
+
+<h3 id="audit-logging">Audit Logging</h3>
+
+<strong>Comprehensive Logging:</strong>
+<pre><code class="language-sql">CREATE TABLE audit_logs (
+<p>    log_id BIGSERIAL PRIMARY KEY,</p>
+<p>    cp_id VARCHAR(50) NOT NULL,</p>
+<p>    user_id VARCHAR(50),  -- If user-level access</p>
+<p>    action VARCHAR(100) NOT NULL,  -- &#039;auth<em>verify&#039;, &#039;config</em>update&#039;, &#039;key_rotate&#039;</p>
+<p>    resource_type VARCHAR(50) NOT NULL,</p>
+<p>    resource_id VARCHAR(100),</p>
+<p>    old_value JSONB,</p>
+<p>    new_value JSONB,</p>
+<p>    ip_address INET NOT NULL,</p>
+<p>    user_agent TEXT,</p>
+<p>    timestamp TIMESTAMP DEFAULT NOW(),</p>
+<p>    INDEX idx<em>cp</em>timestamp (cp_id, timestamp),</p>
+<p>    INDEX idx_action (action, timestamp)</p>
+<p>);</code></pre></p>
+
+<strong>Log Retention:</strong>
+<ul>
+<li>Keep detailed logs for 90 days (hot storage)</li>
+<li>Archive to cold storage for 7 years (regulatory compliance)</li>
+<li>Enable log analysis for security monitoring</li>
+</ul>
+
+<h2 id="monitoring-observability">Monitoring & Observability</h2>
+
+<h3 id="key-metrics">Key Metrics</h3>
+
+<strong>Per-Tenant Metrics:</strong>
+<ul>
+<li>API request rate (per endpoint)</li>
+<li>Authentication success/failure rate</li>
+<li>Average response time (p50, p95, p99)</li>
+<li>Error rate</li>
+<li>API quota usage (% of limit)</li>
+</ul>
+
+<strong>System-Wide Metrics:</strong>
+<ul>
+<li>Total active CPs</li>
+<li>Total API requests per second</li>
+<li>Database connection pool utilization</li>
+<li>Cache hit rate</li>
+<li>CPU and memory utilization</li>
+<li>Network bandwidth</li>
+</ul>
+
+<strong>Implementation (Prometheus):</strong>
+<pre><code class="language-typescript">import { Counter, Histogram, Gauge } from &#039;prom-client&#039;;
+
+<p>// API requests per tenant</p>
+<p>const apiRequests = new Counter({</p>
+<p>  name: &#039;map<em>api</em>requests_total&#039;,</p>
+<p>  help: &#039;Total API requests by tenant and endpoint&#039;,</p>
+<p>  labelNames: [&#039;cp_id&#039;, &#039;endpoint&#039;, &#039;status&#039;],</p>
+<p>});</p>
+
+<p>// Response time per tenant</p>
+<p>const responseTime = new Histogram({</p>
+<p>  name: &#039;map<em>api</em>response<em>time</em>seconds&#039;,</p>
+<p>  help: &#039;API response time by tenant and endpoint&#039;,</p>
+<p>  labelNames: [&#039;cp_id&#039;, &#039;endpoint&#039;],</p>
+<p>  buckets: [0.1, 0.3, 0.5, 1, 2, 5],</p>
+<p>});</p>
+
+<p>// Active tenants</p>
+<p>const activeTenants = new Gauge({</p>
+<p>  name: &#039;map<em>active</em>tenants&#039;,</p>
+<p>  help: &#039;Number of active tenant CPs&#039;,</p>
+<p>});</p>
+
+<p>// Usage in middleware</p>
+<p>app.use((req, res, next) =&gt; {</p>
+<p>  const start = Date.now();</p>
+
+<p>  res.on(&#039;finish&#039;, () =&gt; {</p>
+<p>    const duration = (Date.now() - start) / 1000;</p>
+
+<p>    apiRequests.inc({</p>
+<p>      cp_id: req.tenantId,</p>
+<p>      endpoint: req.route.path,</p>
+<p>      status: res.statusCode,</p>
+<p>    });</p>
+
+<p>    responseTime.observe({</p>
+<p>      cp_id: req.tenantId,</p>
+<p>      endpoint: req.route.path,</p>
+<p>    }, duration);</p>
+<p>  });</p>
+
+<p>  next();</p>
+<p>});</code></pre></p>
+
+<h3 id="alerting">Alerting</h3>
+
+<strong>Critical Alerts:</strong>
+<ul>
+<li>Authentication failure rate >5% (any tenant)</li>
+<li>API response time p95 >1 second (any tenant)</li>
+<li>Database connection pool >90% utilized</li>
+<li>Any tenant exceeded quota by 20%</li>
+<li>System-wide error rate >1%</li>
+</ul>
+
+<strong>Warning Alerts:</strong>
+<ul>
+<li>Tenant approaching quota (80%)</li>
+<li>Database replica lag >10 seconds</li>
+<li>Cache hit rate <80%</li>
+<li>Disk usage >75%</li>
+</ul>
+
+<h2 id="disaster-recovery">Disaster Recovery</h2>
+
+<h3 id="backup-strategy">Backup Strategy</h3>
+
+<strong>Database:</strong>
+<ul>
+<li>Full backup daily (3 AM UTC)</li>
+<li>Transaction log backup every 15 minutes</li>
+<li>Retention: 30 days hot, 1 year cold</li>
+</ul>
+
+<strong>Configuration:</strong>
+<ul>
+<li>Git repository for all configuration files</li>
+<li>Automated deployment via CI/CD</li>
+<li>Infrastructure as Code (Terraform/CloudFormation)</li>
+</ul>
+
+<h3 id="failover-procedures">Failover Procedures</h3>
+
+<strong>Multi-Region Setup:</strong>
+<pre><code class="language-">Primary Region: EU-West-1 (London)
+<p>Secondary Region: US-East-1 (N. Virginia)</p>
+
+<p>Replication:</p>
+<ul>
+<li>Database: Asynchronous replication (RPO: 5 minutes)</li>
+<li>File storage: S3 cross-region replication</li>
+<li>DNS: Route 53 health checks with automatic failover</li>
+</ul>
+
+<p>Failover Trigger:</p>
+<ul>
+<li>Automatic: Primary region health check fails for 3 minutes</li>
+<li>Manual: Operations team initiates failover</li>
+</ul>
+
+<p>RTO (Recovery Time Objective): 10 minutes</p>
+<p>RPO (Recovery Point Objective): 5 minutes</code></pre></p>
+
+<h2 id="onboarding-new-downstream-cp">Onboarding New Downstream CP</h2>
+
+<h3 id="automated-onboarding-flow">Automated Onboarding Flow</h3>
+
+<pre><code class="language-typescript">// Onboarding API endpoint
+<p>async function onboardNewCP(req: Request, res: Response) {</p>
+<p>  const { cp<em>name, contact</em>email, country, auth_mode } = req.body;</p>
+
+<p>  // 1. Generate unique CP ID</p>
+<p>  const cp_id = generateCPID(country); // e.g., &quot;CP1-UK-0123&quot;</p>
+
+<p>  // 2. Generate Ed25519 key pair</p>
+<p>  const { publicKey, privateKey } = generateKeyPair();</p>
+
+<p>  // 3. Encrypt private key with master key</p>
+<p>  const encryptedPrivateKey = encryptPrivateKey(privateKey, MASTER_KEY);</p>
+
+<p>  // 4. Generate API key</p>
+<p>  const { key: apiKey, hash: apiKeyHash } = generateApiKey();</p>
+
+<p>  // 5. Insert into database</p>
+<p>  await db.query(</p>
+    <code>INSERT INTO cp_tenants
+<p>     (cp<em>id, cp</em>name, private<em>key</em>encrypted, public<em>key, api</em>key<em>hash, auth</em>mode, contact_email)</p>
+<p>     VALUES ($1, $2, $3, $4, $5, $6, $7)</code>,</p>
+<p>    [cp<em>id, cp</em>name, encryptedPrivateKey, publicKey, apiKeyHash, auth<em>mode, contact</em>email]</p>
+<p>  );</p>
+
+<p>  // 6. Create default configuration</p>
+<p>  await createDefaultConfig(cp_id);</p>
+
+<p>  // 7. Send welcome email with credentials</p>
+<p>  await sendWelcomeEmail(contact_email, {</p>
+<p>    cp_id,</p>
+<p>    api_key: apiKey,  // Show once, never again</p>
+<p>    public_key: publicKey,</p>
+<p>    api_endpoint: &#039;https://api.map.example.com/v1&#039;,</p>
+<p>    documentation_url: &#039;https://docs.map.example.com&#039;,</p>
+<p>  });</p>
+
+<p>  // 8. Return response (without private key or API key)</p>
+<p>  res.json({</p>
+<p>    success: true,</p>
+<p>    cp_id,</p>
+<p>    status: &#039;active&#039;,</p>
+<p>    message: &#039;Credentials sent to email. Please store API key securely.&#039;,</p>
+<p>  });</p>
+<p>}</code></pre></p>
+
+<p><strong>Onboarding Time:</strong> <5 minutes (fully automated)</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>A well-designed multi-tenant architecture is essential for operating a successful MAP. Key takeaways:</p>
+
+<ul>
+<li><strong>Use Row-Level Security</strong> for cost-effective tenant isolation</li>
+<li><strong>Horizontal scaling</strong> enables growth to 1,000+ downstream CPs</li>
+<li><strong>API Gateway</strong> provides single entry point with rate limiting</li>
+<li><strong>Comprehensive logging</strong> ensures compliance and troubleshooting</li>
+<li><strong>Automated onboarding</strong> reduces operational overhead</li>
+<li><strong>Multi-region deployment</strong> provides high availability</li>
+<li><strong>Monitoring and alerting</strong> catch issues before customers notice</li>
+</ul>
+
+<p>This architecture has been proven to support large-scale multi-tenant operations in production environments.</p>
+
+<p>---</p>
+
+<strong>Next Steps:</strong>
+<ul>
+<li>Review MAP-DEPLOYMENT-AWS.md for AWS-specific implementation</li>
+<li>Review MAP-DEPLOYMENT-ONPREM.md for on-premises setup</li>
+<li>Review reference code in <code>/code/map/</code></li>
+<li>Deploy test environment</li>
+<li>Onboard pilot downstream CP</li>
+</ul>
+
+<p><strong>Document Version:</strong> 1.0</p>
+<p><strong>Last Updated:</strong> 2025-12-01</p>
+
+    </main>
+
+    <footer class="doc-footer">
+        <p>&copy; 2025 PSTN2 Project | <a href="../index.html">Home</a> | <a href="mailto:nick.holland@8x8.com">Contact</a></p>
+    </footer>
+</body>
+</html>
