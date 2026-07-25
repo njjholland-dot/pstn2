@@ -866,4 +866,4 @@ export default function() {
 
 **Document Status:** Normative Specification
 **Compliance Required:** Yes for certification
-**Feedback:** https://github.com/8x8/pstn2/issues (repository access is currently limited while the project incubates; contact nick.holland@8x8.com)
+**Feedback:** https://github.com/njjholland-dot/pstn2/issues

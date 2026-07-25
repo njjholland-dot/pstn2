@@ -850,5 +850,5 @@ Total time: ~800ms (vs 5-8 seconds traditional PSTN)
 ---
 
 **Document Status:** Living Specification
-**Feedback:** https://github.com/8x8/pstn2/issues (repository access is currently limited while the project incubates; contact nick.holland@8x8.com)
+**Feedback:** https://github.com/njjholland-dot/pstn2/issues
 **Website:** https://pstn2.org

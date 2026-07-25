@@ -53,10 +53,8 @@
 ### 1.3 Development Environment
 
 ```bash
-# Clone reference implementations
-# (repository access is currently limited while the project incubates;
-#  contact nick.holland@8x8.com)
-git clone https://github.com/8x8/pstn2.git
+# Clone reference implementations (open source, public domain)
+git clone https://github.com/njjholland-dot/pstn2.git
 cd pstn2/code
 
 # TypeScript
@@ -1190,7 +1188,7 @@ config := pstn2.Config{
 ---
 
 **Document Status:** Living Guide
-**Contributions:** https://github.com/8x8/pstn2/pulls
-**Questions:** https://github.com/8x8/pstn2/discussions
+**Contributions:** https://github.com/njjholland-dot/pstn2/pulls
+**Questions:** https://github.com/njjholland-dot/pstn2/discussions
 
 (Repository access is currently limited while the project incubates; contact nick.holland@8x8.com)
