@@ -44,3 +44,6 @@ tools/narrate/.cache/
 # Playwright MCP session files
 .playwright-mcp/
 .env
+
+# deploy zip cache
+.deploy-cache/

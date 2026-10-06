@@ -97,7 +97,42 @@
 
     <main>
         <article class="release">
-            <h2>Full site review and update <span class="badge">LATEST</span></h2>
+            <h2>Number Discovery, broadcast presentations and a live test CP <span class="badge">LATEST</span></h2>
+            <time datetime="2026-10-06">6 October 2026</time>
+            <p class="summary">
+                PSTN2 now answers “who has this number?” in one consistent way across the whole site,
+                using the mechanism from the Solution Overview: cache, Ofcom’s S1–S9 lists with a
+                Range Holder URL, ask the Range Holder, follow a redirect if the number has been
+                ported, cache the answer. There is no central database and no replicated directory.
+            </p>
+
+            <h3>🔎 Protocol v1.1: Number Discovery</h3>
+            <ul>
+                <li><strong>The Directory Service is gone.</strong> The specification’s §9 is now Number Discovery: <code>GET {rangeHolderUrl}/pstn2/v1/numbers/{digits}</code> answers <code>held</code>, <code>redirect</code> (from the Range Holder, for a ported-out number), <code>not_held</code>, or 404. The <code>/directory/all</code>, <code>/directory/publish</code> and <code>/directory/lookup</code> endpoints, hourly sync and eventual-consistency replication have been removed.</li>
+                <li><strong>Self-correcting caches:</strong> any PSTN2 response can carry <code>cache.invalidate</code>, so a stale cache entry costs one extra query, never a misrouted call.</li>
+                <li>Answers are Ed25519-signed over canonical JSON, with each provider’s keys at <code>/pstn2/v1/keys</code>. The OpenAPI specification now passes validation.</li>
+                <li>The redirect stays an HTTP 200 result, keeping the earlier decision to move away from HTTP 301.</li>
+            </ul>
+
+            <h3>🎬 Presentations</h3>
+            <ul>
+                <li><strong>Distributed Database rebuilt as “Who Has This Number?”</strong> It previously described replication, gossip propagation, directory servers and “latest timestamp wins”, which contradicted the Solution Overview. It now walks through the real mechanism step by step.</li>
+                <li><strong>Central database cost corrected</strong> to about £2m to build and about £600k a year to run (30% a year). The site previously said £5 billion.</li>
+                <li><strong>All presentations rebuilt for television and conference screens:</strong> a fixed 16:9 stage, professional pre-rendered UK narration, captions, chapters, full screen, and a kiosk loop (<code>?kiosk=1</code>). Fonts and libraries are self-hosted, so the decks work offline. Fictional providers and Ofcom’s reserved drama-range numbers are used throughout.</li>
+                <li><strong>New: Test Harness live demo.</strong> Three providers, each a Range Holder with ported numbers, and Ofcom’s numbering list. They answer “who has this number?” for unported, ported, cached and invalidated cases, with narration. It ends with an interactive mode that runs the real discovery engine.</li>
+            </ul>
+
+            <h3>💻 Code</h3>
+            <ul>
+                <li><strong>Real SDKs in all three languages.</strong> TypeScript was reworked, and Python and Go were written from scratch; previously they were examples only. Each has a Number Discovery client, a Range Holder responder, signature verification, and auth, token pool, routing and emergency modules built on discovery.</li>
+                <li>Six runnable examples per language, including <strong>06 number discovery</strong>, which runs against the live test CP. Unit and integration tests in every language, plus a conformance suite that proves all three agree with the reference engine.</li>
+                <li><strong>New: live dummy test CP</strong> at <a href="/testcp/">pstn2.org/testcp</a>. It offers a test numbering list, two test Range Holders, one ported number, and signed answers.</li>
+                <li>The old MySQL test prototype was replaced with a dependency-free mock network and test environment. The Test Harness ZIP and Complete Download links now work.</li>
+            </ul>
+        </article>
+
+        <article class="release">
+            <h2>Full site review and update</h2>
             <time datetime="2026-07-24">24 July 2026</time>
             <p class="summary">
                 A top-to-bottom review of every page, presentation, specification, and code sample —

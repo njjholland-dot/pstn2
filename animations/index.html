@@ -751,11 +751,12 @@
                 </ul>
             </div>
             <p class="subtitle">
-                This website comprises free to download and use software, documentation, and a Directory of other participants.
+                This website comprises free to download and use software, documentation, a live test provider and a browser-based test harness that shows three providers and Ofcom answering “who has this number?”.
             </p>
             <div class="cta-buttons">
                 <a href="#architecture" class="btn btn-primary">View Architecture</a>
                 <a href="#presentations" class="btn btn-secondary">View Presentations</a>
+                <a href="src/test-harness/index.html" class="btn btn-secondary">Watch the Live Demo</a>
                 <a href="#code-samples" class="btn btn-secondary">Explore Code</a>
             </div>
         </div>
@@ -851,8 +852,8 @@
                     <div class="feature-icon">🌐</div>
                     <h3>Distributed Architecture</h3>
                     <p>
-                        No single point of failure. The network uses eventual consistency across
-                        distributed databases, ensuring high availability and global scalability.
+                        No central database and no single point of failure. Each provider answers only for
+                        its own numbers; Ofcom’s numbering lists say which provider to ask first.
                     </p>
                 </div>
                 <div class="feature-card">
@@ -1004,14 +1005,15 @@
                     <div class="presentation-card">
                         <div class="presentation-content">
                             <div class="presentation-number">7</div>
-                            <h4 class="presentation-title">Distributed Database</h4>
+                            <h4 class="presentation-title">Who Has This Number? (Distributed Database)</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 12 scenes</span>
-                                <span class="meta-item">⏱️ ~12 min</span>
+                                <span class="meta-item">⏱️ ~7 min</span>
                             </div>
                             <p class="presentation-description">
-                                Eventual consistency model ensuring scalability, eliminating single points of failure,
-                                and enabling global distribution.
+                                How a provider finds who holds any number using Ofcom’s S1–S9 lists and the Range Holder,
+                                with redirects for ported numbers and self-correcting caches. No central database:
+                                no ~£2m build and no ~£600k a year to run.
                             </p>
                             <a href="src/distributed-database/index.html" class="presentation-link">Watch Presentation →</a>
                         </div>
@@ -1020,6 +1022,22 @@
                     <div class="presentation-card">
                         <div class="presentation-content">
                             <div class="presentation-number">8</div>
+                            <h4 class="presentation-title">Test Harness: Live Demo</h4>
+                            <div class="presentation-meta">
+                                <span class="meta-item">📊 8 scenes</span>
+                                <span class="meta-item">⏱️ ~5 min + interactive</span>
+                            </div>
+                            <p class="presentation-description">
+                                Three providers, each a Range Holder with ported numbers, and Ofcom’s numbering list.
+                                Watch them answer “who has this number?” for unported and ported numbers, then try it yourself.
+                            </p>
+                            <a href="src/test-harness/index.html" class="presentation-link">Watch the Demo →</a>
+                        </div>
+                    </div>
+
+                    <div class="presentation-card">
+                        <div class="presentation-content">
+                            <div class="presentation-number">9</div>
                             <h4 class="presentation-title">MAP Architecture</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 11 scenes</span>
@@ -1041,7 +1059,7 @@
                 <div class="presentation-grid">
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">9</div>
+                            <div class="presentation-number">10</div>
                             <h4 class="presentation-title">End-to-End Scenario</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 15 scenes</span>
@@ -1057,7 +1075,7 @@
 
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">10</div>
+                            <div class="presentation-number">11</div>
                             <h4 class="presentation-title">Law Enforcement Access</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 8 scenes</span>
@@ -1142,7 +1160,7 @@
                         <g transform="translate(570, 475)">
                             <text x="0" y="0" font-size="13" fill="white">🔐 Authentication Engine</text>
                             <text x="0" y="20" font-size="13" fill="white">🔒 Encryption (SRTP/DTLS)</text>
-                            <text x="0" y="40" font-size="13" fill="white">📊 Directory Service</text>
+                            <text x="0" y="40" font-size="13" fill="white">🔎 Number Discovery</text>
                             <text x="0" y="60" font-size="13" fill="white">🚑 Emergency Handler</text>
                         </g>
                     </g>
@@ -1267,8 +1285,8 @@
                         <g transform="translate(635, 100)">
                             <rect x="0" y="0" width="130" height="60" rx="8" fill="white" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
                             <text x="65" y="20" text-anchor="middle" font-size="13" font-weight="bold" fill="#3b82f6">🔄 Porting</text>
-                            <text x="65" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Distributed DB</text>
-                            <text x="65" y="52" text-anchor="middle" font-size="9" fill="#4a5568">Real-time Updates</text>
+                            <text x="65" y="38" text-anchor="middle" font-size="10" fill="#1a202c">Range Holder redirect</text>
+                            <text x="65" y="52" text-anchor="middle" font-size="9" fill="#4a5568">Self-correcting caches</text>
                         </g>
                         <path d="M 700 160 L 700 350" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
 
@@ -1332,7 +1350,7 @@
                     <div class="arch-feature-card">
                         <div class="arch-feature-icon">🔄</div>
                         <h3>Number Porting</h3>
-                        <p>Distributed database with eventual consistency enables real-time number portability across all carriers.</p>
+                        <p>The Range Holder redirects queries for ported numbers to the provider that now serves them, and caches correct themselves on the next call. No central database.</p>
                     </div>
                     <div class="arch-feature-card">
                         <div class="arch-feature-icon">🚑</div>
@@ -1364,12 +1382,13 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>5 complete working examples</li>
+                            <li>6 runnable examples, including live number discovery</li>
+                            <li>Number Discovery client &amp; Range Holder responder</li>
                             <li>Authentication (Direct Query & Token Pool)</li>
                             <li>Direct routing with media negotiation</li>
                             <li>Emergency services integration</li>
-                            <li>Complete end-to-end call flow</li>
-                            <li>Full SDK documentation</li>
+                            <li>Zero runtime dependencies</li>
+                            <li>Unit &amp; integration tests (Jest)</li>
                         </ul>
                         <span class="code-status available">✓ Available Now</span>
                         <a href="/code/typescript/README.html" class="code-link">View Documentation →</a>
@@ -1385,12 +1404,12 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>5 async Python examples</li>
-                            <li>Type-safe with Pydantic models</li>
-                            <li>FastAPI integration patterns</li>
-                            <li>Emergency location services</li>
-                            <li>Complete call flow demonstration</li>
-                            <li>Testing with pytest</li>
+                            <li>6 runnable async examples</li>
+                            <li>Number Discovery with signature checks</li>
+                            <li>Typed with Pydantic v2 models</li>
+                            <li>httpx client, Ed25519 via cryptography</li>
+                            <li>Auth, token pool, routing, emergency</li>
+                            <li>Unit &amp; integration tests (pytest)</li>
                         </ul>
                         <span class="code-status available">✓ Available Now</span>
                         <a href="/code/python/README.html" class="code-link">View Documentation →</a>
@@ -1402,16 +1421,16 @@
                     <div class="code-header">
                         <div class="code-language">🔷</div>
                         <h3 class="code-title">Go</h3>
-                        <p class="code-subtitle">High-performance production-ready</p>
+                        <p class="code-subtitle">Standard library only</p>
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>5 production-ready Go examples</li>
-                            <li>Full context.Context support</li>
-                            <li>Concurrent authentication handling</li>
-                            <li>HTTP server & gRPC integration</li>
-                            <li>Benchmark tests included</li>
-                            <li>Connection pooling & retries</li>
+                            <li>6 runnable Go examples</li>
+                            <li>context.Context throughout</li>
+                            <li>Thread-safe discovery cache</li>
+                            <li>Range Holder responder as http.Handler</li>
+                            <li>Retries per the specification</li>
+                            <li>Tests, race-detector clean</li>
                         </ul>
                         <span class="code-status available">✓ Available Now</span>
                         <a href="/code/go/README.html" class="code-link">View Documentation →</a>
@@ -1444,12 +1463,13 @@
                     <div class="code-header">
                         <div class="code-language">📦</div>
                         <h3 class="code-title">Complete Download</h3>
-                        <p class="code-subtitle">Everything in one package (256KB)</p>
+                        <p class="code-subtitle">Everything in one package</p>
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>All 10 animations + website source</li>
-                            <li>15 code examples (TypeScript/Python/Go)</li>
+                            <li>All 11 narrated presentations + website source</li>
+                            <li>18 code examples (TypeScript/Python/Go)</li>
+                            <li>Test harness, mock network &amp; conformance suite</li>
                             <li>Complete documentation & specs</li>
                             <li>Claude.md AI guidance file</li>
                             <li>Deployment scripts included</li>
@@ -1462,8 +1482,29 @@
                             </p>
                         </div>
                         <span class="code-status available">✓ Available Now</span>
-                        <a href="/pstn2-complete.zip" class="code-link" style="background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%); border: none;">📥 Download ZIP (256KB) →</a>
+                        <a href="/pstn2-complete.zip" class="code-link" style="background: linear-gradient(135deg, var(--primary-orange) 0%, var(--accent-orange) 100%); border: none;">📥 Download ZIP →</a>
                         <a href="https://github.com/njjholland-dot/pstn2" target="_blank" rel="noopener" class="code-link" style="margin-left: 10px;">⭐ View on GitHub →</a>
+                    </div>
+                </div>
+
+                <div class="code-card">
+                    <div class="code-header">
+                        <div class="code-language">🧪</div>
+                        <h3 class="code-title">Test Against a Live CP</h3>
+                        <p class="code-subtitle">Dummy test provider on pstn2.org</p>
+                    </div>
+                    <div class="code-body">
+                        <ul class="code-features">
+                            <li>Test numbering list (S1–S9 + Range Holder URL)</li>
+                            <li>Two test Range Holders, one ported number</li>
+                            <li>held, redirect, not_held and 404 answers</li>
+                            <li>Ed25519-signed responses with published keys</li>
+                            <li>Works with all three SDKs (example 06)</li>
+                            <li>Conformance suite in the harness download</li>
+                        </ul>
+                        <span class="code-status available">✓ Live</span>
+                        <a href="/testcp/" class="code-link">Test Numbers &amp; Instructions →</a>
+                        <a href="/pstn2-test-harness.zip" class="code-link" style="margin-left: 10px;">Harness ZIP</a>
                     </div>
                 </div>
 
@@ -1532,7 +1573,8 @@
                     <li><a href="src/authentication-option2/index.html">Authentication Option 2</a></li>
                     <li><a href="src/direct-routing/index.html">Direct Routing</a></li>
                     <li><a href="src/emergency-services/index.html">Emergency Services</a></li>
-                    <li><a href="src/distributed-database/index.html">Distributed Database</a></li>
+                    <li><a href="src/distributed-database/index.html">Who Has This Number?</a></li>
+                    <li><a href="src/test-harness/index.html">Test Harness: Live Demo</a></li>
                     <li><a href="src/map-architecture/index.html">MAP Architecture</a></li>
                     <li><a href="src/end-to-end-scenario/index.html">End-to-End Scenario</a></li>
                     <li><a href="src/law-enforcement/index.html">Law Enforcement Access</a></li>
@@ -1545,6 +1587,7 @@
                     <li><a href="/code/typescript/README.html">TypeScript Implementation</a></li>
                     <li><a href="/code/python/README.html">Python Implementation</a></li>
                     <li><a href="/code/go/README.html">Go Implementation</a></li>
+                    <li><a href="/testcp/">Live Test CP</a></li>
                     <li><a href="/pstn2-test-harness.zip">Test Harness (ZIP download)</a></li>
                     <li><a href="https://github.com/njjholland-dot/pstn2" target="_blank" rel="noopener">Source on GitHub</a></li>
                 </ul>
