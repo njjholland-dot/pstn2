@@ -14,401 +14,501 @@
 
         <nav class="doc-nav">
             <div class="doc-nav-links">
-                <a href="#installation">Installation</a>
                 <a href="#requirements">Requirements</a>
-                <a href="#quick-start">Quick Start</a>
-                <a href="#features">Features</a>
-                <a href="#project-setup">Project Setup</a>
-                <a href="#running-examples">Running Examples</a>
-                <a href="#sdk-api-reference">SDK API Reference</a>
-                <a href="#type-safety-with-pydantic">Type Safety with Pydantic</a>
-                <a href="#error-handling">Error Handling</a>
-                <a href="#best-practices">Best Practices</a>
-                <a href="#integration-examples">Integration Examples</a>
-                <a href="#testing">Testing</a>
-                <a href="#performance-tips">Performance Tips</a>
+                <a href="#installation">Installation</a>
+                <a href="#quick-start">Quick start</a>
+                <a href="#how-discovery-works">How discovery works</a>
+                <a href="#api-reference">API reference</a>
                 <a href="#examples">Examples</a>
-                <a href="#further-reading">Further Reading</a>
+                <a href="#live-dummy-test-cp">Live dummy test CP</a>
+                <a href="#running-the-tests">Running the tests</a>
+                <a href="#further-reading">Further reading</a>
                 <a href="#license">License</a>
                 <a href="README.md">View Markdown</a>
             </div>
         </nav>
     <main class="doc-container">
 <h1 id="pstn2-python-sdk">PSTN2 Python SDK</h1>
-<p>Python implementation of the PSTN2 distributed telecommunications
-protocol.</p>
-<blockquote>
-<p><strong>Status: reference API — not yet on PyPI.</strong> The
-<code>pstn2</code> package has not been published, so
-<code>pip install pstn2</code> will not work yet. The examples in
-<code>examples/</code> and the snippets below illustrate the
-<em>intended</em> SDK surface.</p>
-</blockquote>
-<h2 id="installation">Installation</h2>
-<p>Once the SDK is published to PyPI, installation will be:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pstn2</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> add pstn2</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> add pstn2</span></code></pre></div>
+<p>Python implementation of the PSTN2 protocol <strong>v1.1</strong>
+(<code>pstn2-python-sdk/1.1.0</code>).</p>
+<p>PSTN2 answers one question before every call: <strong>"which CP
+currently holds this number?"</strong> There is no central database. The
+regulator's numbering list names each block's Range Holder and its PSTN2
+URL; the Range Holder knows where its ported-out numbers went; every CP
+knows the numbers it serves. The SDK's Number Discovery walks that
+chain, and caller ID verification, direct routing and emergency location
+are then sent to the holder it finds.</p>
+<ul>
+<li><strong>Number Discovery</strong> (§9): numbering list (longest
+prefix) → Range Holder → redirect for ported numbers → holder, with
+per-number caching, stale-cache invalidation, hop limit and loop
+detection, and optional Ed25519 signature verification</li>
+<li><strong>Caller ID verification</strong>: Direct Query (§5.1) and
+Token Pool (§5.2)</li>
+<li><strong>Direct routing</strong> with codec and SRTP negotiation
+(§6)</li>
+<li><strong>Emergency location</strong> for PSAPs (§8)</li>
+<li><strong>Range Holder responder</strong>: the server side of
+discovery, built from your own number database</li>
+<li>Async throughout (<code>httpx</code>), Pydantic v2 models, full type
+hints (<code>py.typed</code>)</li>
+</ul>
 <h2 id="requirements">Requirements</h2>
 <ul>
-<li>Python 3.11 or later</li>
-<li>Dependencies: <code>httpx</code>, <code>cryptography</code>,
-<code>pydantic</code></li>
+<li>Python 3.11 or later (tested on 3.14)</li>
+<li><code>httpx</code>, <code>pydantic</code> v2,
+<code>cryptography</code> (installed automatically)</li>
+<li>Node.js 18+ only if you want to run the local mock network for the
+examples and tests</li>
 </ul>
-<h2 id="quick-start">Quick Start</h2>
+<h2 id="installation">Installation</h2>
+<p>The package is not on PyPI. Install it from the repository:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># From a clone of the repository</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> code/python</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Or straight from GitHub</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="st">&quot;pstn2 @ git+https://github.com/njjholland-dot/pstn2#subdirectory=code/python&quot;</span></span></code></pre></div>
+<p>For development (tests included):</p>
 <div class="sourceCode" id="cb2"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client, AuthenticationMode</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> main():</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    client <span class="op">=</span> PSTN2Client(</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        cp_id<span class="op">=</span><span class="st">&#39;CP1-UK-0001&#39;</span>,</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        api_endpoint<span class="op">=</span><span class="st">&#39;https://api.yourcp.com/pstn2/v1&#39;</span>,</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        private_key<span class="op">=</span>os.environ[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>],</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        auth_mode<span class="op">=</span>AuthenticationMode.DIRECT_QUERY,</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Verify an inbound call</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        call_reference<span class="op">=</span><span class="st">&#39;abc-123-def-456&#39;</span>,</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Call verified: </span><span class="sc">{</span>verification<span class="sc">.</span>verified<span class="sc">}</span><span class="ss">&#39;</span>)</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>asyncio.run(main())</span></code></pre></div>
-<h2 id="features">Features</h2>
-<ul>
-<li>✅ <strong>Authentication</strong>: Verify caller IDs using Direct
-Query or Token Pool</li>
-<li>✅ <strong>Direct Routing</strong>: Discover peer-to-peer routing
-paths</li>
-<li>✅ <strong>End-to-End Encryption</strong>: Per-call key exchange
-with Ed25519</li>
-<li>✅ <strong>Call Branding</strong>: Display verified caller
-information</li>
-<li>✅ <strong>Emergency Services</strong>: Real-time GPS location for
-999/112/911 calls</li>
-<li>✅ <strong>Directory Service</strong>: Distributed number directory
-lookups</li>
-<li>✅ <strong>Async/Await</strong>: Built on modern Python asyncio</li>
-<li>✅ <strong>Type Safety</strong>: Full type hints with Pydantic
-models</li>
-</ul>
-<h2 id="project-setup">Project Setup</h2>
-<h3 id="using-pip">Using pip</h3>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv .venv</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> <span class="st">&#39;.[dev]&#39;</span></span></code></pre></div>
+<h2 id="quick-start">Quick start</h2>
 <div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create virtual environment</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv venv</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate  <span class="co"># or `venv\Scripts\activate` on Windows</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install package</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install pstn2</span></code></pre></div>
-<h3 id="using-poetry">Using Poetry</h3>
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2 <span class="im">import</span> PSTN2Client</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> main():</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="cf">with</span> PSTN2Client(</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;CP1-UK-0101&quot;</span>,                       <span class="co"># the CP you are acting as</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        numbering_list_url<span class="op">=</span><span class="st">&quot;http://127.0.0.1:47901/numbering-list.json&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    ) <span class="im">as</span> client:</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Who holds this number?</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        result <span class="op">=</span> <span class="cf">await</span> client.discover(<span class="st">&quot;+441134960456&quot;</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(result.result, result.holder, result.hops, result.ported)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># held  Bravo Networks (CP1-UK-0102)  [&#39;CP1-UK-0103&#39;, &#39;CP1-UK-0102&#39;]  True</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> result.fallback_to_pstn:</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>            ...  <span class="co"># unknown / unallocated / not_participating / error → traditional PSTN</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Verify an inbound caller ID (discovery happens inside)</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        v <span class="op">=</span> <span class="cf">await</span> client.verify_call(<span class="st">&quot;+442079460100&quot;</span>, <span class="st">&quot;+441134960789&quot;</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(v.verified, v.holder, v.trust_level)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>asyncio.run(main())</span></code></pre></div>
+<p>Start the local mock network first
+(<code>node test-environment/mock-network/server.mjs</code>), or point
+<code>numbering_list_url</code> at the live dummy test CP (see
+below).</p>
+<p>Or configure from the environment:</p>
 <div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize project</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> new my-pstn2-app</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-pstn2-app</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add dependency</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> add pstn2</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate shell</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> shell</span></code></pre></div>
-<h3 id="using-uv-recommended-for-speed">Using uv (Recommended for
-speed)</h3>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create project</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> init my-pstn2-app</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-pstn2-app</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add dependency</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> add pstn2</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Run script</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run python main.py</span></code></pre></div>
-<h2 id="running-examples">Running Examples</h2>
-<ol type="1">
-<li>Set environment variables:</li>
-</ol>
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client.from_env()   <span class="co"># PSTN2_NETWORK, PSTN2_NUMBERING_LIST_URL, PSTN2_CP_ID, ...</span></span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PSTN2_NETWORK</code></td>
+<td><code>local</code> (default) or <code>live</code></td>
+</tr>
+<tr>
+<td><code>PSTN2_MOCK_PORT</code></td>
+<td>Local mock network port (default <code>47901</code>)</td>
+</tr>
+<tr>
+<td><code>PSTN2_NUMBERING_LIST_URL</code></td>
+<td>Overrides the numbering list URL for either network</td>
+</tr>
+<tr>
+<td><code>PSTN2_CP_ID</code></td>
+<td>Acting CP (local default <code>CP1-UK-0101</code> Alpha Telecom;
+live default <code>CP1-UK-TEST-CLIENT</code>)</td>
+</tr>
+<tr>
+<td><code>PSTN2_VERIFY_SIGNATURES</code></td>
+<td><code>1</code>/<code>0</code> (default on for live, off for
+local)</td>
+</tr>
+<tr>
+<td><code>PSTN2_PRIVATE_KEY</code></td>
+<td>Ed25519 private key (PEM or base64) for request signatures; an
+ephemeral key is generated if unset</td>
+</tr>
+</tbody>
+</table>
+<p><code>local</code> uses
+<code>http://127.0.0.1:${PSTN2_MOCK_PORT}/numbering-list.json</code>;
+<code>live</code> uses
+<code>https://pstn2.org/testcp/numbering-list.json</code>.</p>
+<h2 id="how-discovery-works">How discovery works</h2>
+<pre><code>discover(number):
+  1. CACHE   unexpired entry → query the cached holder directly
+  2. LIST    longest-prefix block in the numbering list
+               no block           → &quot;unallocated&quot;        (traditional PSTN)
+               no rangeHolderUrl  → &quot;not_participating&quot;  (traditional PSTN)
+  3. RANGE HOLDER  GET {rangeHolderUrl}/pstn2/v1/numbers/{digits}
+  4. answer:  held      → cache {number → holder, ttl}; done
+              redirect  → query portedTo (step 4 again)
+              not_held  → purge cache entry; restart at step 2
+              404       → &quot;unknown&quot;
+  At most 5 queries; the same CP twice = loop → &quot;error&quot;.</code></pre>
+<p>The algorithm, hop accounting and event stream are identical to the
+reference engine
+(<code>animations/src/test-harness/harness-engine.js</code>); the test
+suite checks this directly. A cached entry is only a hint: if the number
+has moved, the CP you reach answers <code>not_held</code> with
+<code>cache.invalidate</code>, and discovery goes back to the Range
+Holder. A stale entry costs one extra query, never a misrouted call.</p>
+<p>Service calls apply the same rule (§5.1.2): if a verification, token,
+routing or emergency request reaches a CP that answers HTTP 200
+<code>{"result": "not_held", "cache": {"invalidate": true}}</code>, the
+SDK purges the entry, rediscovers and retries <strong>once</strong> at
+the new holder (<code>result.rediscovered</code> is then
+<code>True</code>).</p>
+<h2 id="api-reference">API reference</h2>
+<h3 id="pstn2client"><code>PSTN2Client</code></h3>
 <div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSTN2_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-private-key-here&quot;</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CP1_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-cp1-key-here&quot;</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSAP_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-psap-key-here&quot;</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">TOKEN_POOL_JWT</span><span class="op">=</span><span class="st">&quot;your-jwt-token-here&quot;</span></span></code></pre></div>
-<ol start="2" type="1">
-<li>Run an example:</li>
-</ol>
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>PSTN2Client(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    cp_id,                          <span class="co"># acting CP id, sent as X-PSTN2-CP-ID and requestingCP</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    numbering_list_url<span class="op">=</span><span class="va">None</span>,        <span class="co"># or numbering_list=&lt;dict | NumberingListData | NumberingList&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    verify_signatures<span class="op">=</span><span class="va">False</span>,        <span class="co"># require Ed25519-signed discovery answers</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="fl">2.0</span>, retries<span class="op">=</span><span class="dv">3</span>,         <span class="co"># per request; retries only for 503/504/network errors (§10.3)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    hop_limit<span class="op">=</span><span class="dv">5</span>, default_ttl<span class="op">=</span><span class="dv">86400</span>, list_refresh_seconds<span class="op">=</span><span class="dv">86400</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    private_key<span class="op">=</span><span class="va">None</span>,               <span class="co"># Ed25519 key for request signatures (ephemeral if None)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    token_pool_url<span class="op">=</span><span class="va">None</span>, token_pool_auth<span class="op">=</span><span class="va">None</span>,   <span class="co"># dedicated token pool, if any</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    on_event<span class="op">=</span><span class="va">None</span>,                  <span class="co"># discovery event hook (sync or async)</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    http_client<span class="op">=</span><span class="va">None</span>,               <span class="co"># bring your own httpx.AsyncClient</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>await client.discover(number, on_event=None)</code></td>
+<td><code>DiscoveryResult</code></td>
+</tr>
+<tr>
+<td><code>client.discovery</code></td>
+<td>the <code>DiscoveryClient</code></td>
+</tr>
+<tr>
+<td><code>client.numbering_list</code> / <code>client.cache</code></td>
+<td>the <code>NumberingList</code> and <code>DiscoveryCache</code></td>
+</tr>
+<tr>
+<td><code>client.auth.verify_call(caller_id, called_id, call_reference=None, *, token_id=None, holder=None)</code></td>
+<td><code>VerificationResult</code></td>
+</tr>
+<tr>
+<td><code>client.auth.create_token(caller_id, called_id, call_reference=None, *, ttl=30, branding=None)</code></td>
+<td><code>TokenCreateResult</code></td>
+</tr>
+<tr>
+<td><code>client.auth.verify_token(token_id, caller_id)</code></td>
+<td><code>TokenVerifyResponse</code> or <code>None</code></td>
+</tr>
+<tr>
+<td><code>client.routing.request_routing(destination, caller_id, media_capabilities=None, call_reference=None, *, branding=None, holder=None)</code></td>
+<td><code>RoutingResult</code></td>
+</tr>
+<tr>
+<td><code>client.emergency.get_location(caller_id, psap_id, call_reference=None, *, holder=None)</code></td>
+<td><code>EmergencyLocationResult</code></td>
+</tr>
+<tr>
+<td><code>client.public_key</code></td>
+<td>this client's Ed25519 identity key (base64)</td>
+</tr>
+<tr>
+<td><code>await client.close()</code> / <code>async with</code></td>
+<td>clear the cache, close connections</td>
+</tr>
+</tbody>
+</table>
+<p><code>holder=</code> accepts a <code>CpRef</code> or a held
+<code>DiscoveryResult</code> you already have, to skip the discovery
+query (example 05 reuses its Phase 1 answer for routing).</p>
+<p>Outcomes, not exceptions: <code>verify_call</code> and
+<code>request_routing</code> return <code>verified=False</code> /
+<code>accepted=False</code> with <code>reason</code> and
+<code>fallback_to_pstn=True</code> when there is no PSTN2 holder or the
+holder declines. <code>get_emergency_location</code>
+<strong>raises</strong> <code>DiscoveryError</code> instead, so a PSAP
+always sees that it must use other location sources. Transport failures
+raise <code>PSTN2TimeoutError</code> / <code>NetworkError</code>.</p>
+<h3 id="discoveryresult"><code>DiscoveryResult</code></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>number</code></td>
+<td>E.164</td>
+</tr>
+<tr>
+<td><code>result</code></td>
+<td><code>"held"</code>, <code>"unknown"</code>,
+<code>"unallocated"</code>, <code>"not_participating"</code> or
+<code>"error"</code></td>
+</tr>
+<tr>
+<td><code>holder</code></td>
+<td><code>CpRef(cp_id, cp_name, url)</code> when held;
+<code>holder.api_base</code> = <code>{url}/pstn2/v1</code></td>
+</tr>
+<tr>
+<td><code>ported</code></td>
+<td><code>True</code> when the holder is not the Range Holder</td>
+</tr>
+<tr>
+<td><code>hops</code></td>
+<td>cpId of every CP queried, in order</td>
+</tr>
+<tr>
+<td><code>from_cache</code></td>
+<td>the answer came from querying a cached holder</td>
+</tr>
+<tr>
+<td><code>invalidated</code></td>
+<td>a response in this discovery purged the cache entry</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td><code>"hop_limit_exceeded"</code>, <code>"loop_detected"</code>,
+<code>"timeout"</code>, <code>"invalid_response"</code>,
+<code>"invalid_signature"</code></td>
+</tr>
+<tr>
+<td><code>range_holder</code></td>
+<td>for <code>not_participating</code>: the Range Holder named in the
+list</td>
+</tr>
+</tbody>
+</table>
+<p><code>result.to_wire()</code> gives the camelCase JSON form
+(<code>fromCache</code>, <code>rangeHolder</code>, …).</p>
+<h3 id="discovery-building-blocks">Discovery building blocks</h3>
 <div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/01_basic_authentication.py</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/02_direct_routing.py</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/03_token_pool.py</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/04_emergency_services.py</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/05_complete_call_flow.py</span></code></pre></div>
-<h2 id="sdk-api-reference">SDK API Reference</h2>
-<h3 id="pstn2client">PSTN2Client</h3>
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2 <span class="im">import</span> NumberingList, DiscoveryCache, DiscoveryClient</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>nl <span class="op">=</span> <span class="cf">await</span> NumberingList.load(<span class="st">&quot;https://pstn2.org/testcp/numbering-list.json&quot;</span>)  <span class="co"># ETag / If-None-Match</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>nl <span class="op">=</span> NumberingList({<span class="st">&quot;listVersion&quot;</span>: <span class="st">&quot;...&quot;</span>, <span class="st">&quot;blocks&quot;</span>: [...]})                    <span class="co"># or from data</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>block <span class="op">=</span> nl.find_block(<span class="st">&quot;+447700900003&quot;</span>)          <span class="co"># longest prefix; numberLength must match</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>cache <span class="op">=</span> DiscoveryCache()                         <span class="co"># number → holder; TTL from cache.ttl</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>dc <span class="op">=</span> DiscoveryClient(nl, cache<span class="op">=</span>cache, verify_signatures<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                     on_event<span class="op">=</span><span class="kw">lambda</span> e: <span class="bu">print</span>(e.<span class="bu">type</span>, e.data))</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> <span class="cf">await</span> dc.discover(<span class="st">&quot;+447700900003&quot;</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>cache.get(<span class="st">&quot;+447700900003&quot;</span>)<span class="op">;</span> cache.purge(<span class="st">&quot;+447700900003&quot;</span>)<span class="op">;</span> cache.entries()<span class="op">;</span> cache.clear()</span></code></pre></div>
+<p>Events (<code>DiscoveryEvent.type</code>, same names as the reference
+engine): <code>cache-hit</code>, <code>cache-miss</code>,
+<code>list-lookup</code>, <code>query</code>, <code>response</code>,
+<code>redirect</code>, <code>cache-purge</code>,
+<code>cache-store</code>, <code>result</code>. A custom
+<code>transport(url, number) -&gt; TransportResponse</code> can be
+passed to <code>DiscoveryClient</code> (useful for in-memory tests).</p>
+<h3 id="answering-discovery-queries-rangeholderresponder">Answering
+discovery queries: <code>RangeHolderResponder</code></h3>
 <div class="sourceCode" id="cb8"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client, AuthenticationMode</span>
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2 <span class="im">import</span> RangeHolderResponder, generate_key_pair</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    cp_id<span class="op">=</span><span class="st">&#39;CP1-UK-0001&#39;</span>,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    api_endpoint<span class="op">=</span><span class="st">&#39;https://api.yourcp.com/pstn2/v1&#39;</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    private_key<span class="op">=</span>os.environ[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>],</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    auth_mode<span class="op">=</span>AuthenticationMode.DIRECT_QUERY,</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="fl">2.0</span>,  <span class="co"># seconds</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    retries<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    log_level<span class="op">=</span><span class="st">&#39;info&#39;</span>,</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<h3 id="authentication-module">Authentication Module</h3>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>db <span class="op">=</span> {</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;cpId&quot;</span>: <span class="st">&quot;CP1-UK-0103&quot;</span>, <span class="st">&quot;cpName&quot;</span>: <span class="st">&quot;Charlie Comms&quot;</span>, <span class="st">&quot;url&quot;</span>: <span class="st">&quot;https://pstn2.charlie-comms.example&quot;</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;ranges&quot;</span>: [<span class="st">&quot;441134960&quot;</span>],</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;inService&quot;</span>: [<span class="st">&quot;+441134960789&quot;</span>],</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;portedIn&quot;</span>: [{<span class="st">&quot;number&quot;</span>: <span class="st">&quot;+442079460321&quot;</span>, <span class="st">&quot;fromCpId&quot;</span>: <span class="st">&quot;CP1-UK-0101&quot;</span>}],</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;portedOut&quot;</span>: [{<span class="st">&quot;number&quot;</span>: <span class="st">&quot;+441134960456&quot;</span>, <span class="st">&quot;toCpId&quot;</span>: <span class="st">&quot;CP1-UK-0102&quot;</span>}],</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;previouslyHeld&quot;</span>: [],</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>peers <span class="op">=</span> {<span class="st">&quot;CP1-UK-0102&quot;</span>: {<span class="st">&quot;cpId&quot;</span>: <span class="st">&quot;CP1-UK-0102&quot;</span>, <span class="st">&quot;cpName&quot;</span>: <span class="st">&quot;Bravo Networks&quot;</span>, <span class="st">&quot;url&quot;</span>: <span class="st">&quot;https://pstn2.bravo-networks.example&quot;</span>}}</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>key <span class="op">=</span> generate_key_pair()</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>responder <span class="op">=</span> RangeHolderResponder(db, peers, numbering_list<span class="op">=</span>nl, signing_key<span class="op">=</span>key.private_key, kid<span class="op">=</span><span class="st">&quot;charlie-2026-10&quot;</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>answer <span class="op">=</span> responder.respond(<span class="st">&quot;+441134960456&quot;</span>)     <span class="co"># → 200 redirect to Bravo, signed</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>answer.status, answer.body</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>responder.keys_document()                         <span class="co"># body for GET {url}/pstn2/v1/keys</span></span></code></pre></div>
+<p>Serve <code>answer.body</code> with <code>answer.status</code> at
+<code>GET {url}/pstn2/v1/numbers/{digits}</code>. The answers match
+<code>Network.respond()</code> in the reference engine exactly.</p>
+<h3 id="signatures-96">Signatures (§9.6)</h3>
 <div class="sourceCode" id="cb9"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify call (Direct Query)</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;abc-123-def-456&#39;</span>,</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Create token (Token Pool)</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>token <span class="op">=</span> <span class="cf">await</span> client.auth.create_token(</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;token-call-123&#39;</span>,</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    ttl<span class="op">=</span><span class="dv">30</span>,  <span class="co"># seconds</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify token</span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_token(token.token_id)</span></code></pre></div>
-<h3 id="routing-module">Routing Module</h3>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.types <span class="im">import</span> MediaCapabilities, CallBranding</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>routing <span class="op">=</span> <span class="cf">await</span> client.routing.request_routing(</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    destination_number<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;xyz-789-abc-012&#39;</span>,</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    media_capabilities<span class="op">=</span>MediaCapabilities(</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        codecs<span class="op">=</span>[<span class="st">&#39;opus&#39;</span>, <span class="st">&#39;g722&#39;</span>, <span class="st">&#39;pcmu&#39;</span>],</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        encryption<span class="op">=</span>[<span class="st">&#39;srtp-aes256&#39;</span>, <span class="st">&#39;srtp-aes128&#39;</span>],</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        video<span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        max_bandwidth<span class="op">=</span><span class="dv">128000</span>,</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    branding<span class="op">=</span>CallBranding(</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        display_name<span class="op">=</span><span class="st">&#39;ACME Support&#39;</span>,</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>        logo<span class="op">=</span><span class="st">&#39;https://cdn.acme.com/logo.png&#39;</span>,</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        background_color<span class="op">=</span><span class="st">&#39;#0066cc&#39;</span>,</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        call_purpose<span class="op">=</span><span class="st">&#39;Account Security Alert&#39;</span>,</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<h3 id="directory-module">Directory Module</h3>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Lookup number</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>cp_info <span class="op">=</span> <span class="cf">await</span> client.directory.lookup(<span class="st">&#39;+441234567890&#39;</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&#39;Hosted by: </span><span class="sc">{</span>cp_info<span class="sc">.</span>cp_id<span class="sc">}</span><span class="ss">&#39;</span>)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reverse lookup</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>ranges <span class="op">=</span> <span class="cf">await</span> client.directory.reverse(<span class="st">&#39;CP1-UK-0001&#39;</span>)</span></code></pre></div>
-<h3 id="emergency-module">Emergency Module</h3>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get caller location (PSAP only)</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>location <span class="op">=</span> <span class="cf">await</span> client.emergency.get_location(</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;emergency-456-789&#39;</span>,</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    psap_id<span class="op">=</span><span class="st">&#39;UK-999-LONDON-CENTRAL&#39;</span>,</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&#39;GPS: </span><span class="sc">{</span>location<span class="sc">.</span>location<span class="sc">.</span>latitude<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>location<span class="sc">.</span>location<span class="sc">.</span>longitude<span class="sc">}</span><span class="ss">&#39;</span>)</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&#39;Accuracy: </span><span class="sc">{</span>location<span class="sc">.</span>location<span class="sc">.</span>accuracy<span class="sc">}</span><span class="ss">m&#39;</span>)</span></code></pre></div>
-<h2 id="type-safety-with-pydantic">Type Safety with Pydantic</h2>
-<p>All SDK models use Pydantic for validation:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.types <span class="im">import</span> (</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    VerifyCallRequest,</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    VerifyCallResponse,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    MediaCapabilities,</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    CallBranding,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Type-safe requests</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>request <span class="op">=</span> VerifyCallRequest(</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    call_reference<span class="op">=</span><span class="st">&#39;abc-123&#39;</span>,</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># IDE auto-completion for responses</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>response: VerifyCallResponse <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(<span class="op">**</span>request.<span class="bu">dict</span>())</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(response.verified)</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(response.trust_level)</span></code></pre></div>
-<h2 id="error-handling">Error Handling</h2>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.exceptions <span class="im">import</span> (</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    PSTN2Error,</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    AuthenticationError,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    RoutingError,</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    NetworkError,</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> AuthenticationError <span class="im">as</span> e:</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Authentication failed: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&#39;</span>)</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> NetworkError <span class="im">as</span> e:</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Network error: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&#39;</span>)</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> PSTN2Error <span class="im">as</span> e:</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;PSTN2 error: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">&#39;</span>)</span></code></pre></div>
-<h2 id="best-practices">Best Practices</h2>
-<h3 id="1-use-environment-variables">1. Use Environment Variables</h3>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ✅ Good</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>private_key <span class="op">=</span> os.environ[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>]</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ❌ Bad</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>private_key <span class="op">=</span> <span class="st">&#39;hardcoded-key&#39;</span></span></code></pre></div>
-<h3 id="2-always-close-clients">2. Always Close Clients</h3>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(...)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="cf">finally</span>:</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span></code></pre></div>
-<p>Or use context manager:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="cf">with</span> PSTN2Client(...) <span class="im">as</span> client:</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span></code></pre></div>
-<h3 id="3-handle-errors-gracefully">3. Handle Errors Gracefully</h3>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    routing <span class="op">=</span> <span class="cf">await</span> client.routing.request_routing(...)</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> routing.accepted:</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use PSTN2</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Fall back to PSTN</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Always provide fallback</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Error: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">, falling back to PSTN&#39;</span>)</span></code></pre></div>
-<h2 id="integration-examples">Integration Examples</h2>
-<h3 id="fastapi-integration">FastAPI Integration</h3>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> FastAPI, HTTPException</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>app <span class="op">=</span> FastAPI()</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(...)</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">@app.post</span>(<span class="st">&#39;/api/calls/verify&#39;</span>)</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> verify_call(</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    caller_id: <span class="bu">str</span>,</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    called_id: <span class="bu">str</span>,</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    call_reference: <span class="bu">str</span>,</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>):</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>            caller_id<span class="op">=</span>caller_id,</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>            called_id<span class="op">=</span>called_id,</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>            call_reference<span class="op">=</span>call_reference,</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {<span class="st">&#39;success&#39;</span>: <span class="va">True</span>, <span class="st">&#39;verification&#39;</span>: verification}</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> HTTPException(status_code<span class="op">=</span><span class="dv">500</span>, detail<span class="op">=</span><span class="bu">str</span>(e))</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="at">@app.on_event</span>(<span class="st">&#39;shutdown&#39;</span>)</span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> shutdown():</span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span></code></pre></div>
-<h3 id="django-integration">Django Integration</h3>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In your Django app</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> django.conf <span class="im">import</span> settings</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>client <span class="op">=</span> PSTN2Client(</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    cp_id<span class="op">=</span>settings.PSTN2_CP_ID,</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    api_endpoint<span class="op">=</span>settings.PSTN2_API_ENDPOINT,</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    private_key<span class="op">=</span>settings.PSTN2_PRIVATE_KEY,</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    auth_mode<span class="op">=</span>settings.PSTN2_AUTH_MODE,</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="co"># In your view</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> verify_call_view(request):</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> JsonResponse({<span class="st">&#39;verified&#39;</span>: verification.verified})</span></code></pre></div>
-<h2 id="testing">Testing</h2>
-<h3 id="unit-tests-with-pytest">Unit Tests with pytest</h3>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pytest</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2.client <span class="im">import</span> PSTN2Client, AuthenticationMode</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">@pytest.fixture</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> client():</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    client <span class="op">=</span> PSTN2Client(</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>        cp_id<span class="op">=</span><span class="st">&#39;TEST-CP-001&#39;</span>,</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        api_endpoint<span class="op">=</span><span class="st">&#39;https://test.example.com&#39;</span>,</span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>        private_key<span class="op">=</span><span class="st">&#39;test-key&#39;</span>,</span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        auth_mode<span class="op">=</span>AuthenticationMode.DIRECT_QUERY,</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">yield</span> client</span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> client.close()</span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="at">@pytest.mark.asyncio</span></span>
-<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> test_verify_call(client):</span>
-<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(</span>
-<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>        caller_id<span class="op">=</span><span class="st">&#39;+441234567890&#39;</span>,</span>
-<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>        called_id<span class="op">=</span><span class="st">&#39;+447700900123&#39;</span>,</span>
-<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>        call_reference<span class="op">=</span><span class="st">&#39;test-123&#39;</span>,</span>
-<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> result.verified <span class="kw">is</span> <span class="va">True</span></span></code></pre></div>
-<h2 id="performance-tips">Performance Tips</h2>
-<ol type="1">
-<li><strong>Reuse Client Instances</strong>: Create one client and reuse
-it across requests</li>
-<li><strong>Connection Pooling</strong>: httpx automatically pools
-connections</li>
-<li><strong>Async All the Way</strong>: Use async/await throughout your
-application</li>
-<li><strong>Cache Directory Results</strong>: Store CP lookups with
-TTL</li>
-</ol>
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2 <span class="im">import</span> canonical_json, sign_body, verify_body</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>canonical_json(obj)                 <span class="co"># keys sorted at every level, no whitespace, &#39;/&#39; and non-ASCII unescaped</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>signed <span class="op">=</span> sign_body(body, private_key, kid<span class="op">=</span><span class="st">&quot;bravo-2026-10&quot;</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>verify_body(signed, public_key_b64) <span class="co"># Ed25519 over canonical_json(body without &quot;signature&quot;)</span></span></code></pre></div>
+<p>With <code>verify_signatures=True</code>, every 200 discovery answer
+must be signed by the answering CP (key from
+<code>{url}/pstn2/v1/keys</code>, chosen by <code>kid</code>, cached per
+CP); an unsigned or invalid answer gives <code>result="error"</code>,
+<code>error="invalid_signature"</code>.</p>
+<h3 id="http-behaviour">HTTP behaviour</h3>
+<p>Every request sends <code>User-Agent: pstn2-python-sdk/1.1.0</code>
+and <code>X-PSTN2-Version: 1.1</code> (pstn2.org's WAF rejects generic
+library user agents). Discovery <code>GET</code>s carry no body and no
+<code>Content-Type</code>. JSON is accepted whatever the response
+<code>Content-Type</code>; a 404 with an HTML body (a static host's
+default page) means <code>unknown</code>.</p>
+<h3 id="errors">Errors</h3>
+<p><code>PSTN2Error</code> (base, with <code>.code</code> and
+<code>.status</code>) → <code>PSTN2TimeoutError</code>,
+<code>NetworkError</code>, <code>InvalidResponseError</code>,
+<code>ApiError</code> (<code>CallNotFoundError</code>,
+<code>TokenExpiredError</code>, <code>InvalidTokenError</code>,
+<code>RateLimitError</code>), <code>DiscoveryError</code>
+(<code>.discovery</code>), <code>NotHeldError</code>,
+<code>ValidationError</code>.</p>
 <h2 id="examples">Examples</h2>
-<p>See the <code>examples/</code> directory for complete working
-examples:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>File</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><code>examples/01_basic_authentication.py</code></td>
+<td>Charlie Comms verifies four inbound caller IDs, including a spoofed
+one and a ported one</td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>examples/02_direct_routing.py</code></td>
+<td>Alpha routes to Bravo with codec/SRTP negotiation; two PSTN
+fallbacks</td>
+</tr>
+<tr>
+<td>03</td>
+<td><code>examples/03_token_pool.py</code></td>
+<td>Originating CP creates a token, terminating CP verifies it; forged
+token falls back to Direct Query</td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>examples/04_emergency_services.py</code></td>
+<td>PSAP location query for a held number; fallback for an unknown
+one</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>examples/05_complete_call_flow.py</code></td>
+<td>Discovery (with redirect) → authentication → routing → summary, then
+a cache hit</td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>examples/06_number_discovery.py</code></td>
+<td>"Who has this number?" hop by hop: scenarios A–G locally, or the
+dummy test CP with signatures</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># terminal 1 (repository root)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># terminal 2</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/01_basic_authentication.py</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/05_complete_call_flow.py</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/06_number_discovery.py</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 06 against the live dummy test CP (signatures verified)</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">python</span> examples/06_number_discovery.py</span></code></pre></div>
+<p>Examples 01–05 need the mock network (the dummy test CP only answers
+discovery). Every example exits non-zero if something did not go as
+expected.</p>
+<h2 id="live-dummy-test-cp">Live dummy test CP</h2>
+<p><code>https://pstn2.org/testcp/</code> hosts two fictional CPs as
+static files, with signed answers:</p>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Expect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+447700900001</code>, <code>+447700900002</code></td>
+<td>held by Test CP A (unported)</td>
+</tr>
+<tr>
+<td><code>+447700900003</code></td>
+<td>Test CP A redirects → held by Test CP B (ported)</td>
+</tr>
+<tr>
+<td><code>+447700900004</code></td>
+<td>held by Test CP A; Test CP B answers <code>not_held</code> +
+invalidate (stale-cache test)</td>
+</tr>
+<tr>
+<td><code>+447700900101</code></td>
+<td>held by Test CP B (unported)</td>
+</tr>
+<tr>
+<td><code>+447700900099</code></td>
+<td>404 from Test CP A (not in service)</td>
+</tr>
+</tbody>
+</table>
+<p>To emulate it locally (same files, same static-host behaviour):</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp-local</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp-local <span class="at">--port</span> 47902</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">python</span> examples/06_number_discovery.py</span></code></pre></div>
+<h2 id="running-the-tests">Running the tests</h2>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest</span></code></pre></div>
+<p>The suite runs offline. It starts the mock network and a freshly
+built static emulator of the dummy test CP on free ports (Node.js
+required; those tests are skipped without it) and covers: numbering list
+matching and ETag/304, cache TTL and purge, canonical JSON and
+signatures (including answers signed by the Node build),
+<code>RangeHolderResponder</code> parity with the reference engine,
+scenarios A–G in memory and over HTTP, the six test numbers with
+signature verification, the WAF user-agent check, and verification /
+token pool / routing / emergency including the not_held → rediscover →
+retry path.</p>
+<h2 id="further-reading">Further reading</h2>
 <ul>
-<li><code>01_basic_authentication.py</code> - Basic authentication
-flow</li>
-<li><code>02_direct_routing.py</code> - Direct routing with media
-negotiation</li>
-<li><code>03_token_pool.py</code> - Token Pool authentication</li>
-<li><code>04_emergency_services.py</code> - Emergency location
-services</li>
-<li><code>05_complete_call_flow.py</code> - End-to-end call
-scenario</li>
-</ul>
-<p>See <a href="../EXAMPLES.md">EXAMPLES.md</a> for detailed
-documentation.</p>
-<h2 id="further-reading">Further Reading</h2>
-<ul>
-<li><a href="../../docs/SPECIFICATION.md">SPECIFICATION.md</a> - PSTN2
-protocol specification</li>
+<li><a href="../../docs/SPECIFICATION.md">SPECIFICATION.md</a> —
+protocol v1.1 (§9 Number Discovery)</li>
 <li><a
-href="../../docs/API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> -
-REST API documentation</li>
+href="../../docs/API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> —
+wire formats</li>
 <li><a
-href="../../docs/IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> -
-Implementation patterns</li>
+href="../../docs/IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> —
+implementation patterns</li>
+<li><a href="../EXAMPLES.md">EXAMPLES.md</a> — examples in all three
+languages</li>
+<li><a
+href="../../docs/TESTING-SPECIFICATION.md">TESTING-SPECIFICATION.md</a>
+— test environment and conformance</li>
 </ul>
 <h2 id="license">License</h2>
-<p>See main project LICENSE file.</p>
+<p>Public domain: the PSTN2 project is released under CC0 1.0 Universal
+(commercial use, modification and distribution allowed; no warranty).
+The Comms Council UK logo and branding are excluded. See the project <a
+href="https://github.com/njjholland-dot/pstn2/blob/main/LICENSE">LICENSE</a>.</p>
     </main>
 
     <footer class="doc-footer">

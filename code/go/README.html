@@ -15,463 +15,579 @@
         <nav class="doc-nav">
             <div class="doc-nav-links">
                 <a href="#installation">Installation</a>
-                <a href="#requirements">Requirements</a>
-                <a href="#quick-start">Quick Start</a>
-                <a href="#features">Features</a>
-                <a href="#project-setup">Project Setup</a>
-                <a href="#running-examples">Running Examples</a>
-                <a href="#sdk-api-reference">SDK API Reference</a>
-                <a href="#error-handling">Error Handling</a>
-                <a href="#best-practices">Best Practices</a>
-                <a href="#integration-examples">Integration Examples</a>
-                <a href="#testing">Testing</a>
-                <a href="#performance-tips">Performance Tips</a>
+                <a href="#quick-start">Quick start</a>
+                <a href="#configuration">Configuration</a>
+                <a href="#api-reference">API reference</a>
                 <a href="#examples">Examples</a>
-                <a href="#further-reading">Further Reading</a>
+                <a href="#running-the-tests">Running the tests</a>
+                <a href="#best-practices">Best practices</a>
+                <a href="#further-reading">Further reading</a>
                 <a href="#license">License</a>
                 <a href="README.md">View Markdown</a>
             </div>
         </nav>
     <main class="doc-container">
 <h1 id="pstn2-go-sdk">PSTN2 Go SDK</h1>
-<p>High-performance Go implementation of the PSTN2 distributed
-telecommunications protocol.</p>
-<blockquote>
-<p><strong>Status: reference API — not yet published.</strong> The Go
-SDK (<code>github.com/pstn2/pstn2-go/pkg/...</code>) has not been
-published and its <code>pkg/</code> sources are not included in this
-repository yet, so <code>go get github.com/pstn2/pstn2-go</code> will
-not work and the examples will not compile. The <code>examples/</code>
-directories and the snippets below illustrate the <em>intended</em> SDK
-surface. A <code>go.mod</code> is provided so the module layout is ready
-for when the SDK lands.</p>
-</blockquote>
+<p>Go implementation of the PSTN2 protocol <strong>v1.1</strong>: caller
+ID verification, direct routing, end-to-end encryption support and
+enhanced emergency location for the existing PSTN, built on
+<strong>Number Discovery</strong> and no central database.</p>
+<ul>
+<li><strong>Standard library only.</strong> No dependencies, no
+<code>go.sum</code>.</li>
+<li><strong>Go 1.21 or later.</strong></li>
+<li>Module <code>github.com/njjholland-dot/pstn2/code/go</code>, package
+<code>pkg/pstn2</code>.</li>
+<li>SDK version <code>1.1.0</code> (<code>pstn2.Version</code>),
+protocol <code>1.1</code> (<code>pstn2.ProtocolVersion</code>).</li>
+</ul>
+<p>Every PSTN2 interaction begins by answering one question: <em>which
+CP currently holds this number?</em> The SDK answers it the way
+SPECIFICATION.md §9 describes:</p>
+<pre><code>cache ──hit──▶ query the cached holder directly
+  │ miss
+  ▼
+regulator numbering list (longest prefix) ──no block──▶ unallocated
+  │                                       └─no URL───▶ not_participating
+  ▼
+Range Holder: GET {url}/pstn2/v1/numbers/{digits}
+  ├─ 200 held      → cache number → holder (ttl), done
+  ├─ 200 redirect  → ported: query portedTo (the new holder)
+  ├─ 200 not_held  → stale cache: purge, restart from the numbering list
+  └─ 404           → unknown (not in service)
+max 5 hops · a CP seen twice in one pass = loop · any failure = traditional PSTN</code></pre>
 <h2 id="installation">Installation</h2>
-<p>Once the SDK is published, installation will be:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get github.com/pstn2/pstn2-go</span></code></pre></div>
-<h2 id="requirements">Requirements</h2>
-<ul>
-<li>Go 1.21 or later</li>
-<li>Dependencies managed with Go modules</li>
-</ul>
-<h2 id="quick-start">Quick Start</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;fmt&quot;</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;os&quot;</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/client&quot;</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/types&quot;</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    ctx <span class="op">:=</span> context<span class="op">.</span>Background<span class="op">()</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    pstn2Client<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>NewClient<span class="op">(&amp;</span>client<span class="op">.</span>Config<span class="op">{</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        CPID<span class="op">:</span>        <span class="st">&quot;CP1-UK-0001&quot;</span><span class="op">,</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        APIEndpoint<span class="op">:</span> <span class="st">&quot;https://api.yourcp.com/pstn2/v1&quot;</span><span class="op">,</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        PrivateKey<span class="op">:</span>  os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;PSTN2_PRIVATE_KEY&quot;</span><span class="op">),</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        AuthMode<span class="op">:</span>    types<span class="op">.</span>AuthModeDirectQuery<span class="op">,</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="bu">panic</span><span class="op">(</span>err<span class="op">)</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> pstn2Client<span class="op">.</span>Close<span class="op">()</span></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Verify an inbound call</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    verification<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        CallerID<span class="op">:</span>      <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        CalledID<span class="op">:</span>      <span class="st">&quot;+447700900123&quot;</span><span class="op">,</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        CallReference<span class="op">:</span> <span class="st">&quot;abc-123-def-456&quot;</span><span class="op">,</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="bu">panic</span><span class="op">(</span>err<span class="op">)</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Call verified: %t</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> verification<span class="op">.</span>Verified<span class="op">)</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h2 id="features">Features</h2>
-<ul>
-<li>✅ <strong>High Performance</strong>: Concurrent processing with
-goroutines</li>
-<li>✅ <strong>Type Safety</strong>: Full type definitions
-throughout</li>
-<li>✅ <strong>Authentication</strong>: Both Direct Query and Token Pool
-modes</li>
-<li>✅ <strong>Direct Routing</strong>: Peer-to-peer routing
-discovery</li>
-<li>✅ <strong>End-to-End Encryption</strong>: Ed25519 key exchange</li>
-<li>✅ <strong>Call Branding</strong>: Verified caller information
-display</li>
-<li>✅ <strong>Emergency Services</strong>: Real-time GPS location
-(PSAP)</li>
-<li>✅ <strong>Directory Service</strong>: Distributed number
-lookups</li>
-<li>✅ <strong>Context Support</strong>: Full context.Context
-integration</li>
-<li>✅ <strong>Production Ready</strong>: Connection pooling, retries,
-timeouts</li>
-</ul>
-<h2 id="project-setup">Project Setup</h2>
-<h3 id="initialize-module">Initialize Module</h3>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create new module</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> my-pstn2-app</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-pstn2-app</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> mod init my-pstn2-app</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Add PSTN2 dependency</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get github.com/pstn2/pstn2-go</span></code></pre></div>
-<h3 id="project-structure">Project Structure</h3>
-<pre><code>my-pstn2-app/
-├── main.go
-├── go.mod
-└── go.sum</code></pre>
-<h2 id="running-examples">Running Examples</h2>
-<ol type="1">
-<li>Set environment variables:</li>
-</ol>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get github.com/njjholland-dot/pstn2/code/go/pkg/pstn2</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="st">&quot;github.com/njjholland-dot/pstn2/code/go/pkg/pstn2&quot;</span></span></code></pre></div>
+<h2 id="quick-start">Quick start</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;fmt&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;log&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;time&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/njjholland-dot/pstn2/code/go/pkg/pstn2&quot;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    client<span class="op">,</span> err <span class="op">:=</span> pstn2<span class="op">.</span>NewClient<span class="op">(</span>pstn2<span class="op">.</span>Config<span class="op">{</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        CPID<span class="op">:</span>             <span class="st">&quot;CP1-UK-0101&quot;</span><span class="op">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        NumberingListURL<span class="op">:</span> <span class="st">&quot;http://127.0.0.1:47901/numbering-list.json&quot;</span><span class="op">,</span> <span class="co">// local mock network</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> client<span class="op">.</span>Close<span class="op">()</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    ctx<span class="op">,</span> cancel <span class="op">:=</span> context<span class="op">.</span>WithTimeout<span class="op">(</span>context<span class="op">.</span>Background<span class="op">(),</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">)</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> cancel<span class="op">()</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Who holds this number? (Charlie&#39;s range, ported to Bravo)</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    res <span class="op">:=</span> client<span class="op">.</span>Discover<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;+441134960456&quot;</span><span class="op">)</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> res<span class="op">.</span>Fallback<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Println<span class="op">(</span><span class="st">&quot;no PSTN2 holder:&quot;</span><span class="op">,</span> res<span class="op">.</span>Result<span class="op">,</span> res<span class="op">.</span>Error<span class="op">,</span> <span class="st">&quot;→ traditional PSTN&quot;</span><span class="op">)</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;held by %s (ported %v) via %v</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> res<span class="op">.</span>Holder<span class="op">.</span>CPName<span class="op">,</span> res<span class="op">.</span>Ported<span class="op">,</span> res<span class="op">.</span>Hops<span class="op">)</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    <span class="co">// held by Bravo Networks (ported true) via [CP1-UK-0103 CP1-UK-0102]</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Verify an inbound caller ID with whoever holds it now.</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    v<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>VerifyCallRequest<span class="op">{</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>        CallerID<span class="op">:</span> <span class="st">&quot;+441614960123&quot;</span><span class="op">,</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>        CalledID<span class="op">:</span> <span class="st">&quot;+442079460100&quot;</span><span class="op">,</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">switch</span> <span class="op">{</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> err <span class="op">!=</span> <span class="ot">nil</span><span class="op">:</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Println<span class="op">(</span><span class="st">&quot;verification failed:&quot;</span><span class="op">,</span> err<span class="op">,</span> <span class="st">&quot;→ traditional PSTN&quot;</span><span class="op">)</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> v<span class="op">.</span>Verified<span class="op">:</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Println<span class="op">(</span><span class="st">&quot;verified by&quot;</span><span class="op">,</span> v<span class="op">.</span>Via<span class="op">.</span>Holder<span class="op">.</span>CPName<span class="op">)</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">default</span><span class="op">:</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Println<span class="op">(</span><span class="st">&quot;not verified:&quot;</span><span class="op">,</span> v<span class="op">.</span>Reason<span class="op">,</span> <span class="st">&quot;→ flag, traditional PSTN&quot;</span><span class="op">)</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Start the local mock network first (Node 18+, no dependencies), from
+the repository root:</p>
 <div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSTN2_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-private-key-here&quot;</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CP1_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-cp1-key-here&quot;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSAP_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-psap-key-here&quot;</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">TOKEN_POOL_JWT</span><span class="op">=</span><span class="st">&quot;your-jwt-token-here&quot;</span></span></code></pre></div>
-<ol start="2" type="1">
-<li>Run an example (each example is its own <code>main</code> package;
-note that these will only compile once the SDK <code>pkg/</code> sources
-are published):</li>
-</ol>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/01-basic-authentication</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/02-direct-routing</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/03-token-pool</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/04-emergency-services</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/05-complete-call-flow</span></code></pre></div>
-<h2 id="sdk-api-reference">SDK API Reference</h2>
-<h3 id="client-configuration">Client Configuration</h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/client&quot;</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/types&quot;</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>pstn2Client<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>NewClient<span class="op">(&amp;</span>client<span class="op">.</span>Config<span class="op">{</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    CPID<span class="op">:</span>        <span class="st">&quot;CP1-UK-0001&quot;</span><span class="op">,</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    APIEndpoint<span class="op">:</span> <span class="st">&quot;https://api.yourcp.com/pstn2/v1&quot;</span><span class="op">,</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    PrivateKey<span class="op">:</span>  os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;PSTN2_PRIVATE_KEY&quot;</span><span class="op">),</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    AuthMode<span class="op">:</span>    types<span class="op">.</span>AuthModeDirectQuery<span class="op">,</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    Timeout<span class="op">:</span>     <span class="dv">2</span> <span class="op">*</span> time<span class="op">.</span>Second<span class="op">,</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    Retries<span class="op">:</span>     <span class="dv">3</span><span class="op">,</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    LogLevel<span class="op">:</span>    <span class="st">&quot;info&quot;</span><span class="op">,</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="cf">defer</span> pstn2Client<span class="op">.</span>Close<span class="op">()</span></span></code></pre></div>
-<h3 id="authentication-module">Authentication Module</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Verify call (Direct Query)</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>verification<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    CallerID<span class="op">:</span>      <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    CalledID<span class="op">:</span>      <span class="st">&quot;+447700900123&quot;</span><span class="op">,</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    CallReference<span class="op">:</span> <span class="st">&quot;abc-123-def-456&quot;</span><span class="op">,</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">// Create token (Token Pool)</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>token<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>CreateToken<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>CreateTokenRequest<span class="op">{</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    CallerID<span class="op">:</span>      <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    CalledID<span class="op">:</span>      <span class="st">&quot;+447700900123&quot;</span><span class="op">,</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    CallReference<span class="op">:</span> <span class="st">&quot;token-call-123&quot;</span><span class="op">,</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    TTL<span class="op">:</span>           <span class="dv">30</span><span class="op">,</span> <span class="co">// seconds</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">// Verify token</span></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>verification<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyToken<span class="op">(</span>ctx<span class="op">,</span> token<span class="op">.</span>TokenID<span class="op">)</span></span></code></pre></div>
-<h3 id="routing-module">Routing Module</h3>
-<div class="sourceCode" id="cb9"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>routing<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Routing<span class="op">().</span>RequestRouting<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>RoutingRequest<span class="op">{</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    DestinationNumber<span class="op">:</span> <span class="st">&quot;+447700900123&quot;</span><span class="op">,</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    CallerID<span class="op">:</span>          <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    CallReference<span class="op">:</span>     <span class="st">&quot;xyz-789-abc-012&quot;</span><span class="op">,</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    MediaCapabilities<span class="op">:</span> <span class="op">&amp;</span>types<span class="op">.</span>MediaCapabilities<span class="op">{</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        Codecs<span class="op">:</span>       <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;opus&quot;</span><span class="op">,</span> <span class="st">&quot;g722&quot;</span><span class="op">,</span> <span class="st">&quot;pcmu&quot;</span><span class="op">},</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        Encryption<span class="op">:</span>   <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;srtp-aes256&quot;</span><span class="op">,</span> <span class="st">&quot;srtp-aes128&quot;</span><span class="op">},</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        Video<span class="op">:</span>        <span class="ot">false</span><span class="op">,</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        MaxBandwidth<span class="op">:</span> <span class="dv">128000</span><span class="op">,</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    Branding<span class="op">:</span> <span class="op">&amp;</span>types<span class="op">.</span>CallBranding<span class="op">{</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        DisplayName<span class="op">:</span>     <span class="st">&quot;ACME Support&quot;</span><span class="op">,</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        Logo<span class="op">:</span>            <span class="st">&quot;https://cdn.acme.com/logo.png&quot;</span><span class="op">,</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        BackgroundColor<span class="op">:</span> <span class="st">&quot;#0066cc&quot;</span><span class="op">,</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        CallPurpose<span class="op">:</span>     <span class="st">&quot;Account Security Alert&quot;</span><span class="op">,</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="directory-module">Directory Module</h3>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs            <span class="co"># http://127.0.0.1:47901</span></span></code></pre></div>
+<h2 id="configuration">Configuration</h2>
+<p><code>pstn2.Config</code> (all fields optional except a numbering
+list source):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CPID</code></td>
+<td>—</td>
+<td>Acting CP's RCPID; sent as <code>X-PSTN2-CP-ID</code> and
+<code>requestingCP</code></td>
+</tr>
+<tr>
+<td><code>NumberingListURL</code></td>
+<td>—</td>
+<td>Regulator numbering list, fetched lazily with
+ETag/If-None-Match</td>
+</tr>
+<tr>
+<td><code>NumberingList</code> / <code>List</code></td>
+<td>—</td>
+<td>In-memory list data, or a shared <code>*NumberingList</code></td>
+</tr>
+<tr>
+<td><code>ListRefresh</code></td>
+<td>24h</td>
+<td>Revalidate the list after this long (<code>refreshSeconds</code>
+86400)</td>
+</tr>
+<tr>
+<td><code>VerifySignatures</code></td>
+<td>false</td>
+<td>Require Ed25519-signed discovery answers (§9.6)</td>
+</tr>
+<tr>
+<td><code>HopLimit</code></td>
+<td>5</td>
+<td>Maximum discovery queries per lookup</td>
+</tr>
+<tr>
+<td><code>DefaultTTL</code></td>
+<td>86400</td>
+<td>Seconds to cache a held answer that carries no
+<code>cache.ttl</code></td>
+</tr>
+<tr>
+<td><code>Timeout</code></td>
+<td>2s</td>
+<td>Per HTTP attempt</td>
+</tr>
+<tr>
+<td><code>Retries</code></td>
+<td>3</td>
+<td>503/504/network retries, 100/200/400ms backoff (§10.3); negative
+disables</td>
+</tr>
+<tr>
+<td><code>HTTPClient</code></td>
+<td>pooled client</td>
+<td>Custom <code>*http.Client</code></td>
+</tr>
+<tr>
+<td><code>PrivateKey</code></td>
+<td>—</td>
+<td>Ed25519 key to sign request bodies</td>
+</tr>
+<tr>
+<td><code>Cache</code></td>
+<td>new</td>
+<td>Shared <code>*DiscoveryCache</code></td>
+</tr>
+<tr>
+<td><code>OnEvent</code></td>
+<td>—</td>
+<td>Receives every discovery event</td>
+</tr>
+</tbody>
+</table>
+<p>Every request carries <code>User-Agent: pstn2-go-sdk/1.1.0</code> and
+<code>X-PSTN2-Version: 1.1</code>. Go's default
+<code>Go-http-client/*</code> agent is rejected by the pstn2.org WAF
+(and many others), so the SDK never sends it. Discovery
+<code>GET</code>s carry no body and no <code>Content-Type</code>;
+responses are parsed as JSON whatever their <code>Content-Type</code>
+(static hosts may send <code>application/octet-stream</code>).</p>
+<h3 id="environment-pstn2loadenv">Environment
+(<code>pstn2.LoadEnv()</code>)</h3>
+<p>The examples, and any program that wants the same switches, read:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PSTN2_NETWORK</code></td>
+<td><code>local</code></td>
+<td><code>local</code> = mock network, <code>live</code> = dummy test
+CPs on pstn2.org</td>
+</tr>
+<tr>
+<td><code>PSTN2_MOCK_PORT</code></td>
+<td><code>47901</code></td>
+<td>Local mock network port</td>
+</tr>
+<tr>
+<td><code>PSTN2_NUMBERING_LIST_URL</code></td>
+<td>per network</td>
+<td>Overrides the numbering list URL</td>
+</tr>
+<tr>
+<td><code>PSTN2_CP_ID</code></td>
+<td><code>CP1-UK-0101</code> (local), <code>CP1-UK-TEST-CLIENT</code>
+(live)</td>
+<td>Acting CP</td>
+</tr>
+<tr>
+<td><code>PSTN2_VERIFY_SIGNATURES</code></td>
+<td>on for live, off for local</td>
+<td><code>1</code>/<code>0</code></td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>env <span class="op">:=</span> pstn2<span class="op">.</span>LoadEnv<span class="op">()</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>client<span class="op">,</span> err <span class="op">:=</span> pstn2<span class="op">.</span>NewClient<span class="op">(</span>env<span class="op">.</span>Config<span class="op">())</span></span></code></pre></div>
+<h2 id="api-reference">API reference</h2>
+<h3 id="number-discovery">Number Discovery</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// The numbering list: from a URL (lazy, ETag, daily refresh) or from data.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>list <span class="op">:=</span> pstn2<span class="op">.</span>NewNumberingListFromURL<span class="op">(</span>url<span class="op">,</span> pstn2<span class="op">.</span>NumberingListOptions<span class="op">{})</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>list<span class="op">,</span> err <span class="op">:=</span> pstn2<span class="op">.</span>LoadNumberingList<span class="op">(</span>ctx<span class="op">,</span> url<span class="op">,</span> pstn2<span class="op">.</span>NumberingListOptions<span class="op">{})</span> <span class="co">// fetch now</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>list <span class="op">:=</span> pstn2<span class="op">.</span>NewNumberingList<span class="op">(</span>pstn2<span class="op">.</span>NumberingListData<span class="op">{</span>Blocks<span class="op">:</span> blocks<span class="op">})</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>block <span class="op">:=</span> list<span class="op">.</span>FindBlock<span class="op">(</span><span class="st">&quot;+441614960123&quot;</span><span class="op">)</span>   <span class="co">// longest prefix, numberLength must match</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>changed<span class="op">,</span> err <span class="op">:=</span> list<span class="op">.</span>Refresh<span class="op">(</span>ctx<span class="op">)</span>            <span class="co">// conditional GET; false on 304</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">// The number cache: number → holder hints with TTL. Never block-level.</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>cache <span class="op">:=</span> pstn2<span class="op">.</span>NewDiscoveryCache<span class="op">(</span><span class="ot">nil</span><span class="op">)</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>cache<span class="op">.</span>Set<span class="op">(</span>number<span class="op">,</span> holder<span class="op">,</span> ported<span class="op">,</span> ttlSeconds<span class="op">)</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>entry<span class="op">,</span> ok <span class="op">:=</span> cache<span class="op">.</span>Get<span class="op">(</span>number<span class="op">)</span>               <span class="co">// expired entries are dropped</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>cache<span class="op">.</span>Purge<span class="op">(</span>number<span class="op">);</span> cache<span class="op">.</span>Clear<span class="op">();</span> cache<span class="op">.</span>Entries<span class="op">()</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">// The discovery client (Client.Discovery() returns the client&#39;s own).</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>d<span class="op">,</span> err <span class="op">:=</span> pstn2<span class="op">.</span>NewDiscoveryClient<span class="op">(</span>pstn2<span class="op">.</span>DiscoveryConfig<span class="op">{</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    CPID<span class="op">:</span> <span class="st">&quot;CP1-UK-0101&quot;</span><span class="op">,</span> NumberingList<span class="op">:</span> list<span class="op">,</span> VerifySignatures<span class="op">:</span> <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>res <span class="op">:=</span> d<span class="op">.</span>Discover<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;+441134960456&quot;</span><span class="op">,</span> pstn2<span class="op">.</span>WithEvents<span class="op">(</span><span class="kw">func</span><span class="op">(</span>e pstn2<span class="op">.</span>DiscoveryEvent<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Println<span class="op">(</span>e<span class="op">.</span>Type<span class="op">)</span> <span class="co">// cache-miss, list-lookup, query, response, redirect, cache-store, result</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="op">}))</span></span></code></pre></div>
+<p><code>Discover</code> never returns an error; failures are results.
+<code>DiscoveryResult</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Number</code></td>
+<td>E.164</td>
+</tr>
+<tr>
+<td><code>Result</code></td>
+<td><code>held</code>, <code>unknown</code>, <code>unallocated</code>,
+<code>not_participating</code>, <code>error</code></td>
+</tr>
+<tr>
+<td><code>Holder</code></td>
+<td><code>*CpRef{CPID, CPName, URL}</code> when held</td>
+</tr>
+<tr>
+<td><code>Ported</code></td>
+<td>holder is not the Range Holder</td>
+</tr>
+<tr>
+<td><code>Hops</code></td>
+<td>cpIds queried, in order</td>
+</tr>
+<tr>
+<td><code>FromCache</code></td>
+<td>the answer came from the cached holder</td>
+</tr>
+<tr>
+<td><code>Invalidated</code></td>
+<td>a <code>cache.invalidate</code> was received and the entry
+purged</td>
+</tr>
+<tr>
+<td><code>Error</code></td>
+<td><code>hop_limit_exceeded</code>, <code>loop_detected</code>,
+<code>timeout</code>, <code>invalid_response</code>,
+<code>invalid_signature</code></td>
+</tr>
+<tr>
+<td><code>RangeHolder</code></td>
+<td>the non-participating Range Holder
+(<code>not_participating</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><code>res.Held()</code> / <code>res.Fallback()</code> tell you which
+way the call goes. Events have the same names as the reference engine:
+<code>cache-hit</code>, <code>cache-miss</code>,
+<code>list-lookup</code>, <code>query</code>, <code>response</code>,
+<code>redirect</code>, <code>cache-purge</code>,
+<code>cache-store</code>, <code>result</code>; <code>response</code>
+events also report <code>Signature</code> (<code>verified</code>,
+<code>unsigned</code>, <code>invalid</code>).</p>
+<p><code>CpRef.DiscoveryURL(n)</code> is
+<code>{url}/pstn2/v1/numbers/{digits}</code>;
+<code>CpRef.APIBase()</code> is <code>{url}/pstn2/v1</code>.</p>
+<h3 id="authentication">Authentication</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Direct Query (§5.1): discover the caller ID&#39;s holder, POST /auth/verify there.</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>v<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>VerifyCallRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> CalledID<span class="op">:</span> calledID<span class="op">})</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">// v.Verified, v.Reason (verified | caller_id_unknown | unallocated | not_participating |</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">// call_not_found | not_verified | discovery_error), v.Fallback, v.Via (holder, discovery, retry)</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">// Token Pool (§5.2): created at the caller ID&#39;s holder, verified there by the terminating CP.</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>tok<span class="op">,</span> err <span class="op">:=</span> originating<span class="op">.</span>Auth<span class="op">().</span>CreateToken<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>TokenRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> CalledID<span class="op">:</span> calledID<span class="op">,</span> TTL<span class="op">:</span> <span class="dv">30</span><span class="op">})</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>tv<span class="op">,</span> err <span class="op">:=</span> terminating<span class="op">.</span>Auth<span class="op">().</span>VerifyToken<span class="op">(</span>ctx<span class="op">,</span> callerID<span class="op">,</span> tok<span class="op">.</span>TokenID<span class="op">)</span> <span class="co">// invalid_token (404), expired_token (410)</span></span></code></pre></div>
+<p>An unverifiable caller ID is an outcome, not an error:
+<code>VerifyCall</code> returns <code>Verified == false</code> with a
+<code>Reason</code> and <code>Fallback == true</code>. An error means
+the verification request itself failed.</p>
+<h3 id="routing">Routing</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>route<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Routing<span class="op">().</span>RequestRouting<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>RoutingRequest<span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    CallerID<span class="op">:</span>          <span class="st">&quot;+442079460100&quot;</span><span class="op">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    DestinationNumber<span class="op">:</span> <span class="st">&quot;+441614960123&quot;</span><span class="op">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    MediaCapabilities<span class="op">:</span> pstn2<span class="op">.</span>MediaCapabilities<span class="op">{</span>Codecs<span class="op">:</span> <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;opus&quot;</span><span class="op">,</span> <span class="st">&quot;g722&quot;</span><span class="op">,</span> <span class="st">&quot;pcmu&quot;</span><span class="op">},</span> Encryption<span class="op">:</span> <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;srtp-aes256&quot;</span><span class="op">}},</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    PublicKey<span class="op">:</span>         pstn2<span class="op">.</span>PublicKeyBase64<span class="op">(</span>identityKey<span class="op">),</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">// route.Accepted, route.ConnectionDetails (fqdn, ipv4/6, port, protocol, publicKey), route.AgreedCapabilities</span></span></code></pre></div>
+<h3 id="emergency">Emergency</h3>
 <div class="sourceCode" id="cb10"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Lookup number</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>cpInfo<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Directory<span class="op">().</span>Lookup<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;+441234567890&quot;</span><span class="op">)</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Hosted by: %s</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> cpInfo<span class="op">.</span>CPID<span class="op">)</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Reverse lookup</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>ranges<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Directory<span class="op">().</span>Reverse<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;CP1-UK-0001&quot;</span><span class="op">)</span></span></code></pre></div>
-<h3 id="emergency-module">Emergency Module</h3>
+class="sourceCode go"><code class="sourceCode go"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>loc<span class="op">,</span> err <span class="op">:=</span> psap<span class="op">.</span>Emergency<span class="op">().</span>GetLocation<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>LocationRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> PSAPID<span class="op">:</span> <span class="st">&quot;UK-999-MANCHESTER-01&quot;</span><span class="op">})</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">// loc.Location (lat, lon, accuracy, source), loc.Address</span></span></code></pre></div>
+<h3 id="ported-numbers-and-stale-caches">Ported numbers and stale
+caches</h3>
+<p>All modules find the holder with <code>Discover()</code> and call
+<code>{holder.url}/pstn2/v1/...</code>. If that CP answers
+<code>200 {"result":"not_held","cache":{"invalidate":true}}</code> (the
+number moved since it was cached, §5.1.2), the SDK purges the entry,
+rediscovers from the Range Holder and retries <strong>once</strong> at
+the new holder. <code>Via.Retried</code>, <code>Via.NotHeldBy</code> and
+<code>Via.FirstDiscovery</code> record what happened.
+<code>cache.scope: "block"</code> also re-downloads the numbering
+list.</p>
+<h3 id="errors-and-fallback">Errors and fallback</h3>
 <div class="sourceCode" id="cb11"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Get caller location (PSAP only)</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>location<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Emergency<span class="op">().</span>GetLocation<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>LocationRequest<span class="op">{</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    CallerID<span class="op">:</span>      <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    CallReference<span class="op">:</span> <span class="st">&quot;emergency-456-789&quot;</span><span class="op">,</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    PSAPID<span class="op">:</span>        <span class="st">&quot;UK-999-LONDON-CENTRAL&quot;</span><span class="op">,</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;GPS: %.6f, %.6f</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> location<span class="op">.</span>Location<span class="op">.</span>Latitude<span class="op">,</span> location<span class="op">.</span>Location<span class="op">.</span>Longitude<span class="op">)</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Accuracy: %.1fm</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> location<span class="op">.</span>Location<span class="op">.</span>Accuracy<span class="op">)</span></span></code></pre></div>
-<h2 id="error-handling">Error Handling</h2>
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>_<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Routing<span class="op">().</span>RequestRouting<span class="op">(</span>ctx<span class="op">,</span> req<span class="op">)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> de<span class="op">,</span> ok <span class="op">:=</span> pstn2<span class="op">.</span>IsDiscoveryError<span class="op">(</span>err<span class="op">);</span> ok <span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// no PSTN2 holder: de.Result.Result is unknown / unallocated / not_participating / error</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span> pstn2<span class="op">.</span>ErrorCode<span class="op">(</span>err<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> pstn2<span class="op">.</span>CodeUnsupportedCodec<span class="op">,</span> pstn2<span class="op">.</span>CodeCapacityExceeded<span class="op">:</span> <span class="co">// §10.2 codes from the holder</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> pstn2<span class="op">.</span>CodeTimeout<span class="op">,</span> pstn2<span class="op">.</span>CodeNetworkError<span class="op">:</span>              <span class="co">// no response after retries</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Whatever the error: route the call over traditional PSTN. PSTN2 never blocks a call.</span></span></code></pre></div>
+<p><code>*pstn2.Error</code> carries <code>Code</code>,
+<code>Message</code>, <code>HTTPStatus</code> and <code>URL</code>;
+<code>pstn2.IsTimeout(err)</code> and
+<code>pstn2.IsNetworkError(err)</code> are helpers.</p>
+<h3 id="answering-discovery-queries-server-side">Answering discovery
+queries (server side)</h3>
+<p><code>RangeHolderResponder</code> builds a CP's §9.2 answers from its
+own number data and serves them as an <code>http.Handler</code>
+(<code>…/pstn2/v1/numbers/{digits}</code> and
+<code>…/pstn2/v1/keys</code>). Its answers are identical to
+<code>Network.respond()</code> in the reference engine, and signed
+answers are byte-identical to those of
+<code>tools/testcp/build.mjs</code>.</p>
 <div class="sourceCode" id="cb12"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/errors&quot;</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>verification<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{...})</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">switch</span> <span class="op">{</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> errors<span class="op">.</span>IsAuthenticationError<span class="op">(</span>err<span class="op">):</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Authentication failed: %v</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> errors<span class="op">.</span>IsNetworkError<span class="op">(</span>err<span class="op">):</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Network error: %v</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> errors<span class="op">.</span>IsTimeout<span class="op">(</span>err<span class="op">):</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Request timeout: %v</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">default</span><span class="op">:</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Error: %v</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h2 id="best-practices">Best Practices</h2>
-<h3 id="1-use-context">1. Use Context</h3>
+class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>r <span class="op">:=</span> pstn2<span class="op">.</span>NewRangeHolderResponder<span class="op">(</span>pstn2<span class="op">.</span>ResponderConfig<span class="op">{</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    DB<span class="op">:</span> pstn2<span class="op">.</span>NumberDatabase<span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>        CPID<span class="op">:</span> <span class="st">&quot;CP1-UK-0103&quot;</span><span class="op">,</span> CPName<span class="op">:</span> <span class="st">&quot;Charlie Comms&quot;</span><span class="op">,</span> URL<span class="op">:</span> <span class="st">&quot;https://pstn2.charlie-comms.example&quot;</span><span class="op">,</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        Ranges<span class="op">:</span>    <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;441134960&quot;</span><span class="op">},</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        InService<span class="op">:</span> <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;+441134960789&quot;</span><span class="op">},</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        PortedOut<span class="op">:</span> <span class="op">[]</span>pstn2<span class="op">.</span>PortedOut<span class="op">{{</span>Number<span class="op">:</span> <span class="st">&quot;+441134960456&quot;</span><span class="op">,</span> ToCPID<span class="op">:</span> <span class="st">&quot;CP1-UK-0102&quot;</span><span class="op">}},</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    NumberingList<span class="op">:</span> list<span class="op">,</span>                         <span class="co">// not_held vs 404 for numbers it doesn&#39;t serve</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    Resolve<span class="op">:</span>       pstn2<span class="op">.</span>ResolverFromList<span class="op">(</span>list<span class="op">),</span> <span class="co">// cpId → CpRef for portedTo</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    KeyID<span class="op">:</span>         <span class="st">&quot;charlie-2026-10&quot;</span><span class="op">,</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    PrivateKey<span class="op">:</span>    signingKey<span class="op">,</span>                   <span class="co">// optional Ed25519 signing</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>http<span class="op">.</span>Handle<span class="op">(</span><span class="st">&quot;/pstn2/v1/&quot;</span><span class="op">,</span> r<span class="op">)</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>status<span class="op">,</span> body <span class="op">:=</span> r<span class="op">.</span>Respond<span class="op">(</span><span class="st">&quot;+441134960456&quot;</span><span class="op">)</span> <span class="co">// 200 redirect → Bravo Networks</span></span></code></pre></div>
+<h3 id="signatures">Signatures</h3>
 <div class="sourceCode" id="cb13"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ✅ Good - pass context for cancellation and timeouts</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>ctx<span class="op">,</span> cancel <span class="op">:=</span> context<span class="op">.</span>WithTimeout<span class="op">(</span>context<span class="op">.</span>Background<span class="op">(),</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">)</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="cf">defer</span> cancel<span class="op">()</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>verification<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{...})</span></span></code></pre></div>
-<h3 id="2-always-close-clients">2. Always Close Clients</h3>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pstn2Client<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>NewClient<span class="op">(&amp;</span>client<span class="op">.</span>Config<span class="op">{...})</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="cf">defer</span> pstn2Client<span class="op">.</span>Close<span class="op">()</span></span></code></pre></div>
-<h3 id="3-use-environment-variables">3. Use Environment Variables</h3>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ✅ Good</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>privateKey <span class="op">:=</span> os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;PSTN2_PRIVATE_KEY&quot;</span><span class="op">)</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">// ❌ Bad</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>privateKey <span class="op">:=</span> <span class="st">&quot;hardcoded-key&quot;</span></span></code></pre></div>
-<h3 id="4-handle-errors-gracefully">4. Handle Errors Gracefully</h3>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>routing<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Routing<span class="op">().</span>RequestRouting<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>RoutingRequest<span class="op">{...})</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    log<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;PSTN2 routing failed: %v, falling back to PSTN&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> fallbackToPSTN<span class="op">(...)</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">!</span>routing<span class="op">.</span>Accepted <span class="op">{</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    log<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Routing rejected: %s&quot;</span><span class="op">,</span> routing<span class="op">.</span>Reason<span class="op">)</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> fallbackToPSTN<span class="op">(...)</span></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co">// Use PSTN2 routing</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> connectDirectly<span class="op">(</span>routing<span class="op">.</span>ConnectionDetails<span class="op">)</span></span></code></pre></div>
-<h2 id="integration-examples">Integration Examples</h2>
-<h3 id="http-server-integration">HTTP Server Integration</h3>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;encoding/json&quot;</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;net/http&quot;</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;os&quot;</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;time&quot;</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/client&quot;</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/types&quot;</span></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> pstn2Client <span class="op">*</span>client<span class="op">.</span>Client</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> err <span class="dt">error</span></span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    pstn2Client<span class="op">,</span> err <span class="op">=</span> client<span class="op">.</span>NewClient<span class="op">(&amp;</span>client<span class="op">.</span>Config<span class="op">{</span></span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>        CPID<span class="op">:</span>        os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;PSTN2_CP_ID&quot;</span><span class="op">),</span></span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        APIEndpoint<span class="op">:</span> os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;PSTN2_API_ENDPOINT&quot;</span><span class="op">),</span></span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>        PrivateKey<span class="op">:</span>  os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;PSTN2_PRIVATE_KEY&quot;</span><span class="op">),</span></span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>        AuthMode<span class="op">:</span>    types<span class="op">.</span>AuthModeDirectQuery<span class="op">,</span></span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>        <span class="bu">panic</span><span class="op">(</span>err<span class="op">)</span></span>
-<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> pstn2Client<span class="op">.</span>Close<span class="op">()</span></span>
-<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>    http<span class="op">.</span>HandleFunc<span class="op">(</span><span class="st">&quot;/api/calls/verify&quot;</span><span class="op">,</span> verifyCallHandler<span class="op">)</span></span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>    http<span class="op">.</span>ListenAndServe<span class="op">(</span><span class="st">&quot;:8080&quot;</span><span class="op">,</span> <span class="ot">nil</span><span class="op">)</span></span>
-<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> verifyCallHandler<span class="op">(</span>w http<span class="op">.</span>ResponseWriter<span class="op">,</span> r <span class="op">*</span>http<span class="op">.</span>Request<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">var</span> req types<span class="op">.</span>VerifyCallRequest</span>
-<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">:=</span> json<span class="op">.</span>NewDecoder<span class="op">(</span>r<span class="op">.</span>Body<span class="op">).</span>Decode<span class="op">(&amp;</span>req<span class="op">);</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>        http<span class="op">.</span>Error<span class="op">(</span>w<span class="op">,</span> err<span class="op">.</span>Error<span class="op">(),</span> http<span class="op">.</span>StatusBadRequest<span class="op">)</span></span>
-<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
-<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>    ctx<span class="op">,</span> cancel <span class="op">:=</span> context<span class="op">.</span>WithTimeout<span class="op">(</span>r<span class="op">.</span>Context<span class="op">(),</span> <span class="dv">2</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">)</span></span>
-<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> cancel<span class="op">()</span></span>
-<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>    verification<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>req<span class="op">)</span></span>
-<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>        http<span class="op">.</span>Error<span class="op">(</span>w<span class="op">,</span> err<span class="op">.</span>Error<span class="op">(),</span> http<span class="op">.</span>StatusInternalServerError<span class="op">)</span></span>
-<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
-<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>    json<span class="op">.</span>NewEncoder<span class="op">(</span>w<span class="op">).</span>Encode<span class="op">(</span>verification<span class="op">)</span></span>
-<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="grpc-service-integration">gRPC Service Integration</h3>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> callService <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    pstn2Client <span class="op">*</span>client<span class="op">.</span>Client</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>s <span class="op">*</span>callService<span class="op">)</span> VerifyCall<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> req <span class="op">*</span>pb<span class="op">.</span>VerifyCallRequest<span class="op">)</span> <span class="op">(*</span>pb<span class="op">.</span>VerifyCallResponse<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    verification<span class="op">,</span> err <span class="op">:=</span> s<span class="op">.</span>pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        CallerID<span class="op">:</span>      req<span class="op">.</span>CallerId<span class="op">,</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>        CalledID<span class="op">:</span>      req<span class="op">.</span>CalledId<span class="op">,</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>        CallReference<span class="op">:</span> req<span class="op">.</span>CallReference<span class="op">,</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> err</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="op">&amp;</span>pb<span class="op">.</span>VerifyCallResponse<span class="op">{</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>        Verified<span class="op">:</span>   verification<span class="op">.</span>Verified<span class="op">,</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        CallerName<span class="op">:</span> verification<span class="op">.</span>CallerName<span class="op">,</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        TrustLevel<span class="op">:</span> <span class="dt">string</span><span class="op">(</span>verification<span class="op">.</span>TrustLevel<span class="op">),</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span> <span class="ot">nil</span></span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h2 id="testing">Testing</h2>
-<h3 id="unit-tests">Unit Tests</h3>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;testing&quot;</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/client&quot;</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;github.com/pstn2/pstn2-go/pkg/types&quot;</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> TestVerifyCall<span class="op">(</span>t <span class="op">*</span>testing<span class="op">.</span>T<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    ctx <span class="op">:=</span> context<span class="op">.</span>Background<span class="op">()</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    pstn2Client<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>NewClient<span class="op">(&amp;</span>client<span class="op">.</span>Config<span class="op">{</span></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        CPID<span class="op">:</span>        <span class="st">&quot;TEST-CP-001&quot;</span><span class="op">,</span></span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        APIEndpoint<span class="op">:</span> <span class="st">&quot;https://test.example.com&quot;</span><span class="op">,</span></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>        PrivateKey<span class="op">:</span>  <span class="st">&quot;test-key&quot;</span><span class="op">,</span></span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        AuthMode<span class="op">:</span>    types<span class="op">.</span>AuthModeDirectQuery<span class="op">,</span></span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        t<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> pstn2Client<span class="op">.</span>Close<span class="op">()</span></span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    verification<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{</span></span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>        CallerID<span class="op">:</span>      <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>        CalledID<span class="op">:</span>      <span class="st">&quot;+447700900123&quot;</span><span class="op">,</span></span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>        CallReference<span class="op">:</span> <span class="st">&quot;test-123&quot;</span><span class="op">,</span></span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>        t<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">!</span>verification<span class="op">.</span>Verified <span class="op">{</span></span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>        t<span class="op">.</span>Error<span class="op">(</span><span class="st">&quot;Expected call to be verified&quot;</span><span class="op">)</span></span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="benchmark-tests">Benchmark Tests</h3>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> BenchmarkVerifyCall<span class="op">(</span>b <span class="op">*</span>testing<span class="op">.</span>B<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    ctx <span class="op">:=</span> context<span class="op">.</span>Background<span class="op">()</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    pstn2Client<span class="op">,</span> _ <span class="op">:=</span> client<span class="op">.</span>NewClient<span class="op">(&amp;</span>client<span class="op">.</span>Config<span class="op">{...})</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> pstn2Client<span class="op">.</span>Close<span class="op">()</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    req <span class="op">:=</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>        CallerID<span class="op">:</span>      <span class="st">&quot;+441234567890&quot;</span><span class="op">,</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>        CalledID<span class="op">:</span>      <span class="st">&quot;+447700900123&quot;</span><span class="op">,</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>        CallReference<span class="op">:</span> <span class="st">&quot;bench-test&quot;</span><span class="op">,</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    b<span class="op">.</span>ResetTimer<span class="op">()</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="op">:=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> b<span class="op">.</span>N<span class="op">;</span> i<span class="op">++</span> <span class="op">{</span></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>        _<span class="op">,</span> err <span class="op">:=</span> pstn2Client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> req<span class="op">)</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>            b<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h2 id="performance-tips">Performance Tips</h2>
-<ol type="1">
-<li><strong>Reuse Client Instances</strong>: Create one client instance
-and reuse it</li>
-<li><strong>Use Connection Pooling</strong>: The SDK automatically pools
-HTTP connections</li>
-<li><strong>Leverage Goroutines</strong>: Make concurrent calls when
-appropriate</li>
-<li><strong>Set Appropriate Timeouts</strong>: Use context timeouts for
-better control</li>
-<li><strong>Cache Directory Results</strong>: Store CP lookups with
-TTL</li>
-</ol>
+class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>b<span class="op">,</span> _ <span class="op">:=</span> pstn2<span class="op">.</span>CanonicalJSON<span class="op">(</span>body<span class="op">)</span>                 <span class="co">// sorted keys, no whitespace, &quot;/&quot; and non-ASCII unescaped</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>signed<span class="op">,</span> _ <span class="op">:=</span> pstn2<span class="op">.</span>SignBody<span class="op">(</span>body<span class="op">,</span> kid<span class="op">,</span> privateKey<span class="op">)</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> pstn2<span class="op">.</span>VerifySignature<span class="op">(</span>signed<span class="op">,</span> publicKey<span class="op">)</span>   <span class="co">// ErrUnsigned / ErrInvalidSignature</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>keys <span class="op">:=</span> pstn2<span class="op">.</span>NewKeyStore<span class="op">(</span>pstn2<span class="op">.</span>HTTPOptions<span class="op">{})</span>    <span class="co">// fetches {url}/pstn2/v1/keys, cached per CP</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>err <span class="op">=</span> keys<span class="op">.</span>VerifyFrom<span class="op">(</span>ctx<span class="op">,</span> cp<span class="op">,</span> body<span class="op">)</span>              <span class="co">// picks the key by &quot;kid&quot;</span></span></code></pre></div>
+<p>With <code>VerifySignatures: true</code>, every <code>200</code>
+discovery answer must be signed by the answering CP with a key it
+publishes; unsigned or invalid answers give
+<code>Result: "error", Error: "invalid_signature"</code>.</p>
 <h2 id="examples">Examples</h2>
-<p>See the <code>examples/</code> directory for complete examples of the
-intended SDK surface:</p>
+<p>Each example is its own <code>main</code> package, reads its
+configuration from the environment, logs every step, falls back to
+traditional PSTN handling on any failure and closes its clients on
+exit.</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Storyline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01-basic-authentication</code></td>
+<td>Charlie Comms (terminating) verifies four caller IDs: Alpha's,
+Bravo's, a spoofed not-in-service number (flagged, PSTN fallback) and a
+ported number (Range Holder redirect → Bravo verifies)</td>
+</tr>
+<tr>
+<td><code>02-direct-routing</code></td>
+<td>Alpha routes +441614960123 directly to Bravo with codec/SRTP
+negotiation; a call to non-participating Delta falls back to PSTN</td>
+</tr>
+<tr>
+<td><code>03-token-pool</code></td>
+<td>Alpha creates a token, Bravo verifies it; a forged token is rejected
+and Bravo falls back to Direct Query</td>
+</tr>
+<tr>
+<td><code>04-emergency-services</code></td>
+<td>A PSAP gets the live location of a 999 caller from the number's
+holder; a non-participating caller falls back to traditional
+location</td>
+</tr>
+<tr>
+<td><code>05-complete-call-flow</code></td>
+<td>Discovery (with redirect), authentication, routing and timing
+summary; the second call is a cache hit</td>
+</tr>
+<tr>
+<td><code>06-number-discovery</code></td>
+<td>"Who has this number?" hop by hop: scenarios A–G locally, or the
+dummy test CPs (signatures verified)</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># from the repository root, in one terminal:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># in another, from code/go:</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/01-basic-authentication</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/02-direct-routing</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/03-token-pool</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/04-emergency-services</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/05-complete-call-flow</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
+<p>Example 06 resets the mock network before and after it runs (it ports
+a number in scenario D), so the examples can be run in any order.</p>
+<h3 id="live-dummy-test-cps">Live dummy test CPs</h3>
+<p><code>https://pstn2.org/testcp/</code> hosts two dummy CPs as static
+files, with signed answers for the Ofcom drama range 07700 900xxx:</p>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Expect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>+447700900001, +447700900002</td>
+<td>held by Test CP A</td>
+</tr>
+<tr>
+<td>+447700900003</td>
+<td>Test CP A redirects → held by Test CP B (ported)</td>
+</tr>
+<tr>
+<td>+447700900004</td>
+<td>held by Test CP A; Test CP B answers <code>not_held</code> +
+invalidate (stale-cache test)</td>
+</tr>
+<tr>
+<td>+447700900101</td>
+<td>held by Test CP B</td>
+</tr>
+<tr>
+<td>+447700900099</td>
+<td>404 from Test CP A</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
+<p>Or emulate them locally (same files, same 403-for-generic-agents
+behaviour):</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp-local</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp-local <span class="at">--port</span> 47902</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
+<p>Only Number Discovery is available on the static test CPs; examples
+01–05 need the mock network.</p>
+<h2 id="running-the-tests">Running the tests</h2>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/go</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> vet ./... <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test ./...</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-race</span> <span class="at">-v</span> ./pkg/pstn2</span></code></pre></div>
+<p>The suite is offline. Unit tests cover the numbering list (longest
+prefix, length check, ETag/304, refresh interval), the cache (TTL,
+purge, concurrency), canonical JSON and Ed25519 signatures, the
+discovery algorithm (all scenarios in memory, loops, hop limit, errors,
+signatures) and HTTP retries. When <code>node</code> is on
+<code>PATH</code> the integration tests also:</p>
 <ul>
-<li><code>01-basic-authentication/</code> - Basic authentication
-flow</li>
-<li><code>02-direct-routing/</code> - Direct routing with media
-negotiation</li>
-<li><code>03-token-pool/</code> - Token Pool authentication</li>
-<li><code>04-emergency-services/</code> - Emergency location
-services</li>
-<li><code>05-complete-call-flow/</code> - End-to-end call scenario</li>
+<li>run scenarios A–G from
+<code>test-environment/fixtures/scenarios.json</code> against
+<code>test-environment/mock-network/server.mjs</code> on a free port,
+with one client;</li>
+<li>build the dummy test CP into a temp directory (temporary keys) and
+run all six test numbers, the stale-cache invalidation and a 403 check
+for Go's default User-Agent against the static host emulator, with
+signatures verified;</li>
+<li>compare <code>RangeHolderResponder</code> with the reference
+engine's <code>Network.respond()</code> and with the signed files from
+<code>build.mjs</code>;</li>
+<li>exercise auth, tokens, routing and emergency against the mock
+network, including <code>not_held</code> → purge → rediscover → retry
+after <code>POST /admin/port</code>.</li>
 </ul>
-<p>See <a href="../EXAMPLES.md">EXAMPLES.md</a> for detailed
-documentation.</p>
-<h2 id="further-reading">Further Reading</h2>
+<p>Without <code>node</code> those tests are skipped.</p>
+<h2 id="best-practices">Best practices</h2>
+<ol type="1">
+<li><strong>Reuse one client</strong> per CP. It is safe for concurrent
+use; the cache, key store and numbering list are shared and
+lock-protected.</li>
+<li><strong>Pass a context with a deadline.</strong> Discovery must
+never hold up call setup.</li>
+<li><strong>Always have a PSTN path.</strong> Any
+<code>Fallback()</code> result or error means: handle the call the
+traditional way.</li>
+<li><strong>Turn on <code>VerifySignatures</code></strong> wherever the
+Range Holders sign their answers.</li>
+<li><strong>Never cache by block.</strong> Porting is per number; the
+SDK keeps number-level and block-level knowledge separate.</li>
+</ol>
+<h2 id="further-reading">Further reading</h2>
 <ul>
-<li><a href="../../docs/SPECIFICATION.md">SPECIFICATION.md</a> - PSTN2
-protocol specification</li>
+<li><a href="../../docs/SPECIFICATION.md">SPECIFICATION.md</a> —
+protocol v1.1 (§9 Number Discovery)</li>
 <li><a
-href="../../docs/API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> -
-REST API documentation</li>
+href="../../docs/API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a> —
+REST API</li>
+<li><a href="../EXAMPLES.md">EXAMPLES.md</a> — examples in all three
+languages</li>
 <li><a
-href="../../docs/IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> -
-Implementation patterns</li>
+href="../../docs/IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> —
+implementation patterns</li>
+<li><a
+href="../../docs/TESTING-SPECIFICATION.md">TESTING-SPECIFICATION.md</a>
+— test environment and conformance</li>
+<li><code>animations/src/test-harness/harness-engine.js</code> — the
+reference discovery engine</li>
 </ul>
 <h2 id="license">License</h2>
-<p>See main project LICENSE file.</p>
+<p>Public domain: the PSTN2 project is released under CC0 1.0 Universal
+(commercial use, modification and distribution allowed; no warranty).
+The Comms Council UK logo and branding are excluded. See the project <a
+href="https://github.com/njjholland-dot/pstn2/blob/main/LICENSE">LICENSE</a>.</p>
     </main>
 
     <footer class="doc-footer">

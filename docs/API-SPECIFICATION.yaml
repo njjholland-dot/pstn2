@@ -23,8 +23,8 @@ info:
     url: https://pstn2.org
     email: nick.holland@8x8.com
   license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    name: CC0 1.0 Universal (public domain)
+    url: https://creativecommons.org/publicdomain/zero/1.0/
 
 servers:
   - url: https://api.cp1.example.com/pstn2/v1
@@ -439,7 +439,7 @@ components:
           $ref: '#/components/schemas/Timestamp'
         version:
           type: string
-          enum: ['1.0']
+          enum: ['1.1']
         requestingCP:
           $ref: '#/components/schemas/RCPID'
         callerID:
@@ -565,7 +565,7 @@ components:
           $ref: '#/components/schemas/Timestamp'
         version:
           type: string
-          example: '1.0'
+          example: '1.1'
         originatingCP:
           $ref: '#/components/schemas/RCPID'
         callerID:
@@ -650,7 +650,7 @@ components:
           $ref: '#/components/schemas/Timestamp'
         version:
           type: string
-          example: '1.0'
+          example: '1.1'
         requestingCP:
           $ref: '#/components/schemas/RCPID'
         callerID:
@@ -784,7 +784,7 @@ components:
           $ref: '#/components/schemas/Timestamp'
         version:
           type: string
-          example: '1.0'
+          example: '1.1'
         requestingPSAP:
           type: string
           pattern: '^[A-Z]{2}-[0-9]{3}-[A-Z0-9-]+$'
@@ -1110,7 +1110,7 @@ components:
       value:
         messageId: '550e8400-e29b-41d4-a716-446655440000'
         timestamp: '2025-11-30T21:30:00.000Z'
-        version: '1.0'
+        version: '1.1'
         requestingCP: 'CP1-UK-0002'
         callerID: '+441234567890'
         calledID: '+447700900123'
@@ -1148,7 +1148,7 @@ components:
       value:
         messageId: '123e4567-e89b-12d3-a456-426614174000'
         timestamp: '2025-11-30T21:30:00.000Z'
-        version: '1.0'
+        version: '1.1'
         requestingCP: 'CP1-UK-0001'
         callerID: '+441234567890'
         destinationNumber: '+447700900123'
@@ -1165,7 +1165,7 @@ components:
       value:
         messageId: '123e4567-e89b-12d3-a456-426614174000'
         timestamp: '2025-11-30T21:30:00.000Z'
-        version: '1.0'
+        version: '1.1'
         requestingCP: 'CP1-UK-0001'
         callerID: '+441234567890'
         destinationNumber: '+447700900123'

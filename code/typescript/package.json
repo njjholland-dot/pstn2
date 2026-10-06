@@ -41,7 +41,7 @@
     "number-discovery"
   ],
   "author": "Nick Holland <nick.holland@8x8.com>",
-  "license": "MIT",
+  "license": "CC0-1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/njjholland-dot/pstn2.git",

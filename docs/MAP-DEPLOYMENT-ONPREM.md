@@ -1,7 +1,7 @@
 # MAP Deployment On-Premises
 
-**Version:** 1.0
-**Date:** 2025-12-01
+**Version:** 1.1 (protocol v1.1)
+**Date:** 2026-10-06
 **Target Audience:** System Administrators, Infrastructure Engineers
 
 ## Overview
@@ -110,7 +110,7 @@ This guide describes deploying a MAP (Managed Access Provider) on your own infra
 | **Orchestration (Optional)** | Kubernetes (k3s) | 1.28+ | For larger deployments |
 | **Database** | PostgreSQL | 15.4+ | Primary data store |
 | **Replication** | PostgreSQL Streaming | Built-in | Database replication |
-| **Cache** | Redis | 7.0+ | Session & directory cache |
+| **Cache** | Redis | 7.0+ | Session & Number Discovery cache |
 | **Web Server** | nginx | 1.24+ | Reverse proxy, static files |
 | **Monitoring** | Prometheus + Grafana | Latest | Metrics & dashboards |
 | **Logging** | ELK Stack | 8.x | Log aggregation |
@@ -478,6 +478,16 @@ http {
             proxy_pass http://api_backend/health;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
+        }
+
+        # Number Discovery for tenants (SPECIFICATION.md §9): public, bodyless,
+        # cacheable GETs from other CPs; answered from each tenant's number database
+        location ~ ^/t/[a-z0-9-]+/pstn2/v1/(numbers/[0-9]+|keys)\$ {
+            limit_except GET HEAD { deny all; }
+            proxy_pass http://api_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            add_header Cache-Control "public, max-age=300";
         }
 
         location / {

@@ -20,6 +20,8 @@
                 <a href="#key-differentiators">Key Differentiators</a>
                 <a href="#value-proposition-for-downstream-cps">Value Proposition for
 Downstream CPs</a>
+                <a href="#how-a-map-takes-part-in-number-discovery">How a MAP Takes Part
+in Number Discovery</a>
                 <a href="#technical-architecture">Technical Architecture</a>
                 <a href="#deployment-models">Deployment Models</a>
                 <a href="#revenue--pricing-models">Revenue &amp; Pricing Models</a>
@@ -38,8 +40,8 @@ Downstream CPs</a>
     <main class="doc-container">
 <h1 id="map-managed-access-provider-overview">MAP (Managed Access
 Provider) Overview</h1>
-<p><strong>Version:</strong> 1.0 <strong>Date:</strong> 2025-12-01
-<strong>Status:</strong> Complete Specification</p>
+<p><strong>Version:</strong> 1.1 (protocol v1.1) <strong>Date:</strong>
+2026-10-06 <strong>Status:</strong> Complete Specification</p>
 <h2 id="executive-summary">Executive Summary</h2>
 <p>A <strong>Managed Access Provider (MAP)</strong> enables smaller
 Communication Providers (CPs) to participate in PSTN2 without requiring
@@ -53,10 +55,12 @@ CPs</p>
 <p><strong>Services Provided:</strong></p>
 <ul>
 <li>PSTN2 authentication (Direct Query &amp; Token Pool)</li>
-<li>Directory service access and synchronization</li>
+<li>Number Discovery for tenants: Range Holder answers for their blocks
+and discovery client for their calls</li>
 <li>Emergency services location handling</li>
 <li>Direct routing coordination</li>
-<li>Number porting database access</li>
+<li>Porting answers: redirects for tenants' ported-out numbers,
+<code>held</code> for ported-in numbers</li>
 <li>Cryptographic key management</li>
 <li>Protocol compliance and certification</li>
 </ul>
@@ -197,6 +201,36 @@ certification</li>
 Vendor</strong> - One partner for PSTN + PSTN2 8. <strong>Seamless
 Transition</strong> - Gradual PSTN2 adoption 9. <strong>Complete
 Solution</strong> - Number management, billing, support</p>
+<h2 id="how-a-map-takes-part-in-number-discovery">How a MAP Takes Part
+in Number Discovery</h2>
+<p>PSTN2 v1.1 has no central database and no central lookup service
+(SPECIFICATION.md §9). Every CP answers "who holds this number?" only
+for its own numbers, and the regulator's numbering list says which CP to
+ask first. A MAP does both jobs on behalf of its downstream CPs:</p>
+<p><strong>As Range Holder responder.</strong> Each tenant's allocated
+blocks appear in the regulator's numbering list (Ofcom S1–S9) against
+the tenant, with a <strong>Range Holder URL</strong> that points at the
+MAP, one base URL per tenant:</p>
+<pre><code>Number Block    Communications Provider   Range Holder URL
+0161 496 0xxx   Tenant One Ltd            https://pstn2.map.example/t/cp1-uk-0123
+0113 496 1xxx   Tenant Two Ltd            https://pstn2.map.example/t/cp1-uk-0456</code></pre>
+<p>The MAP serves <code>GET {tenantUrl}/pstn2/v1/numbers/{digits}</code>
+from that tenant's number database (held, redirect for numbers it ported
+out, <code>not_held</code> + <code>cache.invalidate</code> for numbers
+that left, 404 otherwise) and <code>GET {tenantUrl}/pstn2/v1/keys</code>
+with the tenant's signing keys. Answers are signed with the tenant's key
+and reveal nothing about other tenants.</p>
+<p><strong>As discovery client.</strong> For tenants' calls the MAP
+downloads the numbering list once, keeps it in memory, and runs
+discovery (cache → list → Range Holder → redirect, max 5 hops) before
+verifying caller IDs, requesting routing or answering emergency queries.
+Each tenant still appears as itself: requests carry the tenant's RCPID
+and signature.</p>
+<p>Tenants that are their own Range Holder can point the Range Holder
+URL at the MAP; tenants that host numbers ported in from other CPs
+simply have those numbers in their MAP-held number database. Nothing is
+synchronised between CPs. See MAP-MULTITENANT-DESIGN.md §3 for the data
+model and endpoints.</p>
 <h2 id="technical-architecture">Technical Architecture</h2>
 <h3 id="multi-tenant-design">Multi-Tenant Design</h3>
 <p><strong>Core Principles:</strong></p>
@@ -212,9 +246,11 @@ changes</li>
 </ol>
 <p><strong>Shared Resources:</strong></p>
 <ul>
-<li>PSTN2 directory service synchronization</li>
+<li>Regulator numbering list (downloaded and refreshed once, used for
+every tenant)</li>
 <li>Emergency services location database</li>
-<li>Number porting database</li>
+<li>Number Discovery cache (per number; discovery answers are public, so
+one cache can serve all tenants)</li>
 <li>Authentication server infrastructure</li>
 <li>Direct routing coordinator</li>
 </ul>
@@ -280,7 +316,7 @@ changes</li>
 <li>Authentication: <span class="math inline">0.0001−</span>0.0005 per
 call</li>
 <li>Emergency location: $0.001 per 999 call</li>
-<li>Directory lookup: $0.00001 per query</li>
+<li>Number Discovery query: $0.00001 per query</li>
 </ul>
 <p><strong>Option 2: Monthly Subscription</strong></p>
 <ul>
@@ -495,7 +531,8 @@ routing</p>
 <li>White-label MAP platform</li>
 <li>Advanced API capabilities</li>
 <li>ML-powered fraud detection</li>
-<li>Global directory synchronization</li>
+<li>Numbering lists for more countries (one regulator list per
+country)</li>
 <li>1,000+ downstream CPs</li>
 </ul>
 <h2 id="conclusion">Conclusion</h2>
@@ -530,8 +567,8 @@ href="https://pstn2.org/code/">https://pstn2.org/code/</a></li>
 <li>Join PSTN2 consortium and obtain CPID</li>
 </ol>
 <hr />
-<p><strong>Document Version:</strong> 1.0 <strong>Last Updated:</strong>
-2025-12-01 <strong>Maintained By:</strong> PSTN2 Project
+<p><strong>Document Version:</strong> 1.1 <strong>Last Updated:</strong>
+2026-10-06 <strong>Maintained By:</strong> PSTN2 Project
 <strong>License:</strong> Public Domain / CC0</p>
 <p>For questions or support, contact: <a
 href="mailto:nick.holland@8x8.com">nick.holland@8x8.com</a></p>

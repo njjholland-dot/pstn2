@@ -1,7 +1,7 @@
 # MAP Multi-Tenant Architecture Design
 
-**Version:** 1.0
-**Date:** 2025-12-01
+**Version:** 1.1 (protocol v1.1)
+**Date:** 2026-10-06
 **Target Audience:** MAP Operators, System Architects
 
 ## Overview
@@ -50,7 +50,7 @@ This document describes the multi-tenant architecture required for operating a M
 
 **Requirements:**
 - Authentication: <500ms (p95)
-- Directory lookup: <100ms (p95)
+- Number Discovery: <50ms per hop (p95); cache and numbering-list lookups <1ms
 - Emergency location: <200ms (p95)
 - API response: <300ms (p95)
 
@@ -110,7 +110,16 @@ tenants:
       - /auth/verify
       - /auth/tokens
       - /routing/request
+
+# Public, unauthenticated, cacheable: Number Discovery for every tenant
+public:
+  - /t/{tenant}/pstn2/v1/numbers/{digits}
+  - /t/{tenant}/pstn2/v1/keys
 ```
+
+The discovery endpoints are called by other CPs, not by tenants, so they sit
+outside API-key authentication. Rate-limit them per source (≥ 200 req/s per CP,
+§11.2) and allow PSTN2 SDK user agents through the WAF.
 
 ### 2. Authentication Service
 
@@ -119,7 +128,7 @@ tenants:
 **Responsibilities:**
 - Receive authentication requests via API
 - Sign requests with downstream CP's private key
-- Query originating CP (Direct Query mode)
+- Discover the caller ID's current holder and query it (Direct Query mode), retrying once after a `not_held` answer
 - Manage token pools (Token Pool mode)
 - Return verification results
 - Log all authentication attempts
@@ -134,6 +143,8 @@ CREATE TABLE cp_tenants (
     public_key TEXT NOT NULL,              -- Ed25519 public key
     auth_mode VARCHAR(20) NOT NULL,        -- 'direct_query' or 'token_pool'
     api_key_hash VARCHAR(128) NOT NULL,
+    pstn2_url VARCHAR(255) NOT NULL,       -- tenant base URL, published as its Range Holder URL
+    key_id VARCHAR(50) NOT NULL,           -- kid for signed discovery answers
     rate_limit_per_min INTEGER DEFAULT 1000,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -180,70 +191,129 @@ Response:
 }
 ```
 
-### 3. Directory Service
+### 3. Number Discovery Service
 
-**Purpose:** Provide PSTN2 directory access to downstream CPs
+**Purpose:** Take part in Number Discovery (SPECIFICATION.md §9) for every
+tenant: answer "who holds this number?" for the tenants' own numbers (Range
+Holder responder), and find the holder of any other number for the tenants'
+calls (discovery client). There is no central database and no global lookup
+service to synchronise with: each tenant answers only for its own numbers, and
+the regulator's numbering list says which CP to ask first.
 
 **Responsibilities:**
-- Synchronize with global PSTN2 directory
-- Maintain local cache for performance
-- Handle number lookup requests
-- Manage number porting updates
-- Propagate CP's number changes to global directory
+- Give each tenant a PSTN2 base URL (for example
+  `https://pstn2.map.example/t/cp1-uk-0123`) and have it published as the
+  **Range Holder URL** against the tenant's blocks in the regulator's numbering
+  list (Ofcom S1–S9)
+- Serve `GET {tenantUrl}/pstn2/v1/numbers/{digits}` and
+  `GET {tenantUrl}/pstn2/v1/keys` for every tenant (public, cacheable)
+- Build each answer from that tenant's number database only: `held`,
+  `redirect` (tenant is Range Holder and ported the number out), `not_held` +
+  `cache.invalidate` (the number has left the tenant), or `404`
+- Sign answers with the tenant's Ed25519 key (`kid` per tenant)
+- Change the answer at once when a tenant ports a number in or out; nothing is
+  propagated to other CPs
+- Download the numbering list once for all tenants, refresh it daily with
+  `ETag` / `If-None-Match`, and on any `cache.scope: "block"` invalidation
+- Run discovery for tenants' calls (cache → numbering list → Range Holder →
+  redirect; max 5 hops; loop detection) and keep a per-number cache, purged on
+  every `not_held` / `cache.invalidate`
 
 **Data Model:**
 ```sql
--- Local Directory Cache
-CREATE TABLE directory_cache (
-    phone_number VARCHAR(20) PRIMARY KEY,
-    current_cp VARCHAR(50) NOT NULL,
-    pstn2_enabled BOOLEAN DEFAULT true,
-    routing_endpoint VARCHAR(255) NOT NULL,
-    last_updated TIMESTAMP NOT NULL,
-    cache_expires TIMESTAMP NOT NULL
-);
-
-CREATE INDEX idx_directory_cache_cp ON directory_cache (current_cp);
-
--- CP Number Assignments
-CREATE TABLE cp_numbers (
-    phone_number VARCHAR(20) PRIMARY KEY,
+-- Blocks each tenant is Range Holder for (as allocated by the regulator)
+CREATE TABLE tenant_ranges (
     cp_id VARCHAR(50) NOT NULL REFERENCES cp_tenants(cp_id),
-    routing_endpoint VARCHAR(255) NOT NULL,
-    emergency_enabled BOOLEAN DEFAULT true,
-    assigned_date TIMESTAMP DEFAULT NOW()
+    prefix VARCHAR(15) NOT NULL,            -- E.164 digits, e.g. '441614960'
+    number_length SMALLINT NOT NULL,        -- total E.164 digits, e.g. 12
+    PRIMARY KEY (cp_id, prefix)
 );
 
-CREATE INDEX idx_cp_numbers_cp_id ON cp_numbers (cp_id);
+-- Each tenant's number database: the source of its discovery answers
+CREATE TABLE tenant_numbers (
+    cp_id VARCHAR(50) NOT NULL REFERENCES cp_tenants(cp_id),
+    phone_number VARCHAR(20) NOT NULL,      -- E.164
+    state VARCHAR(20) NOT NULL,             -- 'in_service', 'ported_in', 'ported_out', 'previously_held'
+    other_cp_id VARCHAR(50),                -- ported_out: to whom; ported_in: from whom
+    emergency_enabled BOOLEAN DEFAULT true,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (cp_id, phone_number)
+);
+
+CREATE INDEX idx_tenant_numbers_number ON tenant_numbers (phone_number);
 ```
+
+A number can appear for two tenants (ported out of one, into the other); each
+tenant answers from its own row. `previously_held` rows are kept for at least
+the longest `cache.ttl` issued (default 24 hours) so stale caches are told
+`not_held`.
+
+**Discovery cache** (in memory per API server, or shared in Redis): discovery
+answers are public, so one cache can serve every tenant.
+```
+pstn2:nd:list               numbering list (ETag, listVersion, blocks)
+pstn2:nd:num:{digits}       {"holder":{cpId,cpName,url},"ported":true}   EX = cache.ttl (default 86400)
+pstn2:nd:keys:{cpId}        key set from {url}/pstn2/v1/keys             EX until validTo
+```
+Cache per number only, never per block.
 
 **API Endpoints:**
 ```http
-# Lookup Number
-GET /api/v1/directory/lookup/{phone_number}
+# Public (any CP): Number Discovery for a tenant's number (§9.2)
+GET /t/cp1-uk-0123/pstn2/v1/numbers/441614960123
+User-Agent: pstn2-go-sdk/1.1.0
+X-PSTN2-Version: 1.1
+
+Response (200 OK):
+{
+    "version": "1.1",
+    "result": "held",
+    "number": "+441614960123",
+    "holder": {
+        "cpId": "CP1-UK-0123",
+        "cpName": "Tenant One Ltd",
+        "url": "https://pstn2.map.example/t/cp1-uk-0123"
+    },
+    "ported": false,
+    "cache": { "ttl": 86400 },
+    "issued": "2026-10-06T09:00:00Z",
+    "kid": "cp1-uk-0123-2026-10",
+    "signature": "base64-ed25519-signature"
+}
+
+# Public: the tenant's signing keys (§9.6)
+GET /t/cp1-uk-0123/pstn2/v1/keys
+
+# Tenant API: who holds this number? (discovery run on the tenant's behalf)
+GET /api/v1/discovery/{phone_number}
 Authorization: Bearer {api_key}
 
 Response:
 {
-    "phone_number": "+447700900123",
-    "current_cp": "CP2-UK-0012",
-    "pstn2_enabled": true,
-    "routing_endpoint": "sip:cp5@pstn2.example.com",
-    "cached": true,
-    "cache_age_seconds": 120
+    "number": "+447700900003",
+    "result": "held",
+    "holder": { "cpId": "CP1-UK-9002", "cpName": "PSTN2 Test CP B", "url": "https://pstn2.org/testcp/b" },
+    "ported": true,
+    "hops": ["CP1-UK-9001", "CP1-UK-9002"],
+    "fromCache": false,
+    "invalidated": false
 }
 
-# Register Number
-POST /api/v1/directory/register
+# Tenant API: record a porting event in the tenant's number database
+PUT /api/v1/numbers/{phone_number}
 Authorization: Bearer {api_key}
 Content-Type: application/json
 
 {
-    "phone_number": "+441234567890",
-    "routing_endpoint": "sip:tenant1@map.example.com",
+    "state": "ported_out",
+    "otherCpId": "CP1-UK-0102",
     "emergency_enabled": true
 }
 ```
+
+The reference SDKs' `RangeHolderResponder` (TypeScript, Python, Go) builds
+exactly these answers from a number database, and their discovery clients
+implement the client side; see https://pstn2.org/code/.
 
 ### 4. Emergency Services Handler
 
@@ -353,7 +423,7 @@ CREATE INDEX idx_active_calls_term_cp ON active_calls (terminating_cp, call_star
 CREATE TABLE usage_metrics (
     metric_id BIGSERIAL PRIMARY KEY,
     cp_id VARCHAR(50) NOT NULL REFERENCES cp_tenants(cp_id),
-    metric_type VARCHAR(50) NOT NULL, -- 'auth_verify', 'directory_lookup', 'emergency', 'routing'
+    metric_type VARCHAR(50) NOT NULL, -- 'auth_verify', 'discovery_query', 'discovery_answer', 'emergency', 'routing'
     metric_count INTEGER NOT NULL,
     period_start TIMESTAMP NOT NULL,
     period_end TIMESTAMP NOT NULL
@@ -392,7 +462,7 @@ Response:
     "period_end": "2025-12-31T23:59:59Z",
     "metrics": {
         "auth_verifications": 45820,
-        "directory_lookups": 12340,
+        "discovery_queries": 12340,
         "emergency_calls": 12,
         "routing_requests": 45820
     },
@@ -668,8 +738,9 @@ spec:
 - Partitioning for large tables (by month or cp_id)
 
 **Caching Layer:**
-- Redis cluster for directory lookups
-- 15-minute TTL for number-to-CP mappings
+- Redis cluster for the shared Number Discovery cache (optional; in-memory per server also works)
+- Number → holder entries live for `cache.ttl` (default 24 hours) and are purged on `not_held` / `cache.invalidate`
+- The numbering list is held in memory on every API server
 - 5-minute TTL for CP configuration
 - Memcached for session data
 
@@ -680,8 +751,8 @@ spec:
 -- Critical indexes for multi-tenant queries
 CREATE INDEX idx_call_records_cp_timestamp ON call_records(cp_id, timestamp);
 CREATE INDEX idx_auth_logs_cp_timestamp ON auth_logs(cp_id, timestamp);
-CREATE INDEX idx_cp_numbers_cp_id ON cp_numbers(cp_id);
-CREATE INDEX idx_directory_cache_number ON directory_cache(phone_number);
+CREATE INDEX idx_tenant_numbers_cp_id ON tenant_numbers(cp_id);
+CREATE INDEX idx_tenant_numbers_number ON tenant_numbers(phone_number);
 
 -- Partial indexes for active tenants only
 CREATE INDEX idx_active_tenants ON cp_tenants(cp_id) WHERE status = 'active';
@@ -944,12 +1015,17 @@ async function onboardNewCP(req: Request, res: Response) {
   // 4. Generate API key
   const { key: apiKey, hash: apiKeyHash } = generateApiKey();
 
+  // 4b. Tenant's PSTN2 base URL (published as the Range Holder URL against its
+  //     blocks in the regulator's numbering list) and discovery signing key id
+  const pstn2_url = `https://pstn2.map.example/t/${cp_id.toLowerCase()}`;
+  const key_id = `${cp_id.toLowerCase()}-${new Date().toISOString().slice(0, 7)}`;
+
   // 5. Insert into database
   await db.query(
     `INSERT INTO cp_tenants
-     (cp_id, cp_name, private_key_encrypted, public_key, api_key_hash, auth_mode, contact_email)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [cp_id, cp_name, encryptedPrivateKey, publicKey, apiKeyHash, auth_mode, contact_email]
+     (cp_id, cp_name, private_key_encrypted, public_key, api_key_hash, pstn2_url, key_id, auth_mode, contact_email)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [cp_id, cp_name, encryptedPrivateKey, publicKey, apiKeyHash, pstn2_url, key_id, auth_mode, contact_email]
   );
 
   // 6. Create default configuration
@@ -960,6 +1036,7 @@ async function onboardNewCP(req: Request, res: Response) {
     cp_id,
     api_key: apiKey,  // Show once, never again
     public_key: publicKey,
+    range_holder_url: pstn2_url,   // ask the regulator to publish this against your blocks
     api_endpoint: 'https://api.map.example.com/v1',
     documentation_url: 'https://docs.map.example.com',
   });
@@ -999,5 +1076,5 @@ This architecture has been proven to support large-scale multi-tenant operations
 4. Deploy test environment
 5. Onboard pilot downstream CP
 
-**Document Version:** 1.0
-**Last Updated:** 2025-12-01
+**Document Version:** 1.1
+**Last Updated:** 2026-10-06

@@ -1,7 +1,7 @@
 # MAP (Managed Access Provider) Overview
 
-**Version:** 1.0
-**Date:** 2025-12-01
+**Version:** 1.1 (protocol v1.1)
+**Date:** 2026-10-06
 **Status:** Complete Specification
 
 ## Executive Summary
@@ -16,10 +16,10 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 
 **Services Provided:**
 - PSTN2 authentication (Direct Query & Token Pool)
-- Directory service access and synchronization
+- Number Discovery for tenants: Range Holder answers for their blocks and discovery client for their calls
 - Emergency services location handling
 - Direct routing coordination
-- Number porting database access
+- Porting answers: redirects for tenants' ported-out numbers, `held` for ported-in numbers
 - Cryptographic key management
 - Protocol compliance and certification
 
@@ -108,6 +108,40 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 8. **Seamless Transition** - Gradual PSTN2 adoption
 9. **Complete Solution** - Number management, billing, support
 
+## How a MAP Takes Part in Number Discovery
+
+PSTN2 v1.1 has no central database and no central lookup service (SPECIFICATION.md
+§9). Every CP answers "who holds this number?" only for its own numbers, and the
+regulator's numbering list says which CP to ask first. A MAP does both jobs on
+behalf of its downstream CPs:
+
+**As Range Holder responder.** Each tenant's allocated blocks appear in the
+regulator's numbering list (Ofcom S1–S9) against the tenant, with a **Range
+Holder URL** that points at the MAP, one base URL per tenant:
+
+```
+Number Block    Communications Provider   Range Holder URL
+0161 496 0xxx   Tenant One Ltd            https://pstn2.map.example/t/cp1-uk-0123
+0113 496 1xxx   Tenant Two Ltd            https://pstn2.map.example/t/cp1-uk-0456
+```
+
+The MAP serves `GET {tenantUrl}/pstn2/v1/numbers/{digits}` from that tenant's
+number database (held, redirect for numbers it ported out, `not_held` +
+`cache.invalidate` for numbers that left, 404 otherwise) and
+`GET {tenantUrl}/pstn2/v1/keys` with the tenant's signing keys. Answers are
+signed with the tenant's key and reveal nothing about other tenants.
+
+**As discovery client.** For tenants' calls the MAP downloads the numbering
+list once, keeps it in memory, and runs discovery (cache → list → Range Holder
+→ redirect, max 5 hops) before verifying caller IDs, requesting routing or
+answering emergency queries. Each tenant still appears as itself: requests
+carry the tenant's RCPID and signature.
+
+Tenants that are their own Range Holder can point the Range Holder URL at the
+MAP; tenants that host numbers ported in from other CPs simply have those
+numbers in their MAP-held number database. Nothing is synchronised between
+CPs. See MAP-MULTITENANT-DESIGN.md §3 for the data model and endpoints.
+
 ## Technical Architecture
 
 ### Multi-Tenant Design
@@ -120,9 +154,9 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 5. **Security** - End-to-end encryption, audit logs
 
 **Shared Resources:**
-- PSTN2 directory service synchronization
+- Regulator numbering list (downloaded and refreshed once, used for every tenant)
 - Emergency services location database
-- Number porting database
+- Number Discovery cache (per number; discovery answers are public, so one cache can serve all tenants)
 - Authentication server infrastructure
 - Direct routing coordinator
 
@@ -185,7 +219,7 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 **Option 1: Per-Call**
 - Authentication: $0.0001-$0.0005 per call
 - Emergency location: $0.001 per 999 call
-- Directory lookup: $0.00001 per query
+- Number Discovery query: $0.00001 per query
 
 **Option 2: Monthly Subscription**
 - Tier 1: Up to 10,000 calls/month - $100/month
@@ -371,7 +405,7 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 - White-label MAP platform
 - Advanced API capabilities
 - ML-powered fraud detection
-- Global directory synchronization
+- Numbering lists for more countries (one regulator list per country)
 - 1,000+ downstream CPs
 
 ## Conclusion
@@ -399,8 +433,8 @@ Becoming a MAP represents a significant business opportunity in the PSTN2 ecosys
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2025-12-01
+**Document Version:** 1.1
+**Last Updated:** 2026-10-06
 **Maintained By:** PSTN2 Project
 **License:** Public Domain / CC0
 

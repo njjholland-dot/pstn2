@@ -33,8 +33,9 @@
         </nav>
     <main class="doc-container">
 <h1 id="map-deployment-on-aws">MAP Deployment on AWS</h1>
-<p><strong>Version:</strong> 1.0 <strong>Date:</strong> 2025-12-01
-<strong>Target Audience:</strong> DevOps Engineers, Cloud Architects</p>
+<p><strong>Version:</strong> 1.1 (protocol v1.1) <strong>Date:</strong>
+2026-10-06 <strong>Target Audience:</strong> DevOps Engineers, Cloud
+Architects</p>
 <h2 id="overview">Overview</h2>
 <p>This guide provides step-by-step instructions for deploying a MAP
 (Managed Access Provider) on Amazon Web Services (AWS). The architecture
@@ -73,7 +74,7 @@ providing scalability, reliability, and security.</p>
 │                        │                                          │
 │  ┌─────────────────────▼────────────────────────────────────┐   │
 │  │              ElastiCache (Redis Cluster)                  │   │
-│  │               Directory Cache, Sessions                   │   │
+│  │               Discovery Cache, Sessions                   │   │
 │  └───────────────────────────────────────────────────────────┘   │
 │                        │                                          │
 │  ┌─────────────────────▼────────────────────────────────────┐   │
@@ -945,6 +946,22 @@ resource &quot;aws_wafv2_web_acl_association&quot; &quot;alb&quot; {
   resource_arn = aws_lb.map_alb.arn
   web_acl_arn  = aws_wafv2_web_acl.map_waf.arn
 }</code></pre>
+<p><strong>Number Discovery traffic.</strong> Other CPs query each
+tenant's discovery endpoints,
+<code>GET /t/{tenant}/pstn2/v1/numbers/{digits}</code> and
+<code>GET /t/{tenant}/pstn2/v1/keys</code> (SPECIFICATION.md §9.2,
+§9.6). These are public, bodyless and cacheable, and a single large CP
+may send 200 requests per second (§11.2), well above the per-IP rate
+rule above. Either raise the limit for these paths with a
+<code>scope_down_statement</code>, or put them behind CloudFront (cache
+for a few minutes, honouring the <code>Cache-Control</code> the API
+sets). Do not block PSTN2 SDK user agents (<code>pstn2-*-sdk/*</code>);
+the managed common rule set's empty-User-Agent rule is fine, because
+PSTN2 clients always send one.</p>
+<p>The API servers keep the regulator's numbering list in memory and
+refresh it daily (<code>ETag</code> / <code>If-None-Match</code>);
+ElastiCache holds the shared per-number discovery cache. No data is
+replicated to or from other CPs.</p>
 <h2 id="cost-optimization">Cost Optimization</h2>
 <h3 id="1-right-sizing">1. Right-Sizing</h3>
 <p><strong>Monitor and adjust:</strong></p>
@@ -1325,7 +1342,17 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href=
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--period</span> 300 <span class="dt">\</span></span>
 <span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--statistics</span> Average</span></code></pre></div>
 <p><strong>Solution:</strong> Scale up ECS tasks, optimize database
-queries, increase Redis cache TTL</p>
+queries, check the discovery cache hit rate in Redis</p>
+<p><strong>Issue 4: Other CPs Cannot Discover Tenants'
+Numbers</strong></p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Query a tenant&#39;s discovery endpoint the way another CP would</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> <span class="at">-A</span> <span class="st">&quot;pstn2-check/1.1&quot;</span> https://pstn2.map.example/t/cp1-uk-0123/pstn2/v1/numbers/441614960123</span></code></pre></div>
+<p><strong>Solution:</strong> A <code>403</code> or <code>429</code>
+means the WAF rule is blocking discovery traffic (see Step 10); a
+<code>404</code> for a number the tenant serves means its number
+database is missing the number; check that the regulator's numbering
+list shows the tenant's Range Holder URL against the block.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>This AWS deployment provides:</p>
 <ul>

@@ -389,8 +389,13 @@ Without `node` those tests are skipped.
 - [SPECIFICATION.md](../../docs/SPECIFICATION.md) — protocol v1.1 (§9 Number Discovery)
 - [API-SPECIFICATION.yaml](../../docs/API-SPECIFICATION.yaml) — REST API
 - [EXAMPLES.md](../EXAMPLES.md) — examples in all three languages
+- [IMPLEMENTATION-GUIDE.md](../../docs/IMPLEMENTATION-GUIDE.md) — implementation patterns
+- [TESTING-SPECIFICATION.md](../../docs/TESTING-SPECIFICATION.md) — test environment and conformance
 - `animations/src/test-harness/harness-engine.js` — the reference discovery engine
 
 ## License
 
-See the main project LICENSE file.
+Public domain: the PSTN2 project is released under CC0 1.0 Universal (commercial
+use, modification and distribution allowed; no warranty). The Comms Council UK
+logo and branding are excluded. See the project
+[LICENSE](https://github.com/njjholland-dot/pstn2/blob/main/LICENSE).

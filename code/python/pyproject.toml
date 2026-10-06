@@ -8,14 +8,14 @@ version = "1.1.0"
 description = "PSTN2 Python SDK: Number Discovery, caller ID verification, direct routing and emergency location (protocol v1.1)"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "CC0-1.0" }
 authors = [{ name = "Nick Holland", email = "nick.holland@8x8.com" }]
 keywords = ["pstn", "pstn2", "telecommunications", "number-discovery", "caller-id", "fraud-prevention"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: AsyncIO",
     "Intended Audience :: Telecommunications Industry",
-    "License :: OSI Approved :: MIT License",
+    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

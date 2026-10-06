@@ -17,8 +17,15 @@
                 <a href="#overview">Overview</a>
                 <a href="#directory-structure">Directory Structure</a>
                 <a href="#prerequisites">Prerequisites</a>
-                <a href="#example-descriptions">Example Descriptions</a>
+                <a href="#the-test-networks">The Test Networks</a>
                 <a href="#running-the-examples">Running the Examples</a>
+                <a href="#example-1-basic-authentication">Example 1: Basic
+Authentication</a>
+                <a href="#example-2-direct-routing">Example 2: Direct Routing</a>
+                <a href="#example-3-token-pool">Example 3: Token Pool</a>
+                <a href="#example-4-emergency-services">Example 4: Emergency Services</a>
+                <a href="#example-5-complete-call-flow">Example 5: Complete Call Flow</a>
+                <a href="#example-6-number-discovery">Example 6: Number Discovery</a>
                 <a href="#common-patterns">Common Patterns</a>
                 <a href="#testing">Testing</a>
                 <a href="#integration-patterns">Integration Patterns</a>
@@ -33,462 +40,1017 @@
         </nav>
     <main class="doc-container">
 <h1 id="pstn2-code-examples">PSTN2 Code Examples</h1>
-<p>This directory contains working code examples demonstrating how to
-use the PSTN2 protocol in TypeScript, Python, and Go.</p>
+<p>Six working examples, in TypeScript, Python and Go, for PSTN2
+protocol <strong>v1.1</strong>. Every example uses <strong>Number
+Discovery</strong> to find the CP that holds a number now: the
+regulator's numbering list names the block's Range Holder, the Range
+Holder redirects if the number has been ported, and the holder answers.
+There is no central database.</p>
+<p>All examples run offline against the <strong>local mock
+network</strong>; example 06 also runs against the <strong>dummy test
+CP</strong> at <a
+href="https://pstn2.org/testcp/">https://pstn2.org/testcp/</a>. Every
+example exits non-zero if something did not go as expected.</p>
 <h2 id="overview">Overview</h2>
-<p>All examples demonstrate the same functionality across three
-languages:</p>
-<ol type="1">
-<li><strong>Basic Authentication</strong> - Verify inbound calls using
-Direct Query authentication</li>
-<li><strong>Direct Routing</strong> - Request peer-to-peer routing with
-media capability negotiation</li>
-<li><strong>Token Pool</strong> - Use Token Pool authentication for
-high-volume scenarios</li>
-<li><strong>Emergency Services</strong> - Query real-time location data
-for emergency calls (PSAP perspective)</li>
-<li><strong>Complete Call Flow</strong> - End-to-end scenario showing
-all PSTN2 features working together</li>
-</ol>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Example</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><strong>Basic Authentication</strong></td>
+<td>A terminating CP verifies four inbound caller IDs (Direct Query),
+including a spoofed one and a ported one</td>
+</tr>
+<tr>
+<td>02</td>
+<td><strong>Direct Routing</strong></td>
+<td>An originating CP asks the destination's holder for a direct media
+path, with codec and SRTP negotiation</td>
+</tr>
+<tr>
+<td>03</td>
+<td><strong>Token Pool</strong></td>
+<td>The originating CP creates a token at the caller ID's holder; the
+terminating CP verifies it; a forged token is rejected</td>
+</tr>
+<tr>
+<td>04</td>
+<td><strong>Emergency Services</strong></td>
+<td>A PSAP gets live location for 999 callers from each number's holder,
+and falls back when there is none</td>
+</tr>
+<tr>
+<td>05</td>
+<td><strong>Complete Call Flow</strong></td>
+<td>Discovery with a Range Holder redirect → authentication → routing →
+timing summary, then a cache hit on the second call</td>
+</tr>
+<tr>
+<td>06</td>
+<td><strong>Number Discovery</strong></td>
+<td>"Who has this number?" hop by hop: scenarios A–G locally, or the six
+dummy test CP numbers with signatures verified</td>
+</tr>
+</tbody>
+</table>
 <h2 id="directory-structure">Directory Structure</h2>
 <pre><code>code/
-├── typescript/
+├── typescript/                       # @pstn2/core (Node.js 18+, no runtime dependencies)
 │   └── examples/
 │       ├── 01-basic-authentication.ts
 │       ├── 02-direct-routing.ts
 │       ├── 03-token-pool.ts
 │       ├── 04-emergency-services.ts
 │       ├── 05-complete-call-flow.ts
-│       ├── basic-usage.ts        # minimal quick-start example
-│       └── token-pool.ts         # minimal token pool quick-start
-├── python/
+│       ├── 06-number-discovery.ts
+│       └── shared.ts                 # printing helpers (not part of the SDK)
+├── python/                           # pstn2 (Python 3.11+)
 │   └── examples/
 │       ├── 01_basic_authentication.py
 │       ├── 02_direct_routing.py
 │       ├── 03_token_pool.py
 │       ├── 04_emergency_services.py
-│       └── 05_complete_call_flow.py
-└── go/
-    └── examples/                 # one main package per example
+│       ├── 05_complete_call_flow.py
+│       └── 06_number_discovery.py
+└── go/                               # pkg/pstn2 (Go 1.21+, standard library only)
+    └── examples/                     # one main package per example
         ├── 01-basic-authentication/main.go
         ├── 02-direct-routing/main.go
         ├── 03-token-pool/main.go
         ├── 04-emergency-services/main.go
-        └── 05-complete-call-flow/main.go</code></pre>
-<p>The TypeScript <code>basic-usage.ts</code> and
-<code>token-pool.ts</code> files are the minimal quick-start examples -
-start there if you just want to see the client API in a few lines.</p>
+        ├── 05-complete-call-flow/main.go
+        └── 06-number-discovery/main.go</code></pre>
+<p>Source: <a href="../code/typescript/examples/">TypeScript</a> · <a
+href="../code/python/examples/">Python</a> · <a
+href="../code/go/examples/">Go</a> · <a
+href="https://github.com/njjholland-dot/pstn2/tree/main/code">GitHub</a></p>
 <h2 id="prerequisites">Prerequisites</h2>
-<h3 id="all-languages">All Languages</h3>
-<p>Before running any examples, you need:</p>
-<ol type="1">
-<li><p><strong>PSTN2 Account</strong>: Register as a Communications
-Provider (CP) and obtain:</p>
+<p>You need no PSTN2 account, keys or credentials. The examples act as
+fictional CPs on a test network. Each client generates an ephemeral
+Ed25519 identity key when none is configured.</p>
 <ul>
-<li>CP ID (e.g., <code>CP1-UK-0001</code>)</li>
-<li>API endpoint URL</li>
-<li>Private key for Ed25519 signing</li>
-</ul></li>
-<li><p><strong>Environment Variables</strong>: Set up the following:</p>
+<li><strong>Node.js 18+</strong> (20+ recommended) for the mock network,
+and for the TypeScript SDK</li>
+<li><strong>Python 3.11+</strong> for the Python SDK</li>
+<li><strong>Go 1.21+</strong> for the Go SDK</li>
+</ul>
 <div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSTN2_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-private-key-here&quot;</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CP1_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-private-key-here&quot;</span>  <span class="co"># For complete call flow</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PSAP_PRIVATE_KEY</span><span class="op">=</span><span class="st">&quot;your-psap-key-here&quot;</span>     <span class="co"># For emergency services</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">TOKEN_POOL_JWT</span><span class="op">=</span><span class="st">&quot;your-jwt-token-here&quot;</span>      <span class="co"># For token pool example</span></span></code></pre></div></li>
-</ol>
-<h3 id="language-specific-setup">Language-Specific Setup</h3>
-<p>See the README.md file in each language directory for setup
-instructions:</p>
-<ul>
-<li><a href="typescript/README.md">TypeScript README</a></li>
-<li><a href="python/README.md">Python README</a></li>
-<li><a href="go/README.md">Go README</a></li>
-</ul>
-<h2 id="example-descriptions">Example Descriptions</h2>
-<h3 id="example-1-basic-authentication">Example 1: Basic
-Authentication</h3>
-<p><strong>Purpose</strong>: Demonstrates how to verify an inbound
-call's authenticity using PSTN2 Direct Query authentication.</p>
-<p><strong>What it shows</strong>:</p>
-<ul>
-<li>Client initialization with configuration</li>
-<li>Verifying caller ID authenticity</li>
-<li>Accessing caller information (name, organization)</li>
-<li>Viewing call branding details</li>
-<li>Handling porting chains (number portability)</li>
-<li>Error handling and PSTN fallback</li>
-</ul>
-<p><strong>Use case</strong>: When you receive an incoming call and want
-to verify the caller ID is legitimate before presenting it to your end
-user.</p>
-<p><strong>Expected output</strong>:</p>
-<pre><code>PSTN2 Client initialized
-CP ID: CP1-UK-0001
-Auth Mode: DirectQuery
----
-Verifying inbound call...
-✓ Call verified successfully!
-  Caller Name: John Smith
-  Organization: ACME Corp
-  Call Purpose: Customer Service
-  Trust Level: verified
-  Branding:
-    Display Name: ACME Support
-    Logo: https://cdn.acme.com/logo.png
-    Colors: #0066cc</code></pre>
-<h3 id="example-2-direct-routing">Example 2: Direct Routing</h3>
-<p><strong>Purpose</strong>: Shows how to request direct peer-to-peer
-routing for an outbound call, eliminating transit providers.</p>
-<p><strong>What it shows</strong>:</p>
-<ul>
-<li>Requesting routing with media capabilities</li>
-<li>Codec negotiation (Opus, G.722, PCMU)</li>
-<li>Encryption preferences (SRTP-AES256)</li>
-<li>Call branding configuration</li>
-<li>Connection details for media setup</li>
-<li>Public key exchange for encryption</li>
-</ul>
-<p><strong>Use case</strong>: When placing an outbound call and you want
-to establish a direct connection to the destination CP for better
-quality and lower costs.</p>
-<p><strong>Expected output</strong>:</p>
-<pre><code>Requesting direct routing for outbound call...
----
-✓ Routing accepted!
-
-Connection Details:
-  FQDN: media1.cp2.example.com
-  IPv4: 203.0.113.42
-  IPv6: 2001:db8::1
-  Port: 5060
-  Protocol: SIP/TLS
-
-Agreed Capabilities:
-  Codecs: opus, g722
-  Encryption: srtp-aes256
-  Video: No
-
-Ready to establish encrypted media connection!</code></pre>
-<h3 id="example-3-token-pool">Example 3: Token Pool</h3>
-<p><strong>Purpose</strong>: Demonstrates Token Pool authentication, an
-alternative to Direct Query that reduces query load.</p>
-<p><strong>What it shows</strong>:</p>
-<ul>
-<li>Creating authentication tokens before placing calls</li>
-<li>Including tokens in SIP headers</li>
-<li>Verifying tokens on the recipient side</li>
-<li>Token expiration (TTL)</li>
-<li>Benefits of centralized token pool</li>
-</ul>
-<p><strong>Use case</strong>: High-volume call centers that want to
-reduce the authentication query load on their infrastructure.</p>
-<p><strong>Expected output</strong>:</p>
-<pre><code>Token Pool Authentication Example
----
-Step 1: Creating authentication token...
-✓ Token created successfully
-  Token ID: tok_1234567890abcdef
-  Expires: 2025-11-30T12:30:45Z
-  Call Reference: token-call-123
-
-Step 2: Placing call with token...
-  SIP INVITE Header:
-    X-PSTN2-Token: tok_1234567890abcdef
-
-Step 3: Recipient CP verifying token...
-✓ Token verified successfully
-  Originating CP: CP1-UK-0001
-  Caller ID: +441234567890
-  Verified: true</code></pre>
-<h3 id="example-4-emergency-services">Example 4: Emergency Services</h3>
-<p><strong>Purpose</strong>: Shows how PSAPs (Public Safety Answering
-Points) query real-time location data for emergency calls.</p>
-<p><strong>What it shows</strong>:</p>
-<ul>
-<li>PSAP client initialization</li>
-<li>Emergency location query</li>
-<li>GPS coordinates and accuracy</li>
-<li>Address information</li>
-<li>Additional context (cell towers, WiFi APs)</li>
-<li>Dispatch recommendations based on accuracy</li>
-<li>Comparison with traditional PSTN location</li>
-</ul>
-<p><strong>Use case</strong>: When a 999/112/911 call is received and
-the PSAP needs to determine the caller's exact location.</p>
-<p><strong>Expected output</strong>:</p>
-<pre><code>Emergency Services Location Query
-PSAP: London Central 999
----
-Emergency call received:
-  From: +441234567890
-  Time: 2025-11-30T12:15:30Z
-
-Querying real-time location...
-✓ Location retrieved successfully
-
-GPS Coordinates:
-  Latitude: 51.507351
-  Longitude: -0.127758
-  Accuracy: 8.5 meters
-  Source: gps
-
-Address:
-  Street: 10 Downing Street
-  City: London
-  Postcode: SW1A 2AA
-  Country: United Kingdom
-
-Dispatch Recommendations:
-  ✓ Excellent accuracy - dispatch to exact location
-  ✓ GPS lock strong</code></pre>
-<h3 id="example-5-complete-call-flow">Example 5: Complete Call Flow</h3>
-<p><strong>Purpose</strong>: End-to-end demonstration of a complete
-PSTN2 call from Alice to Bob, showing all features working together.</p>
-<p><strong>What it shows</strong>:</p>
-<ul>
-<li>All 7 phases of PSTN2 call setup:
-<ol type="1">
-<li>Directory lookup (finding recipient's CP)</li>
-<li>Authentication (verifying caller identity)</li>
-<li>Direct routing (negotiating peer-to-peer connection)</li>
-<li>Key exchange (DTLS/SRTP setup)</li>
-<li>Media setup (RTP session establishment)</li>
-<li>Call branding (caller display on recipient phone)</li>
-<li>Call connected (encrypted conversation)</li>
-</ol></li>
-<li>Timing breakdown for each phase</li>
-<li>Visual representation of caller display</li>
-<li>Comparison with traditional PSTN</li>
-<li>Complete feature and security summary</li>
-</ul>
-<p><strong>Use case</strong>: Understanding the complete PSTN2 call flow
-and seeing how all components work together in a real-world
-scenario.</p>
-<p><strong>Expected output</strong>:</p>
-<pre><code>============================================================
-COMPLETE PSTN2 CALL FLOW
-Alice (CP1) → Bob (CP2)
-============================================================
-
-📱 Phase 1: Alice dials Bob&#39;s number
-   Alice: +441234567890
-   Bob:   +447700900123
-
-🔍 Looking up Bob&#39;s CP in directory...
-   ✓ Found: CP1-UK-0002
-   ✓ Endpoint: https://api.cp2.example.com/pstn2/v1
-   ⏱  Time: 45ms
-
-🔐 Phase 2: Authenticating call with Bob&#39;s CP...
-   ✓ Call authenticated
-   ✓ Trust Level: verified
-   ⏱  Time: 78ms
-
-🔄 Phase 3: Requesting direct routing...
-   ✓ Routing accepted
-   ✓ Media Server: media1.cp2.example.com
-   ✓ Codec: opus
-   ✓ Encryption: srtp-aes256
-   ⏱  Time: 92ms
-
-[... remaining phases ...]
-
-============================================================
-CALL SUMMARY
-============================================================
-
-Timing Breakdown:
-  Directory Lookup:     45ms
-  Authentication:       78ms
-  Routing Request:      92ms
-  Key Exchange:         35ms
-  Media Setup:          50ms
-  -----------------------------------
-  Total Setup Time:     300ms
-
-Traditional PSTN Comparison:
-  PSTN2:        ~300ms setup time
-  Traditional:  5,000-8,000ms setup time
-  Improvement:  16x faster! 🚀
-
-Features Enabled:
-  ✓ Caller ID verification (fraud prevention)
-  ✓ Direct routing (cost reduction)
-  ✓ End-to-end encryption (privacy)
-  ✓ Call branding (trust)
-  ✓ HD audio quality (Opus codec)
-
-💚 Call in progress - Alice and Bob are talking!</code></pre>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/njjholland-dot/pstn2.git</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> pstn2</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># TypeScript</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/typescript <span class="kw">&amp;&amp;</span> <span class="ex">npm</span> ci <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> ../..</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Python</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python <span class="kw">&amp;&amp;</span> <span class="ex">python3</span> <span class="at">-m</span> venv .venv <span class="kw">&amp;&amp;</span> <span class="ex">.venv/bin/pip</span> install <span class="at">-e</span> <span class="st">&#39;.[dev]&#39;</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> ../..</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Go: nothing to install (standard library only)</span></span></code></pre></div>
+<p>See the language READMEs for the full SDK documentation: <a
+href="../code/typescript/README.md">TypeScript</a> · <a
+href="../code/python/README.md">Python</a> · <a
+href="../code/go/README.md">Go</a></p>
+<h2 id="the-test-networks">The Test Networks</h2>
+<h3 id="local-mock-network-examples-0106">Local mock network (examples
+01–06)</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># from the repository root, in its own terminal</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs        <span class="co"># http://127.0.0.1:47901</span></span></code></pre></div>
+<p>It serves a simulated Ofcom numbering list and three participating
+CPs over real HTTP (Node.js only, no dependencies):</p>
+<table>
+<thead>
+<tr>
+<th>CP</th>
+<th>cpId</th>
+<th>Range Holder for</th>
+<th>Numbers used in the examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alpha Telecom</td>
+<td><code>CP1-UK-0101</code></td>
+<td>020 7946 0xxx</td>
+<td>+442079460100 (Alice)</td>
+</tr>
+<tr>
+<td>Bravo Networks</td>
+<td><code>CP1-UK-0102</code></td>
+<td>0161 496 0xxx</td>
+<td>+441614960123; +441134960456 ported <strong>in</strong> from
+Charlie; +441614960999 not in service</td>
+</tr>
+<tr>
+<td>Charlie Comms</td>
+<td><code>CP1-UK-0103</code></td>
+<td>0113 496 0xxx</td>
+<td>+441134960789; +441134960456 ported <strong>out</strong> to Bravo
+(Bob)</td>
+</tr>
+<tr>
+<td>Delta Voice</td>
+<td><code>CP1-UK-0104</code></td>
+<td>0117 496 0xxx</td>
+<td>not participating (no Range Holder URL): +441174960555</td>
+</tr>
+<tr>
+<td>(none)</td>
+<td></td>
+<td>0115 496 0xxx</td>
+<td>not allocated: +441154960555</td>
+</tr>
+</tbody>
+</table>
+<p>All numbers are from Ofcom's reserved drama ranges and all CPs are
+fictional. In the mock, a CP verifies any caller ID it holds, accepts
+routing to any number it holds
+(<code>media.{cp}.example:5061/tls</code>) and returns a fixed
+Manchester location for emergency queries. For a number it does not hold
+it answers
+<code>200 {"result":"not_held","cache":{"invalidate":true}}</code>, so
+the SDKs' rediscover-and-retry path is exercised too.</p>
+<h3 id="dummy-test-cp-example-06">Dummy test CP (example 06)</h3>
+<p><a href="https://pstn2.org/testcp/">https://pstn2.org/testcp/</a> is
+two fictional CPs hosted as static files with <strong>signed</strong>
+answers. Test CP A (<code>CP1-UK-9001</code>) is Range Holder for 07700
+900 0xx, Test CP B (<code>CP1-UK-9002</code>) for 07700 900 1xx. It
+answers Number Discovery only.</p>
 <h2 id="running-the-examples">Running the Examples</h2>
-<h3 id="quick-start">Quick Start</h3>
-<ol type="1">
-<li>Choose your preferred language</li>
-<li>Navigate to that directory:
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> typescript  <span class="co"># or python, or go</span></span></code></pre></div></li>
-<li>Follow the setup instructions in the language-specific README</li>
-<li>Set environment variables</li>
-<li>Run an example:
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># terminal 1, repository root</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># terminal 2</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/typescript <span class="kw">&amp;&amp;</span> <span class="ex">npm</span> run example:01            <span class="co"># … example:06</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python <span class="kw">&amp;&amp;</span> <span class="ex">.venv/bin/python</span> examples/01_basic_authentication.py</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/go <span class="kw">&amp;&amp;</span> <span class="ex">go</span> run ./examples/01-basic-authentication</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>TypeScript (<code>code/typescript</code>)</th>
+<th>Python (<code>code/python</code>)</th>
+<th>Go (<code>code/go</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><code>npm run example:01</code></td>
+<td><code>.venv/bin/python examples/01_basic_authentication.py</code></td>
+<td><code>go run ./examples/01-basic-authentication</code></td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>npm run example:02</code></td>
+<td><code>.venv/bin/python examples/02_direct_routing.py</code></td>
+<td><code>go run ./examples/02-direct-routing</code></td>
+</tr>
+<tr>
+<td>03</td>
+<td><code>npm run example:03</code></td>
+<td><code>.venv/bin/python examples/03_token_pool.py</code></td>
+<td><code>go run ./examples/03-token-pool</code></td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>npm run example:04</code></td>
+<td><code>.venv/bin/python examples/04_emergency_services.py</code></td>
+<td><code>go run ./examples/04-emergency-services</code></td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>npm run example:05</code></td>
+<td><code>.venv/bin/python examples/05_complete_call_flow.py</code></td>
+<td><code>go run ./examples/05-complete-call-flow</code></td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>npm run example:06</code></td>
+<td><code>.venv/bin/python examples/06_number_discovery.py</code></td>
+<td><code>go run ./examples/06-number-discovery</code></td>
+</tr>
+</tbody>
+</table>
+<p>The TypeScript examples run with <code>ts-node</code>;
+<code>npm run typecheck:examples</code> type-checks them. Example 06
+resets the mock network before and after it runs (it ports a number in
+scenario D), so the examples can run in any order.</p>
+<h3 id="environment-variables">Environment variables</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PSTN2_NETWORK</code></td>
+<td><code>local</code></td>
+<td><code>local</code> = mock network, <code>live</code> = dummy test CP
+on pstn2.org</td>
+</tr>
+<tr>
+<td><code>PSTN2_MOCK_PORT</code></td>
+<td><code>47901</code></td>
+<td>Mock network port (start it with <code>--port N</code>, or
+<code>PSTN2_MOCK_PORT=N</code>, to match)</td>
+</tr>
+<tr>
+<td><code>PSTN2_NUMBERING_LIST_URL</code></td>
+<td>per network</td>
+<td>Overrides the numbering list URL (e.g. the local static
+emulator)</td>
+</tr>
+<tr>
+<td><code>PSTN2_CP_ID</code></td>
+<td>per example; <code>CP1-UK-TEST-CLIENT</code> live</td>
+<td>Acting CP</td>
+</tr>
+<tr>
+<td><code>PSTN2_VERIFY_SIGNATURES</code></td>
+<td>on for live, off for local</td>
+<td><code>1</code> / <code>0</code></td>
+</tr>
+<tr>
+<td><code>PSTN2_LOG_LEVEL</code></td>
+<td>quiet</td>
+<td>SDK request log (TypeScript <code>info</code>/<code>debug</code>;
+Python <code>INFO</code>/<code>DEBUG</code>)</td>
+</tr>
+<tr>
+<td><code>PSTN2_PSAP_ID</code></td>
+<td><code>UK-999-MANCHESTER-01</code></td>
+<td>Python and Go example 04</td>
+</tr>
+<tr>
+<td><code>PSTN2_TERMINATING_CP_ID</code></td>
+<td><code>CP1-UK-0102</code></td>
+<td>Python examples 03 and 05</td>
+</tr>
+<tr>
+<td><code>PSTN2_PRIVATE_KEY</code></td>
+<td>ephemeral</td>
+<td>Python: Ed25519 key (PEM or base64) for request signatures</td>
+</tr>
+</tbody>
+</table>
+<p>Each example starts by printing the network, numbering-list URL,
+acting CP, whether signatures are verified and the list version
+(<code>2026-10-06T06:00:00Z (4 blocks)</code> on the mock). If the list
+cannot be loaded it explains how to start the mock network and exits
+1.</p>
+<hr />
+<h2 id="example-1-basic-authentication">Example 1: Basic
+Authentication</h2>
+<p><strong>Files:</strong>
+<code>typescript/examples/01-basic-authentication.ts</code>,
+<code>python/examples/01_basic_authentication.py</code>,
+<code>go/examples/01-basic-authentication/main.go</code></p>
+<p><strong>Acting CP:</strong> Charlie Comms (<code>CP1-UK-0103</code>),
+the <strong>terminating</strong> CP. Called number +441134960789 (a
+Charlie customer). For each inbound call the SDK discovers the caller
+ID's current holder and sends <code>POST /pstn2/v1/auth/verify</code>
+there.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">,</span> calledID<span class="op">:</span> <span class="st">&#39;+441134960789&#39;</span><span class="op">,</span> callReference<span class="op">:</span> client<span class="op">.</span><span class="fu">generateCallReference</span>() })<span class="op">;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (v<span class="op">.</span><span class="at">verified</span>) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`✓ VERIFIED by </span><span class="sc">${</span>v<span class="op">.</span><span class="at">holder</span><span class="op">?.</span><span class="at">cpName</span><span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="cf">if</span> (v<span class="op">.</span><span class="at">fallbackToTraditional</span>) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;✗ NOT VERIFIED: flag it, traditional PSTN treatment&#39;</span>)<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>v <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(caller_id, <span class="st">&quot;+441134960789&quot;</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(v.verified, v.holder, v.trust_level, v.reason, v.fallback_to_pstn)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Go</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>v<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>VerifyCallRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> CalledID<span class="op">:</span> <span class="st">&quot;+441134960789&quot;</span><span class="op">})</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">// err → traditional PSTN; v.Verified; v.Reason; v.Fallback; v.Via.Holder</span></span></code></pre></div>
+<p><strong>Results (all three SDKs):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Caller ID</th>
+<th>Discovery</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>+442079460100 (Alpha customer)</td>
+<td>held by Alpha Telecom, 1 hop</td>
+<td>✓ verified by Alpha Telecom, trust <code>verified</code></td>
+</tr>
+<tr>
+<td>+441614960123 (Bravo customer)</td>
+<td>held by Bravo Networks, 1 hop</td>
+<td>✓ verified by Bravo Networks</td>
+</tr>
+<tr>
+<td>+441614960999 (spoofed, not in service)</td>
+<td><code>unknown</code>: Bravo (Range Holder) answered 404, 1 hop</td>
+<td>✗ not verified → flag as possible spoofing → traditional PSTN
+treatment</td>
+</tr>
+<tr>
+<td>+441134960456 (Charlie's range, ported to Bravo)</td>
+<td>held by Bravo (ported in), 2 hops: Charlie → Bravo</td>
+<td>✓ verified by Bravo: verification went to the CP that holds the
+number now</td>
+</tr>
+</tbody>
+</table>
+<p>The not-verified reason is <code>unknown</code> in TypeScript,
+<code>discovery_unknown</code> in Python and
+<code>caller_id_unknown</code> in Go. TypeScript ends with
+<code>Summary: 3 verified, 1 flagged / PSTN fallback</code> and
+<code>Number cache now holds 3 entries (per number, never per block)</code>;
+Go with
+<code>3 of 4 caller IDs verified; 1 flagged and handled as traditional PSTN</code>.</p>
+<p><strong>Sample output (TypeScript):</strong></p>
+<pre><code>Call 4: +441134960456 (0113 496 0456) → +441134960789 (0113 496 0789)
+  (Charlie&#39;s own range, ported to Bravo Networks)
+  Discovery:   held by Bravo Networks (ported in) — 2 hops: Charlie Comms → Bravo Networks
+  ✓ VERIFIED by Bravo Networks
+    Caller:      Bravo Networks customer (Bravo Networks)
+    Trust level: verified
+    Ported number: verification went to the CP that holds it now</code></pre>
+<hr />
+<h2 id="example-2-direct-routing">Example 2: Direct Routing</h2>
+<p><strong>Files:</strong>
+<code>typescript/examples/02-direct-routing.ts</code>,
+<code>python/examples/02_direct_routing.py</code>,
+<code>go/examples/02-direct-routing/main.go</code></p>
+<p><strong>Acting CP:</strong> Alpha Telecom (<code>CP1-UK-0101</code>),
+the <strong>originating</strong> CP. Caller +442079460100. It offers
+codecs <code>opus, g722, pcmu</code>, encryption
+<code>srtp-aes256, srtp-aes128</code> and its Ed25519 identity key, and
+sends <code>POST /pstn2/v1/routing/request</code> to the destination's
+holder.</p>
 <div class="sourceCode" id="cb9"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># TypeScript</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run example:01</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Python</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/01_basic_authentication.py</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Go</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/01-basic-authentication</span></code></pre></div></li>
-</ol>
-<h2 id="common-patterns">Common Patterns</h2>
-<h3 id="error-handling">Error Handling</h3>
-<p>All examples include proper error handling with fallback to
-traditional PSTN:</p>
-<p><strong>TypeScript</strong>:</p>
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> routing <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">requestRouting</span>({</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  destinationNumber<span class="op">:</span> <span class="st">&#39;+441614960123&#39;</span><span class="op">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  callerID<span class="op">:</span> <span class="st">&#39;+442079460100&#39;</span><span class="op">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  mediaCapabilities<span class="op">:</span> { codecs<span class="op">:</span> [<span class="st">&#39;opus&#39;</span><span class="op">,</span> <span class="st">&#39;g722&#39;</span><span class="op">,</span> <span class="st">&#39;pcmu&#39;</span>]<span class="op">,</span> encryption<span class="op">:</span> [<span class="st">&#39;srtp-aes256&#39;</span><span class="op">,</span> <span class="st">&#39;srtp-aes128&#39;</span>] }<span class="op">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (routing<span class="op">.</span><span class="at">accepted</span>) <span class="fu">connect</span>(routing<span class="op">.</span><span class="at">connectionDetails</span>)<span class="op">;</span>   <span class="co">// else: routing.reason → traditional PSTN</span></span></code></pre></div>
+<p><strong>Results:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Discovery</th>
+<th>Outcome</th>
+<th>SDKs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>→ +441614960123</td>
+<td>held by Bravo Networks, 1 hop</td>
+<td>✓ accepted by Bravo: <code>media.bravo.example</code> (203.0.113.11
+/ 2001:db8::11) port 5061/tls; agreed <code>opus</code> +
+<code>srtp-aes256</code>, no video; peer Ed25519 identity key
+(authenticates the DTLS fingerprint)</td>
+<td>all</td>
+</tr>
+<tr>
+<td>→ +441174960555</td>
+<td><code>not_participating</code>: Range Holder Delta Voice has no
+PSTN2 URL, no queries</td>
+<td>✗ no direct route → traditional PSTN</td>
+<td>Python, Go</td>
+</tr>
+<tr>
+<td>→ +441614960123 offering only <code>g729</code></td>
+<td>held by Bravo</td>
+<td>✗ not accepted (<code>unsupported_codec</code>, the mock's HTTP 400)
+→ traditional PSTN</td>
+<td>Python</td>
+</tr>
+</tbody>
+</table>
+<p>The next step is a SIP INVITE straight to the returned endpoint (Go
+prints
+<code>sips:+441614960123@media.bravo.example:5061;transport=tls</code>);
+media keys come from DTLS-SRTP. <code>requestRouting</code> never throws
+for a rejection: it returns <code>accepted: false</code> with a
+<code>reason</code>.</p>
+<hr />
+<h2 id="example-3-token-pool">Example 3: Token Pool</h2>
+<p><strong>Files:</strong>
+<code>typescript/examples/03-token-pool.ts</code>,
+<code>python/examples/03_token_pool.py</code>,
+<code>go/examples/03-token-pool/main.go</code></p>
+<p><strong>Acting CPs:</strong> Alpha Telecom (<code>CP1-UK-0101</code>,
+originating) and Bravo Networks (<code>CP1-UK-0102</code>, terminating).
+Call +442079460100 → +441614960123, TTL 30 s. Tokens are held by the CP
+that holds the caller ID, found by discovery.</p>
 <div class="sourceCode" id="cb10"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> {</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> verification <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="at">auth</span><span class="op">.</span><span class="fu">verifyCall</span>({<span class="op">...</span>})<span class="op">;</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Handle success</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">catch</span> (error) {</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Error:&#39;</span><span class="op">,</span> error)<span class="op">;</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Falling back to traditional PSTN&#39;</span>)<span class="op">;</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p><strong>Python</strong>:</p>
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> token <span class="op">=</span> <span class="cf">await</span> alpha<span class="op">.</span><span class="fu">createToken</span>({ callerID<span class="op">,</span> calledID<span class="op">,</span> ttl<span class="op">:</span> <span class="dv">30</span> })<span class="op">;</span>   <span class="co">// POST {holder}/pstn2/v1/auth/tokens</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">// INVITE carries X-PSTN2-Token: token.tokenId</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> data <span class="op">=</span> <span class="cf">await</span> bravo<span class="op">.</span><span class="fu">verifyToken</span>(token<span class="op">.</span><span class="at">tokenId</span><span class="op">,</span> callerID)<span class="op">;</span>            <span class="co">// GET {holder}/pstn2/v1/auth/tokens/{id}; null if unknown</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> bravo<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">,</span> calledID<span class="op">,</span> tokenId<span class="op">:</span> token<span class="op">.</span><span class="at">tokenId</span> })<span class="op">;</span> <span class="co">// token first, Direct Query fallback</span></span></code></pre></div>
+<p><strong>Flow (all three SDKs):</strong></p>
+<ol type="1">
+<li>Alpha creates a token for the call: discovery of the caller ID →
+held by Alpha, 1 hop → <code>TK-xxxxxxxxxxxxxxxx</code> (matches
+<code>^TK-[A-Za-z0-9]{16}$</code>) with its expiry and call
+reference.</li>
+<li>The call is signalled with <code>X-PSTN2-Token: TK-…</code>
+(simulated).</li>
+<li>Bravo verifies the token at Alpha: ✓ verified, originating CP
+<code>CP1-UK-0101</code>, caller → called, call reference matches.</li>
+<li>A forged <code>TK-AAAAAAAAAAAAAAAA</code>:
+<ul>
+<li>TypeScript: <code>verifyToken</code> returns <code>null</code>
+(treat as unverified); a separate <code>verifyCall({ tokenId })</code>
+with the real token is ✓ verified.</li>
+<li>Python and Go: the pool answers 404 <code>invalid_token</code> →
+fall back to Direct Query → ✓ verified by Alpha Telecom.</li>
+</ul></li>
+</ol>
+<p>A short TTL limits the fraud window; each call needs one create and
+one <code>GET</code>.</p>
+<hr />
+<h2 id="example-4-emergency-services">Example 4: Emergency Services</h2>
+<p><strong>Files:</strong>
+<code>typescript/examples/04-emergency-services.ts</code>,
+<code>python/examples/04_emergency_services.py</code>,
+<code>go/examples/04-emergency-services/main.go</code></p>
+<p><strong>Acting party:</strong> a PSAP, ID
+<code>UK-999-MANCHESTER-01</code> (TypeScript acts as
+<code>PSAP-UK-999-01</code>). For each 999 call it discovers the caller
+ID's holder and sends <code>POST /pstn2/v1/emergency/location</code>
+there.</p>
 <div class="sourceCode" id="cb11"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    verification <span class="op">=</span> <span class="cf">await</span> client.auth.verify_call(...)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Handle success</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> error:</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&#39;Error: </span><span class="sc">{</span>error<span class="sc">}</span><span class="ss">&#39;</span>)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&#39;Falling back to traditional PSTN&#39;</span>)</span></code></pre></div>
-<p><strong>Go</strong>:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>verification<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> <span class="op">&amp;</span>types<span class="op">.</span>VerifyCallRequest<span class="op">{...})</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Error: %v</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Println<span class="op">(</span><span class="st">&quot;Falling back to traditional PSTN&quot;</span><span class="op">)</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="configuration">Configuration</h3>
-<p>All examples use environment variables for sensitive
-configuration:</p>
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    loc <span class="op">=</span> <span class="cf">await</span> client.emergency.get_location(caller_id, PSAP_ID)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(loc.location.latitude, loc.location.longitude, loc.address)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> DiscoveryError <span class="im">as</span> e:</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    ...  <span class="co"># no PSTN2 holder: use cell location / billing address</span></span></code></pre></div>
+<p>The location call <strong>raises</strong> (TypeScript
+<code>DiscoveryError</code>/<code>PSTN2Error</code>, Python
+<code>DiscoveryError</code>, Go a discovery error) when there is no
+PSTN2 holder, so the PSAP always knows to use its other sources.</p>
+<p><strong>Results:</strong></p>
+<table>
+<thead>
+<tr>
+<th>999 caller</th>
+<th>Discovery</th>
+<th>Outcome</th>
+<th>SDKs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>+441614960123</td>
+<td>held by Bravo, 1 hop</td>
+<td>✓ location from Bravo: 53.4808, -2.2426 (±12 m, gps), 1 Example
+Street, Manchester M1 1AA, GB → dispatch (Go also prints an
+OpenStreetMap link)</td>
+<td>all</td>
+</tr>
+<tr>
+<td>+441134960456</td>
+<td>held by Bravo (ported in), 2 hops: Charlie → Bravo</td>
+<td>✓ same location from Bravo</td>
+<td>TypeScript</td>
+</tr>
+<tr>
+<td>+441614960999</td>
+<td><code>unknown</code> (404), 1 hop</td>
+<td>✗ no PSTN2 location → cell-tower / billing-address location</td>
+<td>TypeScript, Python</td>
+</tr>
+<tr>
+<td>+441174960555</td>
+<td><code>not_participating</code> (Delta Voice)</td>
+<td>✗ fallback to cell location / billing address</td>
+<td>Go</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="example-5-complete-call-flow">Example 5: Complete Call Flow</h2>
+<p><strong>Files:</strong>
+<code>typescript/examples/05-complete-call-flow.ts</code>,
+<code>python/examples/05_complete_call_flow.py</code>,
+<code>go/examples/05-complete-call-flow/main.go</code></p>
+<p>Alice +442079460100 (Alpha) calls Bob +441134960456 (Charlie's range,
+ported to Bravo). Two clients: Alpha (originating) and Bravo
+(terminating).</p>
+<ul>
+<li><strong>Phase 1, Number Discovery</strong>, printed hop by hop:
+cache miss → numbering list block <code>0113 496 0xxx</code> → Range
+Holder Charlie Comms →
+<code>GET …/cp/charlie/pstn2/v1/numbers/441134960456</code> ← 200
+redirect → ported to Bravo → <code>GET …/cp/bravo/…</code> ← 200 held →
+cached. Result: held by Bravo, <code>ported: true</code>, hops
+<code>CP1-UK-0103 → CP1-UK-0102</code>.</li>
+<li><strong>Phase 2, Authentication:</strong> Bravo discovers Alice's
+caller ID (held by Alpha, 1 hop) and verifies it there: ✓ verified,
+trust <code>verified</code>.</li>
+<li><strong>Phase 3, Direct routing:</strong> Alpha → Bravo. The
+discovery comes from the cache (Python passes Phase 1's answer with
+<code>holder=</code>). ✓ accepted:
+<code>media.bravo.example:5061/tls</code>, <code>opus</code> +
+<code>srtp-aes256</code>.</li>
+<li><strong>Phase 4, Summary:</strong> per-phase timings and total setup
+(a few ms to ~25 ms on localhost; target &lt; 1000 ms).</li>
+<li><strong>Second call:</strong> cache hit → one query straight to
+Bravo, <code>fromCache: true</code>, hops <code>CP1-UK-0102</code>: no
+Range Holder redirect.</li>
+</ul>
+<p><strong>Sample output (TypeScript):</strong></p>
+<pre><code>🔍 Phase 1 — Number Discovery: who holds the destination?
+     · cache miss for +441134960456
+     · numbering list: block 0113 496 0xxx → Range Holder Charlie Comms
+     · GET http://127.0.0.1:47901/cp/charlie/pstn2/v1/numbers/441134960456
+       ← 200 redirect from Charlie Comms
+     · redirect: ported to Bravo Networks
+     · GET http://127.0.0.1:47901/cp/bravo/pstn2/v1/numbers/441134960456
+       ← 200 held from Bravo Networks
+     · cached +441134960456 → Bravo Networks
+   ✓ held by Bravo Networks (ported in) — 2 hops: Charlie Comms → Bravo Networks [3ms]
+
+🔐 Phase 2 — Authentication: CP1-UK-0102 verifies Alice&#39;s caller ID
+   Discovery (caller ID): held by Alpha Telecom — 1 hop: Alpha Telecom
+   ✓ verified by Alpha Telecom — trust verified [9ms]
+
+🔄 Phase 3 — Direct routing: CP1-UK-0101 asks the holder for a media path
+   Discovery: held by Bravo Networks (ported in) — 1 hop: Bravo Networks (from cache)
+   ✓ accepted by Bravo Networks: media.bravo.example:5061/tls, opus + srtp-aes256 [2ms]
+
+📋 Phase 4 — Summary
+────────────────────────────────────────────────────────────────
+   Number Discovery:    3ms  2 hops (CP1-UK-0103 → CP1-UK-0102)
+   Authentication:      9ms  verified
+   Direct routing:      2ms  accepted
+   Total setup:        15ms
+────────────────────────────────────────────────────────────────</code></pre>
+<hr />
+<h2 id="example-6-number-discovery">Example 6: Number Discovery</h2>
+<p><strong>Files:</strong>
+<code>typescript/examples/06-number-discovery.ts</code>,
+<code>python/examples/06_number_discovery.py</code>,
+<code>go/examples/06-number-discovery/main.go</code></p>
+<p>The heart of PSTN2 v1.1: "which CP currently holds this number?" The
+example prints every step of the algorithm through the SDK's discovery
+events (<code>cache-hit</code> / <code>cache-miss</code>,
+<code>list-lookup</code>, <code>query</code>, <code>response</code>,
+<code>redirect</code>, <code>cache-purge</code>,
+<code>cache-store</code>, <code>result</code>), checks each result
+against the expected outcome, prints the cache contents and exits 1 if
+anything differs. It picks its mode from the numbering list it
+loads.</p>
 <div class="sourceCode" id="cb13"><pre
 class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>privateKey<span class="op">:</span> <span class="bu">process</span><span class="op">.</span><span class="at">env</span><span class="op">.</span><span class="at">PSTN2_PRIVATE_KEY</span><span class="op">!</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a># Python</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>private_key<span class="op">=</span>os<span class="op">.</span><span class="at">environ</span>[<span class="st">&#39;PSTN2_PRIVATE_KEY&#39;</span>]</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Go</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>PrivateKey<span class="op">:</span> os<span class="op">.</span><span class="fu">Getenv</span>(<span class="st">&quot;PSTN2_PRIVATE_KEY&quot;</span>)</span></code></pre></div>
-<h3 id="client-cleanup">Client Cleanup</h3>
-<p>Always close clients when done:</p>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">discover</span>(number<span class="op">,</span> { onEvent<span class="op">:</span> (e) <span class="kw">=&gt;</span> <span class="fu">print</span>(e) })<span class="op">;</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">// r.result, r.holder, r.ported, r.hops, r.fromCache, r.invalidated</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript - use finally or defer-like pattern</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client<span class="op">.</span><span class="fu">close</span>()<span class="op">;</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a># Python <span class="op">-</span> use <span class="cf">finally</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client<span class="op">.</span><span class="fu">close</span>()</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Go - use defer</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>defer client<span class="op">.</span><span class="fu">Close</span>()</span></code></pre></div>
-<h2 id="testing">Testing</h2>
-<p>For testing examples without a real PSTN2 account, you can:</p>
+class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="cf">await</span> client.discover(number, on_event<span class="op">=</span>printer)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Go</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>res <span class="op">:=</span> client<span class="op">.</span>Discover<span class="op">(</span>ctx<span class="op">,</span> number<span class="op">,</span> pstn2<span class="op">.</span>WithEvents<span class="op">(</span>printer<span class="op">))</span></span></code></pre></div>
+<h3 id="local-mock-network-scenarios-ag">Local mock network: scenarios
+A–G</h3>
+<p>Acting CP Alpha Telecom; one client, so the cache carries over from
+step to step. The example resets the mock
+(<code>POST /admin/reset</code>) before and after.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Scenario</th>
+<th>Number</th>
+<th>Result</th>
+<th>Hops</th>
+<th>Flags</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>Unported number</td>
+<td>+441614960123</td>
+<td>held by Bravo</td>
+<td>Bravo</td>
+<td></td>
+</tr>
+<tr>
+<td>B</td>
+<td>Ported number (Range Holder redirects)</td>
+<td>+441134960456</td>
+<td>held by Bravo (ported in)</td>
+<td>Charlie → Bravo</td>
+<td></td>
+</tr>
+<tr>
+<td>C</td>
+<td>Repeat call goes direct from cache</td>
+<td>+441134960456</td>
+<td>held by Bravo (ported in)</td>
+<td>Bravo</td>
+<td><code>fromCache</code></td>
+</tr>
+<tr>
+<td>D</td>
+<td>Number ports back (<code>POST /admin/port</code> Bravo → Charlie):
+Bravo answers <code>not_held</code> → purge → restart from the Range
+Holder</td>
+<td>+441134960456</td>
+<td>held by Charlie</td>
+<td>Bravo → Charlie</td>
+<td><code>invalidated</code></td>
+</tr>
+<tr>
+<td>E</td>
+<td>Number not in service</td>
+<td>+441614960999</td>
+<td><code>unknown</code> (404) → traditional PSTN</td>
+<td>Bravo</td>
+<td></td>
+</tr>
+<tr>
+<td>F</td>
+<td>Range Holder not participating</td>
+<td>+441174960555</td>
+<td><code>not_participating</code> (Delta Voice has no PSTN2 URL)</td>
+<td>none</td>
+<td></td>
+</tr>
+<tr>
+<td>G</td>
+<td>Number not allocated</td>
+<td>+441154960555</td>
+<td><code>unallocated</code></td>
+<td>none</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Final line: <code>7/7 lookups behaved as specified.</code>
+(TypeScript), <code>7/7 lookups as expected.</code> (Python),
+<code>7/7 steps as expected</code> (Go).</p>
+<p><strong>Sample output (TypeScript, scenario D):</strong></p>
+<pre><code>D. Number ports back: stale cache is invalidated: +441134960456 (0113 496 0456)
+   (mock network: +441134960456 ported Bravo → Charlie (POST /admin/port); our cache still says Bravo)
+   1 CACHE   hit → Bravo Networks (expires 2026-10-07T11:41:15.934Z)
+   → QUERY   Bravo Networks: GET http://127.0.0.1:47901/cp/bravo/pstn2/v1/numbers/441134960456
+   ← 200     not_held
+   ✗ PURGE   Bravo Networks says not_held: cache entry purged, restart from the Range Holder
+   2 LIST    block 0113 496 0xxx → Range Holder Charlie Comms http://127.0.0.1:47901/cp/charlie
+   → QUERY   Charlie Comms: GET http://127.0.0.1:47901/cp/charlie/pstn2/v1/numbers/441134960456
+   ← 200     held
+   ✓ STORE   +441134960456 → Charlie Comms
+   = held by Charlie Comms — 2 hops: Bravo Networks → Charlie Comms (stale cache invalidated)</code></pre>
+<p><strong>Sample output (Go, scenario B):</strong></p>
+<pre><code>── B  Ported number (Range Holder redirects)
+   Alpha Telecom asks: who holds 0113 496 0456 (+441134960456)?
+   cache     miss
+   list      0113 496 0xxx → Range Holder Charlie Comms
+   hop 1  →  Charlie Comms  GET http://127.0.0.1:47901/cp/charlie/pstn2/v1/numbers/441134960456
+          ←  200 redirect → portedTo Bravo Networks (http://127.0.0.1:47901/cp/bravo)
+   redirect  ported to Bravo Networks
+   hop 2  →  Bravo Networks  GET http://127.0.0.1:47901/cp/bravo/pstn2/v1/numbers/441134960456
+          ←  200 held by Bravo Networks (ported in)
+   cache     stored → Bravo Networks until 2026-10-07T11:41:28Z
+   result    held by Bravo Networks (ported) · hops [CP1-UK-0103, CP1-UK-0102] · fromCache=false invalidated=false · 0ms  ✓</code></pre>
+<h3 id="dummy-test-cp-six-test-numbers-signed">Dummy test CP: six test
+numbers, signed</h3>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">npm</span> run example:06                               <span class="co"># TypeScript</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">.venv/bin/python</span> examples/06_number_discovery.py  <span class="co"># Python</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">go</span> run ./examples/06-number-discovery            <span class="co"># Go</span></span></code></pre></div>
+<p>Acting CP <code>CP1-UK-TEST-CLIENT</code>; signature verification is
+on by default in this mode, so every <code>200</code> answer is checked
+against the answering CP's key from <code>{url}/pstn2/v1/keys</code>
+(kids <code>a-test-2026-10</code>, <code>b-test-2026-10</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Result</th>
+<th>Hops</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>+447700900001</td>
+<td>held by Test CP A</td>
+<td>A</td>
+</tr>
+<tr>
+<td>+447700900002</td>
+<td>held by Test CP A</td>
+<td>A</td>
+</tr>
+<tr>
+<td>+447700900003</td>
+<td>held by Test CP B (ported in): Test CP A redirects</td>
+<td>A → B</td>
+</tr>
+<tr>
+<td>+447700900004</td>
+<td>held by Test CP A. The cache is pre-seeded with Test CP B, which
+answers <code>not_held</code> → purge → Range Holder A
+(<code>invalidated</code>)</td>
+<td>B → A</td>
+</tr>
+<tr>
+<td>+447700900101</td>
+<td>held by Test CP B</td>
+<td>B</td>
+</tr>
+<tr>
+<td>+447700900099</td>
+<td><code>unknown</code>: Test CP A's static host returns its HTML 404
+page</td>
+<td>A</td>
+</tr>
+</tbody>
+</table>
+<p>Final line:
+<code>6/6 lookups behaved as specified (all 200 answers signature-verified).</code>
+(TypeScript), <code>6/6 lookups as expected.</code> (Python). Go adds a
+seventh step, a repeat of 003 from the cache
+(<code>7/7 steps as expected</code>).</p>
+<p><strong>Run the same thing locally</strong> with the static-host
+emulator, which serves the same signed files the way pstn2.org does
+(JSON for extensionless files, HTML 404 pages, 403 for generic user
+agents):</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp-local</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp-local <span class="at">--port</span> 47902</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">npm</span> run example:06</span></code></pre></div>
+<p><code>build.mjs</code> signs with the keys in
+<code>$PSTN2_TESTCP_KEYS</code> or <code>tools/testcp/.keys.json</code>,
+generating test keys there if neither exists (never commit them).</p>
+<p>If <code>PSTN2_NETWORK=live</code> prints
+<code>Could not load the numbering list: HTTP 404</code>, the dummy test
+CP has not been deployed: use the emulator. (A <code>403</code> would
+mean the request was sent with a generic user agent; the SDKs always
+send <code>pstn2-{language}-sdk/1.1.0</code>.)</p>
+<hr />
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="discovery-first-then-the-holder">Discovery first, then the
+holder</h3>
+<p>Every service call follows the same pattern, inside the SDK:</p>
 <ol type="1">
-<li><strong>Use Mock Responses</strong>: Modify examples to use mock
-data</li>
-<li><strong>Run a Local Test Server</strong>: Set up a local
-PSTN2-compatible API server</li>
-<li><strong>Use Test Credentials</strong>: Some PSTN2 providers offer
-sandbox environments</li>
+<li><code>discover(number)</code>: cache → numbering list → Range Holder
+→ (redirect) → holder.</li>
+<li>Call <code>{holder.url}/pstn2/v1/...</code>.</li>
+<li>If that CP answers
+<code>200 {"result":"not_held","cache":{"invalidate":true}}</code>,
+purge the cache entry, rediscover from the Range Holder and retry
+<strong>once</strong> (<code>retried</code> in TypeScript,
+<code>rediscovered</code> in Python, <code>Via.Retried</code> in
+Go).</li>
 </ol>
+<h3 id="outcomes-not-exceptions">Outcomes, not exceptions</h3>
+<p>Discovery never throws; a non-<code>held</code> result means
+traditional PSTN. Verification and routing return outcomes
+(<code>verified: false</code> / <code>accepted: false</code> with a
+reason and a fallback flag); only transport failures and emergency
+location without a holder raise.</p>
+<p><strong>TypeScript:</strong></p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">,</span> calledID })<span class="op">;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (v<span class="op">.</span><span class="at">verified</span>) {</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// add verification (and branding) to the call</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> <span class="cf">if</span> (v<span class="op">.</span><span class="at">fallbackToTraditional</span>) {</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// no PSTN2 holder (v.reason): traditional PSTN treatment</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the holder did not confirm the call: flag as possible spoofing</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>Python:</strong></p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>v <span class="op">=</span> <span class="cf">await</span> client.verify_call(caller_id, called_id)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> v.verified:</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="cf">elif</span> v.fallback_to_pstn:</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    ...   <span class="co"># v.reason, e.g. &quot;discovery_unknown&quot;</span></span></code></pre></div>
+<p><strong>Go:</strong></p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>v<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>VerifyCallRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> CalledID<span class="op">:</span> calledID<span class="op">})</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">||</span> <span class="op">!</span>v<span class="op">.</span>Verified <span class="op">{</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// err: the request failed; v.Reason / v.Fallback: why it is not verified</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">// → handle the call the traditional way</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="configuration">Configuration</h3>
+<p>The examples build their clients from the environment:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> client <span class="op">=</span> PSTN2Client<span class="op">.</span><span class="fu">fromEnv</span>({ cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0103&#39;</span><span class="op">,</span> cpName<span class="op">:</span> <span class="st">&#39;Charlie Comms&#39;</span> })<span class="op">;</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client<span class="op">.</span><span class="fu">start</span>()<span class="op">;</span>   <span class="co">// load the numbering list</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> NetworkConfig.from_env(default_cp_id<span class="op">=</span><span class="st">&quot;CP1-UK-0103&quot;</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="cf">with</span> PSTN2Client.from_config(config) <span class="im">as</span> client:</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Go</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>env <span class="op">:=</span> pstn2<span class="op">.</span>LoadEnv<span class="op">()</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>client<span class="op">,</span> err <span class="op">:=</span> pstn2<span class="op">.</span>NewClient<span class="op">(</span>env<span class="op">.</span>Config<span class="op">())</span></span></code></pre></div>
+<p>In production, configure the regulator's numbering-list URL, your
+RCPID and your Ed25519 key directly (see the <a
+href="../docs/IMPLEMENTATION-GUIDE.md">Implementation Guide</a>,
+Appendix).</p>
+<h3 id="client-cleanup">Client cleanup</h3>
+<p>Always close clients when done:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript: try/finally</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client<span class="op">.</span><span class="fu">close</span>()<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python: async with, or</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client.close()</span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Go</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="cf">defer</span> client<span class="op">.</span>Close<span class="op">()</span></span></code></pre></div>
+<h2 id="testing">Testing</h2>
+<p>The examples double as smoke tests; the SDK test suites run the same
+scenarios automatically and offline:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/typescript <span class="kw">&amp;&amp;</span> <span class="ex">npm</span> test</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python <span class="kw">&amp;&amp;</span> <span class="ex">.venv/bin/pytest</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/go <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test ./...</span></code></pre></div>
 <p>See <a
 href="../docs/TESTING-SPECIFICATION.md">TESTING-SPECIFICATION.md</a> for
-more details.</p>
+the mock network, the static emulator, the browser test harness (<a
+href="https://pstn2.org/src/test-harness/">https://pstn2.org/src/test-harness/</a>),
+the dummy test CP and the Number Discovery conformance requirements.</p>
 <h2 id="integration-patterns">Integration Patterns</h2>
 <h3 id="sip-integration">SIP Integration</h3>
 <p>PSTN2 is designed to work alongside existing SIP infrastructure:</p>
 <ol type="1">
 <li><p><strong>Inbound Calls</strong>: When receiving a SIP INVITE:</p>
 <ul>
-<li>Extract caller ID and call reference from SIP headers</li>
-<li>Call <code>verifyCall()</code> to authenticate</li>
+<li>Extract the caller ID (and <code>X-PSTN2-Token</code>, if
+present)</li>
+<li>Call <code>verifyCall()</code>: discovery finds the caller ID's
+holder</li>
 <li>Add verification results to SIP headers</li>
 <li>Route call to destination</li>
 </ul></li>
 <li><p><strong>Outbound Calls</strong>: When placing a SIP INVITE:</p>
 <ul>
-<li>Call <code>requestRouting()</code> to find direct path</li>
-<li>If accepted, establish media connection to returned endpoint</li>
-<li>If rejected, route via traditional PSTN</li>
+<li>Call <code>requestRouting()</code>: discovery finds the
+destination's holder</li>
+<li>If accepted, send the INVITE to the returned endpoint (DTLS-SRTP
+media)</li>
+<li>If rejected, or there is no PSTN2 holder, route via traditional
+PSTN</li>
 </ul></li>
-<li><p><strong>Emergency Calls</strong>: When receiving 999/112/911:</p>
+<li><p><strong>Emergency Calls</strong>: When receiving 999/112:</p>
 <ul>
 <li>Route to appropriate PSAP</li>
-<li>PSAP calls <code>getLocation()</code> immediately</li>
+<li>PSAP calls <code>getEmergencyLocation()</code> immediately</li>
 <li>Display location to operator</li>
 <li>Dispatch emergency services</li>
 </ul></li>
 </ol>
 <h3 id="backward-compatibility">Backward Compatibility</h3>
 <p>All examples demonstrate graceful fallback to traditional PSTN when
-PSTN2 features are unavailable:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (routing<span class="op">.</span><span class="at">accepted</span>) {</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Use PSTN2 direct routing</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">await</span> <span class="fu">connectToPeer</span>(routing<span class="op">.</span><span class="at">connectionDetails</span>)<span class="op">;</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Fall back to traditional PSTN</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">await</span> <span class="fu">routeViaPSTN</span>(destinationNumber)<span class="op">;</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+PSTN2 features are unavailable (number unallocated, Range Holder not
+participating, number unknown, CP unreachable, routing rejected):</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (routing<span class="op">.</span><span class="at">accepted</span>) {</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Use PSTN2 direct routing</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">await</span> <span class="fu">connectToPeer</span>(routing<span class="op">.</span><span class="at">connectionDetails</span>)<span class="op">;</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Fall back to traditional PSTN</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">await</span> <span class="fu">routeViaPSTN</span>(destinationNumber)<span class="op">;</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <h2 id="performance-considerations">Performance Considerations</h2>
-<p>Based on the examples:</p>
+<p>On the local mock network each step takes a few milliseconds. On real
+networks (SPECIFICATION.md §12.3):</p>
 <ul>
-<li><strong>Directory Lookup</strong>: 20-50ms typical</li>
-<li><strong>Authentication</strong>: 50-100ms typical</li>
-<li><strong>Routing Request</strong>: 80-120ms typical</li>
-<li><strong>Total Call Setup</strong>: 200-500ms typical (vs. 5-8
-seconds traditional PSTN)</li>
+<li><strong>Number Discovery</strong>: cache and numbering-list lookups
+&lt; 1 ms; &lt; 50 ms per network hop. A cache hit needs one query
+(straight to the cached holder); a cache miss needs one, or two for a
+ported number</li>
+<li><strong>Authentication</strong>: &lt; 100 ms (95th percentile)</li>
+<li><strong>Routing Request</strong>: &lt; 200 ms (95th percentile)</li>
+<li><strong>Total Call Setup</strong>: &lt; 1 second (vs. 5–8 seconds
+traditional PSTN)</li>
 </ul>
 <p>Performance tips:</p>
 <ol type="1">
-<li>Cache directory results (with TTL)</li>
+<li>Reuse one client per CP so its number cache stays warm (cached per
+number, 24 h default TTL)</li>
+<li>Load the numbering list at start-up (<code>start()</code> / first
+discovery)</li>
 <li>Use Token Pool for high-volume scenarios</li>
-<li>Implement connection pooling for HTTP clients</li>
-<li>Use exponential backoff for retries</li>
+<li>Keep HTTP connections alive (the SDKs do)</li>
 </ol>
 <h2 id="security-best-practices">Security Best Practices</h2>
 <p>All examples demonstrate:</p>
 <ol type="1">
-<li><strong>Private Key Protection</strong>: Never hardcode keys, use
-environment variables</li>
-<li><strong>TLS Everywhere</strong>: All API calls use HTTPS/TLS
-1.3</li>
-<li><strong>Signature Verification</strong>: All messages are
-cryptographically signed</li>
+<li><strong>Private Key Protection</strong>: never hardcode keys; the
+examples use ephemeral keys</li>
+<li><strong>TLS Everywhere</strong>: production APIs use HTTPS/TLS 1.3
+(the mock network is plain HTTP on localhost only)</li>
+<li><strong>Signature Verification</strong>: example 06 verifies every
+signed discovery answer from the dummy test CP</li>
 <li><strong>Short TTLs</strong>: Token Pool tokens expire in 30
 seconds</li>
-<li><strong>Error Information</strong>: Never expose sensitive data in
+<li><strong>Descriptive User-Agent</strong>:
+<code>pstn2-{language}-sdk/1.1.0</code>; generic agents are rejected by
+many WAFs</li>
+<li><strong>Error Information</strong>: never expose sensitive data in
 error messages</li>
 </ol>
 <h2 id="troubleshooting">Troubleshooting</h2>
-<p>Common issues and solutions:</p>
-<h3 id="authentication-failed">"Authentication failed"</h3>
+<h3 id="could-not-load-the-numbering-list">"Could not load the numbering
+list"</h3>
 <ul>
-<li>Check your private key is correct</li>
-<li>Verify your CP ID matches your account</li>
-<li>Ensure your API endpoint URL is correct</li>
-<li>Check network connectivity to PSTN2 API</li>
+<li>Start the mock network:
+<code>node test-environment/mock-network/server.mjs</code></li>
+<li>If it runs on another port, set <code>PSTN2_MOCK_PORT</code> to
+match</li>
+<li>Live: HTTP 404 means the dummy test CP is not deployed yet (use the
+emulator); 403 means a generic user agent was sent</li>
 </ul>
-<h3 id="directory-lookup-failed">"Directory lookup failed"</h3>
+<h3 id="not-verified-unknown-or-not_participating">"NOT VERIFIED
+(unknown)" or "not_participating"</h3>
 <ul>
-<li>Number may not be in PSTN2 directory yet</li>
-<li>Try with a known PSTN2-enabled number</li>
-<li>Check directory endpoint is accessible</li>
+<li>Expected for +441614960999 (not in service) and +441174960555 (Delta
+Voice is not on PSTN2)</li>
+<li>The call is handled as traditional PSTN; that is the designed
+fallback</li>
+</ul>
+<h3 id="unexpected-holder-or-invalidated">Unexpected holder or
+"invalidated"</h3>
+<ul>
+<li>Example 06 ports +441134960456 during scenario D and resets the mock
+afterwards; if it was interrupted, reset with
+<code>curl -X POST -A pstn2-reset/1.1 http://127.0.0.1:47901/admin/reset</code>
+or restart the mock</li>
+</ul>
+<h3 id="invalid_signature">"invalid_signature"</h3>
+<ul>
+<li>Signatures are only published by the dummy test CP; set
+<code>PSTN2_VERIFY_SIGNATURES=0</code> against the mock network (the
+default)</li>
+<li>With the emulator, rebuild the files with
+<code>tools/testcp/build.mjs</code> after changing keys</li>
 </ul>
 <h3 id="routing-rejected">"Routing rejected"</h3>
 <ul>
-<li>Destination CP may not support direct routing</li>
-<li>Media capabilities may not match</li>
+<li>The destination may not support the offered codecs
+(<code>unsupported_codec</code>)</li>
 <li>Fallback to traditional PSTN is normal</li>
 </ul>
 <h3 id="token-expired">"Token expired"</h3>
@@ -499,28 +1061,33 @@ error messages</li>
 </ul>
 <h2 id="further-reading">Further Reading</h2>
 <ul>
-<li><a href="../docs/SPECIFICATION.md">SPECIFICATION.md</a> - Complete
-PSTN2 protocol specification</li>
+<li><a href="../docs/SPECIFICATION.md">SPECIFICATION.md</a> - PSTN2
+protocol v1.1 (§9 Number Discovery)</li>
 <li><a href="../docs/API-SPECIFICATION.yaml">API-SPECIFICATION.yaml</a>
-- REST API documentation</li>
+- REST API (OpenAPI 3.0)</li>
 <li><a
 href="../docs/IMPLEMENTATION-GUIDE.md">IMPLEMENTATION-GUIDE.md</a> -
 Implementation patterns and best practices</li>
 <li><a
 href="../docs/TESTING-SPECIFICATION.md">TESTING-SPECIFICATION.md</a> -
-Testing strategies and certification</li>
+Test environment, conformance and certification</li>
+<li>SDK READMEs: <a href="../code/typescript/README.md">TypeScript</a> ·
+<a href="../code/python/README.md">Python</a> · <a
+href="../code/go/README.md">Go</a></li>
 </ul>
 <h2 id="support">Support</h2>
 <p>For issues with the examples:</p>
 <ol type="1">
 <li>Check the language-specific README</li>
 <li>Review the troubleshooting section above</li>
-<li>Consult the main specification documents</li>
-<li>Contact your PSTN2 provider for API support</li>
+<li>Consult the specification documents</li>
+<li>Open an issue: <a
+href="https://github.com/njjholland-dot/pstn2/issues">https://github.com/njjholland-dot/pstn2/issues</a></li>
 </ol>
 <h2 id="license">License</h2>
-<p>These examples are provided as reference implementations for the
-PSTN2 protocol. See the main project LICENSE file for details.</p>
+<p>These examples are reference implementations for the PSTN2 protocol,
+released into the public domain (CC0). See the project <a
+href="https://github.com/njjholland-dot/pstn2/blob/main/LICENSE">LICENSE</a>.</p>
     </main>
 
     <footer class="doc-footer">

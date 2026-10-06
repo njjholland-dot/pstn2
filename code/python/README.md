@@ -316,9 +316,13 @@ token pool / routing / emergency including the not_held → rediscover → retry
 
 - [SPECIFICATION.md](../../docs/SPECIFICATION.md) — protocol v1.1 (§9 Number Discovery)
 - [API-SPECIFICATION.yaml](../../docs/API-SPECIFICATION.yaml) — wire formats
-- [IMPLEMENTATION-GUIDE.md](../../docs/IMPLEMENTATION-GUIDE.md)
-- [EXAMPLES.md](../EXAMPLES.md)
+- [IMPLEMENTATION-GUIDE.md](../../docs/IMPLEMENTATION-GUIDE.md) — implementation patterns
+- [EXAMPLES.md](../EXAMPLES.md) — examples in all three languages
+- [TESTING-SPECIFICATION.md](../../docs/TESTING-SPECIFICATION.md) — test environment and conformance
 
 ## License
 
-MIT — see the project LICENSE file.
+Public domain: the PSTN2 project is released under CC0 1.0 Universal (commercial
+use, modification and distribution allowed; no warranty). The Comms Council UK
+logo and branding are excluded. See the project
+[LICENSE](https://github.com/njjholland-dot/pstn2/blob/main/LICENSE).

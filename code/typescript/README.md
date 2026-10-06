@@ -20,7 +20,7 @@ build it locally:
 ```bash
 git clone https://github.com/njjholland-dot/pstn2.git
 cd pstn2/code/typescript
-npm install && npm run build
+npm ci && npm run build
 ```
 
 Once published, installation will be `npm install @pstn2/core`.
@@ -387,7 +387,7 @@ npm run test:coverage
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run build              # → dist/
 npm run watch
 npm run typecheck:examples
@@ -404,11 +404,15 @@ npm run docs
 
 ## License
 
-See the project [LICENSE](../../LICENSE) file.
+Public domain: the PSTN2 project is released under CC0 1.0 Universal (commercial
+use, modification and distribution allowed; no warranty). The Comms Council UK
+logo and branding are excluded. See the project
+[LICENSE](https://github.com/njjholland-dot/pstn2/blob/main/LICENSE).
 
 ## Support
 
 - Documentation: https://pstn2.org/docs
 - Specification: [SPECIFICATION.md](../../docs/SPECIFICATION.md) (§9 Number Discovery), [API-SPECIFICATION.yaml](../../docs/API-SPECIFICATION.yaml)
+- Examples guide: [EXAMPLES.md](../EXAMPLES.md) · Implementation guide: [IMPLEMENTATION-GUIDE.md](../../docs/IMPLEMENTATION-GUIDE.md) · Testing: [TESTING-SPECIFICATION.md](../../docs/TESTING-SPECIFICATION.md)
 - GitHub: https://github.com/njjholland-dot/pstn2
 - Email: nick.holland@8x8.com

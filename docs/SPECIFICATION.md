@@ -214,7 +214,7 @@ Direct real-time query to originating CP.
 {
   "messageId": "550e8400-e29b-41d4-a716-446655440000",
   "timestamp": "2025-11-30T21:30:00.000Z",
-  "version": "1.0",
+  "version": "1.1",
   "requestingCP": "CP1-UK-0002",
   "callerID": "+441234567890",
   "calledID": "+447700900123",
@@ -996,7 +996,7 @@ Total time: ~800ms (vs 5-8 seconds traditional PSTN)
 - [ ] Ed25519 keys properly generated and stored
 - [ ] Message signatures verified on all requests
 - [ ] Rate limiting implemented per specification
-- [ ] Porting chain limits enforced (max 5 hops)
+- [ ] Number Discovery hop limit (max 5) and loop detection enforced
 - [ ] Request size limits enforced (max 100KB)
 - [ ] Timeouts configured (2s default)
 - [ ] Error messages do not leak sensitive information

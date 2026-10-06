@@ -30,9 +30,9 @@ AWS</a>
         </nav>
     <main class="doc-container">
 <h1 id="map-deployment-on-premises">MAP Deployment On-Premises</h1>
-<p><strong>Version:</strong> 1.0 <strong>Date:</strong> 2025-12-01
-<strong>Target Audience:</strong> System Administrators, Infrastructure
-Engineers</p>
+<p><strong>Version:</strong> 1.1 (protocol v1.1) <strong>Date:</strong>
+2026-10-06 <strong>Target Audience:</strong> System Administrators,
+Infrastructure Engineers</p>
 <h2 id="overview">Overview</h2>
 <p>This guide describes deploying a MAP (Managed Access Provider) on
 your own infrastructure using open-source components. This approach
@@ -283,7 +283,7 @@ class="math inline">2, 000−</span>5,000/month (operations)</p>
 <td><strong>Cache</strong></td>
 <td>Redis</td>
 <td>7.0+</td>
-<td>Session &amp; directory cache</td>
+<td>Session &amp; Number Discovery cache</td>
 </tr>
 <tr>
 <td><strong>Web Server</strong></td>
@@ -663,26 +663,36 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="
 <span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header Connection &quot;&quot;;</span></span>
 <span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
 <span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="st">        location / {</span></span>
-<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_pass http://api_backend;</span></span>
-<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_http_version 1.1;</span></span>
-<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header Host </span><span class="dt">\$</span><span class="st">host;</span></span>
-<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header X-Real-IP </span><span class="dt">\$</span><span class="st">remote_addr;</span></span>
-<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header X-Forwarded-For </span><span class="dt">\$</span><span class="st">proxy_add_x_forwarded_for;</span></span>
-<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header X-Forwarded-Proto </span><span class="dt">\$</span><span class="st">scheme;</span></span>
-<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="st">            # Timeouts</span></span>
-<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_connect_timeout 5s;</span></span>
-<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_send_timeout 60s;</span></span>
-<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_read_timeout 60s;</span></span>
-<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
-<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
-<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a><span class="co"># Start services</span></span>
-<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /opt/map</span>
-<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="st">        # Number Discovery for tenants (SPECIFICATION.md §9): public, bodyless,</span></span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a><span class="st">        # cacheable GETs from other CPs; answered from each tenant&#39;s number database</span></span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a><span class="st">        location ~ ^/t/[a-z0-9-]+/pstn2/v1/(numbers/[0-9]+|keys)</span><span class="dt">\$</span><span class="st"> {</span></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="st">            limit_except GET HEAD { deny all; }</span></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_pass http://api_backend;</span></span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_http_version 1.1;</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header Connection &quot;&quot;;</span></span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a><span class="st">            add_header Cache-Control &quot;public, max-age=300&quot;;</span></span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a><span class="st">        location / {</span></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_pass http://api_backend;</span></span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_http_version 1.1;</span></span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header Host </span><span class="dt">\$</span><span class="st">host;</span></span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header X-Real-IP </span><span class="dt">\$</span><span class="st">remote_addr;</span></span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header X-Forwarded-For </span><span class="dt">\$</span><span class="st">proxy_add_x_forwarded_for;</span></span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_set_header X-Forwarded-Proto </span><span class="dt">\$</span><span class="st">scheme;</span></span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a><span class="st">            # Timeouts</span></span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_connect_timeout 5s;</span></span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_send_timeout 60s;</span></span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a><span class="st">            proxy_read_timeout 60s;</span></span>
+<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a><span class="st">        }</span></span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a><span class="co"># Start services</span></span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /opt/map</span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div>
 <h3 id="step-8-set-up-monitoring-prometheus--grafana">Step 8: Set Up
 Monitoring (Prometheus + Grafana)</h3>
 <div class="sourceCode" id="cb9"><pre

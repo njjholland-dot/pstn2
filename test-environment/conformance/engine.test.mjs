@@ -1,5 +1,5 @@
 // Unit tests for the reference Number Discovery engine used by the test harness
-// and the mock network. Run: node --test test-environment/conformance/
+// and the mock network. Run: node --test test-environment/conformance/engine.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

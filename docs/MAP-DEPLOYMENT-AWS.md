@@ -1,7 +1,7 @@
 # MAP Deployment on AWS
 
-**Version:** 1.0
-**Date:** 2025-12-01
+**Version:** 1.1 (protocol v1.1)
+**Date:** 2026-10-06
 **Target Audience:** DevOps Engineers, Cloud Architects
 
 ## Overview
@@ -43,7 +43,7 @@ This guide provides step-by-step instructions for deploying a MAP (Managed Acces
 │                        │                                          │
 │  ┌─────────────────────▼────────────────────────────────────┐   │
 │  │              ElastiCache (Redis Cluster)                  │   │
-│  │               Directory Cache, Sessions                   │   │
+│  │               Discovery Cache, Sessions                   │   │
 │  └───────────────────────────────────────────────────────────┘   │
 │                        │                                          │
 │  ┌─────────────────────▼────────────────────────────────────┐   │
@@ -896,6 +896,20 @@ resource "aws_wafv2_web_acl_association" "alb" {
 }
 ```
 
+**Number Discovery traffic.** Other CPs query each tenant's discovery
+endpoints, `GET /t/{tenant}/pstn2/v1/numbers/{digits}` and
+`GET /t/{tenant}/pstn2/v1/keys` (SPECIFICATION.md §9.2, §9.6). These are
+public, bodyless and cacheable, and a single large CP may send 200 requests per
+second (§11.2), well above the per-IP rate rule above. Either raise the limit
+for these paths with a `scope_down_statement`, or put them behind CloudFront
+(cache for a few minutes, honouring the `Cache-Control` the API sets). Do not
+block PSTN2 SDK user agents (`pstn2-*-sdk/*`); the managed common rule set's
+empty-User-Agent rule is fine, because PSTN2 clients always send one.
+
+The API servers keep the regulator's numbering list in memory and refresh it
+daily (`ETag` / `If-None-Match`); ElastiCache holds the shared per-number
+discovery cache. No data is replicated to or from other CPs.
+
 ## Cost Optimization
 
 ### 1. Right-Sizing
@@ -1309,7 +1323,18 @@ aws cloudwatch get-metric-statistics \
   --statistics Average
 ```
 
-**Solution:** Scale up ECS tasks, optimize database queries, increase Redis cache TTL
+**Solution:** Scale up ECS tasks, optimize database queries, check the discovery cache hit rate in Redis
+
+**Issue 4: Other CPs Cannot Discover Tenants' Numbers**
+```bash
+# Query a tenant's discovery endpoint the way another CP would
+curl -s -A "pstn2-check/1.1" https://pstn2.map.example/t/cp1-uk-0123/pstn2/v1/numbers/441614960123
+```
+
+**Solution:** A `403` or `429` means the WAF rule is blocking discovery traffic
+(see Step 10); a `404` for a number the tenant serves means its number
+database is missing the number; check that the regulator's numbering list
+shows the tenant's Range Holder URL against the block.
 
 ## Conclusion
 
