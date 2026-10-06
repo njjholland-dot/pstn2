@@ -4,6 +4,7 @@
 //   node tools/narrate/build-narration.mjs                  # every deck with a narration.json
 //   node tools/narrate/build-narration.mjs distributed-database test-harness
 //   PSTN2_VOICE="Jamie (Premium)" node tools/narrate/build-narration.mjs --force
+//   PSTN2_VOICE=system node tools/narrate/build-narration.mjs --force   # the macOS System Voice (e.g. a Siri voice)
 //
 // For each deck (animations/src/<deck>/narration.json) and each scene:
 //   1. each segment's spoken text (lexicon applied) → macOS `say` → 48 kHz WAV
@@ -42,7 +43,18 @@ const TAIL = 0.9;         // after the last line
 const RATE = Number(process.env.PSTN2_RATE || 172); // words per minute
 const SR = 48000;
 
+// The macOS System Voice (Accessibility › Read & Speak). Siri voices are only
+// reachable this way: `say` without -v speaks with the selected System Voice.
+function systemVoiceId() {
+    try {
+        const out = execFileSync('defaults', ['read', 'com.apple.Accessibility', 'SpokenContentDefaultVoiceSelectionsByLanguage'], { encoding: 'utf8' });
+        const m = out.match(/voiceId\s*=\s*"?([^";\n]+)"?/);
+        return m ? m[1] : 'unknown';
+    } catch { return 'unknown'; }
+}
+
 function pickVoice() {
+    if (process.env.PSTN2_VOICE === 'system') return `system:${systemVoiceId()}`;
     if (process.env.PSTN2_VOICE) return process.env.PSTN2_VOICE;
     const list = execFileSync('say', ['-v', '?'], { encoding: 'utf8' }).split('\n');
     const gb = list.filter((l) => /\ben_GB\b/.test(l)).map((l) => l.replace(/\s+en_GB.*$/, '').trim());
@@ -57,7 +69,8 @@ function renderSegment(voice, text) {
     const wav = join(cacheDir, `${key}.wav`);
     if (existsSync(wav) && !FORCE) return wav;
     const aiff = join(tmpdir(), `p2-${key}.raw.wav`);
-    run('say', ['-v', voice, '-r', String(RATE), '-o', aiff, '--file-format=WAVE', '--data-format=LEI16@' + SR, text]);
+    const voiceArgs = voice.startsWith('system:') ? [] : ['-v', voice];
+    run('say', [...voiceArgs, '-r', String(RATE), '-o', aiff, '--file-format=WAVE', '--data-format=LEI16@' + SR, text]);
     // trim leading/trailing digital silence so our own gaps are exact
     run('ffmpeg', ['-y', '-v', 'error', '-i', aiff,
         '-af', 'silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.02,areverse,silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.05,areverse',
@@ -148,7 +161,7 @@ function buildDeck(deck, voice) {
 const voice = pickVoice();
 const all = readdirSync(srcDir).filter((d) => existsSync(join(srcDir, d, 'narration.json')));
 const targets = decks.length ? decks : all;
-console.log(`Narration voice: ${voice}${/Premium|Enhanced/.test(voice) ? '' : '  (standard quality — install a Premium/Enhanced en-GB voice for broadcast quality)'}`);
+console.log(`Narration voice: ${voice}${/Premium|Enhanced|siri/i.test(voice) ? '' : '  (standard quality — install a Premium/Enhanced en-GB voice for broadcast quality)'}`);
 for (const d of targets) {
     if (!all.includes(d)) { console.error(`no narration.json for ${d}`); process.exitCode = 1; continue; }
     buildDeck(d, voice);
