@@ -7,7 +7,7 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment / secrets (test-environment/backend/.env with dev defaults IS tracked)
+# Environment / secrets
 .env.local
 .env.production
 *.pem
@@ -43,3 +43,4 @@ tools/narrate/.cache/
 
 # Playwright MCP session files
 .playwright-mcp/
+.env

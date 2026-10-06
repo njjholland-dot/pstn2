@@ -1,232 +1,68 @@
-# PSTN2 Test Harness
+# PSTN2 test environment
 
-A comprehensive test environment for the PSTN2 protocol, simulating multiple Communication Providers (CPs) with full authentication, routing, and directory services.
+Everything needed to prove that PSTN2 Number Discovery works: who has this number?
+Three Communication Providers are Range Holders with ported numbers, and Ofcom publishes
+the numbering list. Implementations must agree on every answer.
 
-## 🎯 Overview
+There is no Docker and no database. Node, Python and Go are all it needs.
 
-This test harness provides a complete, working implementation of the PSTN2 protocol with:
+```
+test-environment/
+  fixtures/                 single source of truth for all tests and demos
+    harness-network.json      Ofcom list + three CPs (Alpha, Bravo, Charlie) with ranges,
+                              numbers in service, ported-in and ported-out numbers
+    scenarios.json            scenarios A–G (unported, ported, cached, invalidated, 404,
+                              non-participating, unallocated)
+    testcp-network.json       the live dummy test CP at https://pstn2.org/testcp/
+  mock-network/
+    server.mjs                the three CPs + Ofcom over real HTTP on localhost:
+                              discovery, auth, token pool, routing, emergency
+    static-server.mjs         emulates the pstn2.org static host (403 for curl/Go user
+                              agents, HTML 404s), for testing the dummy test CP locally
+  conformance/
+    engine.test.mjs           tests for the reference engine
+    run.sh                    engine + all three SDK suites + all 18 examples
+```
 
-- **3 Simulated CPs**: CP1 (Direct Query), CP2 (Direct Query), CP3 (Token Pool)
-- **Real MySQL Database**: 500+ phone numbers across CPs
-- **Full Protocol Implementation**: Authentication, Directory, Routing, Porting
-- **Web UI**: Interactive call simulator with CP switching
-- **Complete Test Suite**: 17 integration tests + 42 unit tests with 100% pass rate
+All numbers are from Ofcom's reserved TV/drama ranges, and all CPs are fictional.
 
-## 🚀 Quick Start
+## Watch it
 
-### Prerequisites
+The narrated, interactive test harness runs in a browser: **https://pstn2.org/src/test-harness/**.
+It uses the same reference engine (`animations/src/test-harness/harness-engine.js`) and the
+same fixtures as the tests.
 
-- Node.js 18+
-- MySQL 8.0
-- npm or yarn
-
-### 1. Start Backend
+## Run it
 
 ```bash
-cd backend
-npm install
-npm run dev
+test-environment/conformance/run.sh           # everything (about 2 minutes)
+test-environment/conformance/run.sh --quick   # engine + SDK test suites
+test-environment/conformance/run.sh --live    # also exercise the live dummy test CP
 ```
 
-The backend will start 4 services:
-- CP1 API: http://localhost:3001
-- CP2 API: http://localhost:3002
-- CP3 API: http://localhost:3003
-- Simulator: http://localhost:3000
-
-### 2. Start Frontend
+Start the mock network yourself, then run any SDK example against it:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+node test-environment/mock-network/server.mjs            # http://127.0.0.1:47901
+cd code/typescript && npm run example:06                  # or examples 01–05
+cd code/python && .venv/bin/python examples/06_number_discovery.py
+cd code/go && go run ./examples/06-number-discovery
 ```
 
-Frontend will be available at: http://localhost:5173
+Mock network endpoints (CP keys: `alpha`, `bravo`, `charlie`):
 
-### 3. Run Tests
+| Endpoint | Purpose |
+|---|---|
+| `GET /numbering-list.json` | Ofcom S1–S9 list + Range Holder URL (ETag/304) |
+| `GET /cp/{key}/pstn2/v1/numbers/{digits}` | Number Discovery: `held` / `redirect` / `not_held` / 404 |
+| `POST /cp/{key}/pstn2/v1/auth/verify`, `/auth/tokens`, `/routing/request`, `/emergency/location` | Services. A CP that no longer holds the number answers `not_held` + `cache.invalidate` |
+| `POST /admin/port {number, fromCpId, toCpId}` · `POST /admin/reset` · `GET /admin/log` | Test control |
 
-```bash
-cd backend
+## Test your own implementation
 
-# Run all tests (unit + integration)
-npm test
+Point your client at the live dummy test CP. The test numbers and expected answers are
+on https://pstn2.org/testcp/. Send a descriptive `User-Agent`: the host rejects
+`curl/*` and `Go-http-client/*`.
 
-# Run only unit tests
-npm test -- src/__tests__/
-
-# Run only integration tests
-npx ts-node tests/integration.test.ts
-```
-
-## 📊 Test Results
-
-```
-✅ Unit Tests: 42/42 passing (100%)
-✅ Integration Tests: 17/17 passing (100%)
-⏱️  Total execution time: ~1 second
-📊 Test coverage: All PSTN2 use cases + utility functions
-```
-
-## 🏗️ Architecture
-
-### Backend Structure
-
-```
-backend/
-├── src/
-│   ├── api/                    # API route handlers
-│   │   ├── cp-routes.ts        # PSTN2 protocol endpoints
-│   │   └── simulator-routes.ts # Test control API
-│   ├── lib/
-│   │   ├── core/              # Core PSTN2 services
-│   │   │   ├── authentication.ts  # Direct Query & Token Pool
-│   │   │   ├── directory.ts       # Number lookup & caching
-│   │   │   ├── routing.ts         # Direct routing negotiation
-│   │   │   ├── messaging.ts       # HTTP client with retry
-│   │   │   ├── types.ts           # TypeScript interfaces
-│   │   │   └── utils.ts           # Helpers & validation
-│   │   └── database/
-│   │       └── connection.ts   # MySQL connection pooling
-│   ├── __tests__/             # Unit tests
-│   │   ├── setup.ts           # Jest test setup
-│   │   └── utils.test.ts      # Utils unit tests (42 tests)
-│   └── server.ts              # Main entry point
-├── tests/
-│   └── integration.test.ts    # Integration test suite (17 tests)
-├── jest.config.js             # Jest configuration
-└── database/
-    ├── migrations/            # SQL schema
-    └── seeds/                 # Test data
-```
-
-### Database Schema
-
-8 tables supporting complete PSTN2 functionality:
-
-- **cp_config** - CP configurations
-- **numbers** - Phone number inventory
-- **directory_cache** - Cached directory entries
-- **auth_tokens** - Token pool for authentication
-- **call_records** - Call history
-- **message_log** - Protocol message audit trail
-- **porting_history** - Number porting records
-- **statistics** - System metrics
-
-## 🧪 Testing
-
-### Unit Tests (42 tests)
-
-Comprehensive tests for utility functions:
-
-- **Phone Number Utilities** (17 tests): normalizePhoneNumber, isValidPhoneNumber, numberMatchesRange, extractRange
-- **ID Generation** (9 tests): generateCallReference, generateMessageId, generateTokenId
-- **Timestamp Utilities** (9 tests): getCurrentTimestamp, addSeconds, isExpired
-- **Validation** (7 tests): isValidCPId, isValidUrl, isValidUUID
-
-### Integration Tests (17 tests)
-
-End-to-end tests covering:
-
-1. Health checks (all services)
-2. CP info endpoints
-3. Directory queries (found/not found)
-4. Directory publishing
-5. Direct Query authentication
-6. Token Pool authentication (create & verify)
-7. Direct routing requests
-8. Porting queries
-9. Database access
-10. End-to-end call simulation
-11. CORS handling
-12. Error handling
-13. Media capability negotiation
-
-### Test Data
-
-- **CP1-UK-0001 (TelcoOne)**: 200 numbers, Direct Query auth
-- **CP2-UK-0002 (ConnectCom)**: 200 numbers, Direct Query auth
-- **CP3-UK-0003 (NetLink)**: 100 numbers, Token Pool auth
-
-## 🔧 Configuration
-
-### Database (backend/.env)
-
-```bash
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=PSTN2_User
-DB_PASSWORD=PSTN2_Pass_2024!
-DB_NAME=PSTN2
-```
-
-## 📖 API Endpoints
-
-### PSTN2 Protocol (each CP)
-
-```
-GET  /pstn2/v1/info                      - CP information
-GET  /pstn2/v1/health                    - Health check
-POST /pstn2/v1/directory/query           - Look up number
-GET  /pstn2/v1/directory/all             - Get all ranges
-POST /pstn2/v1/auth/verify               - Direct Query auth
-POST /pstn2/v1/auth/token/create         - Create token (CP3)
-POST /pstn2/v1/auth/token/verify         - Verify token (CP3)
-POST /pstn2/v1/routing/request           - Direct routing request
-POST /pstn2/v1/porting/query             - Porting status
-```
-
-### Simulator API
-
-```
-GET  /health                             - Simulator health
-POST /api/call/initiate                  - Simulate call
-GET  /api/call/:ref/messages             - Get call messages
-GET  /api/cp/:id/numbers                 - Get CP numbers
-GET  /api/cp/:id/stats                   - Get CP statistics
-```
-
-## 📝 Usage Examples
-
-### Test Call Between CPs
-
-```bash
-# Directory lookup
-curl -X POST http://localhost:3001/pstn2/v1/directory/query \
-  -H "Content-Type: application/json" \
-  -d '{"number": "+441712345000"}'
-
-# Initiate call simulation
-curl -X POST http://localhost:3000/api/call/initiate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fromCP": "CP1-UK-0001",
-    "fromNumber": "+441712345000",
-    "toNumber": "+441770090000"
-  }'
-```
-
-## 📚 Documentation
-
-- **DEPLOYMENT-NOTES.md** - Setup and deployment guide
-- **GIT-WORKFLOW.md** - Git usage and workflow  
-- **IMPLEMENTATION-PLAN.md** - Detailed implementation plan (50+ pages)
-- **BUILD-STATUS.md** - Progress tracking
-
-## 🎯 Success Metrics
-
-- ✅ Backend: 100% complete (2500+ lines)
-- ✅ Frontend: 100% complete (1500+ lines)
-- ✅ Database: Fully configured and seeded
-- ✅ Unit Tests: 42/42 passing (100%)
-- ✅ Integration Tests: 17/17 passing (100%)
-- ✅ Git: 5 commits with full history
-- ✅ Documentation: Comprehensive guides
-
-**Status**: Production Ready - All Tests Passing ✅
-
----
-
-**Version**: 1.0.0
-**Updated**: 2025-12-03
-**Total Lines of Code**: 4800+
+To test a Range Holder you have built, serve its answers for the numbers in `harness-network.json`.
+Then point a copy of the numbering list at it and run scenarios A–G with any of the SDKs.
