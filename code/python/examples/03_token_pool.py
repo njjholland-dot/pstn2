@@ -1,94 +1,77 @@
 """
-Example 3: Token Pool Authentication
+Example 3: Token Pool authentication
 
-This example demonstrates Token Pool authentication (Option 2),
-which creates a shared token before placing the call.
+Option 2 of §5: the originating CP creates a short-lived token *before* placing the
+call; the terminating CP verifies the token instead of making a Direct Query.
+
+  * Alpha Telecom (originating, CP1-UK-0101) creates a token for +442079460100 →
+    +441614960123 in the pool of the caller ID's holder (itself, found by discovery).
+  * Bravo Networks (terminating, CP1-UK-0102) verifies the token presented with the
+    call: it discovers the caller ID's holder and reads GET /auth/tokens/{tokenId}.
+  * A forged token does not verify → Bravo falls back to Direct Query.
+
+Run the local mock network first:
+    node test-environment/mock-network/server.mjs
+then:
+    python examples/03_token_pool.py
 """
 
+from __future__ import annotations
+
 import asyncio
+import dataclasses
+import logging
 import os
-from pstn2.client import PSTN2Client, AuthenticationMode
-from pstn2.types import CallBranding
+import sys
+
+from pstn2 import NetworkConfig, PSTN2Client, PSTN2Error
+
+CALLER_ID = "+442079460100"  # Alpha customer
+CALLED_ID = "+441614960123"  # Bravo customer
 
 
-async def main():
-    # Initialize client with Token Pool mode
-    client = PSTN2Client(
-        cp_id='CP1-UK-0001',
-        api_endpoint='https://api.yourcp.com/pstn2/v1',
-        private_key=os.environ['PSTN2_PRIVATE_KEY'],
-        auth_mode=AuthenticationMode.TOKEN_POOL,
-        token_pool_endpoint='https://tokenpool.pstn2.org',
-        token_pool_auth=os.environ['TOKEN_POOL_JWT'],
-    )
+async def main() -> int:
+    logging.basicConfig(level=os.environ.get("PSTN2_LOG_LEVEL", "WARNING"))
+    alpha_cfg = NetworkConfig.from_env(default_cp_id="CP1-UK-0101")
+    bravo_cfg = dataclasses.replace(alpha_cfg, cp_id=os.environ.get("PSTN2_TERMINATING_CP_ID", "CP1-UK-0102"))
+    print("PSTN2 Example 3: Token Pool")
+    print(f"  Network:         {alpha_cfg.network}  ({alpha_cfg.numbering_list_url})")
+    print(f"  Originating CP:  {alpha_cfg.cp_id}")
+    print(f"  Terminating CP:  {bravo_cfg.cp_id}")
+    print("---")
 
-    print('Token Pool Authentication Example')
-    print('---')
+    async with PSTN2Client.from_config(alpha_cfg) as alpha, PSTN2Client.from_config(bravo_cfg) as bravo:
+        call_ref = alpha.generate_call_reference()
+        print(f"\n1. {alpha_cfg.cp_id} creates a token before calling {CALLED_ID}")
+        try:
+            token = await alpha.auth.create_token(
+                CALLER_ID, CALLED_ID, call_ref, ttl=30,
+                branding={"displayName": "Alpha Telecom", "callPurpose": "Appointment reminder"},
+            )
+        except PSTN2Error as error:
+            print(f"  ! Could not create token: {error}\n  → Place the call without a token (Direct Query will be used)")
+            return 1
+        print(f"  ✓ Token {token.token_id} created at {token.holder}")
+        print(f"    Expires: {token.expires_at}")
+        print(f"    Pool found by discovery: hops {' → '.join(token.discovery.hops) if token.discovery else '-'}")
 
-    # STEP 1: Create token before placing call (Originating CP)
-    print('Step 1: Creating authentication token...')
-
-    try:
-        token = await client.auth.create_token(
-            caller_id='+441234567890',
-            called_id='+447700900123',
-            call_reference='token-call-123',
-            ttl=30,  # 30 seconds
-            branding=CallBranding(
-                display_name='ACME Corp',
-                call_purpose='Customer Service',
-            ),
-        )
-
-        print('✓ Token created successfully')
-        print(f'  Token ID: {token.token_id}')
-        print(f'  Expires: {token.expires_at}')
-        print(f'  Call Reference: {token.call_reference}')
-        print('')
-
-        # STEP 2: Place call with token in SIP INVITE
-        print('Step 2: Placing call with token...')
-        print('  SIP INVITE Header:')
-        print(f'    X-PSTN2-Token: {token.token_id}')
-        print('')
-
-        # Simulate some time passing
-        await asyncio.sleep(1)
-
-        # STEP 3: Recipient CP verifies token (on different CP)
-        print('Step 3: Recipient CP verifying token...')
-
-        verification = await client.auth.verify_token(token.token_id)
-
-        if verification:
-            print('✓ Token verified successfully')
-            print(f'  Originating CP: {verification.originating_cp}')
-            print(f'  Caller ID: {verification.caller_id}')
-            print(f'  Called ID: {verification.called_id}')
-            print(f'  Verified: {verification.verified}')
-
-            if verification.branding:
-                print(f'  Display Name: {verification.branding.display_name}')
-                print(f'  Call Purpose: {verification.branding.call_purpose}')
-            print('')
-            print('Call can proceed with confidence!')
+        print(f"\n2. {bravo_cfg.cp_id} receives the call with token {token.token_id} and verifies it")
+        tok = await bravo.auth.verify_token(token.token_id, CALLER_ID)
+        if tok and tok.verified:
+            print(f"  ✓ Token verified: originatingCP={tok.originating_cp} callerID={tok.caller_id} calledID={tok.called_id}")
+            print(f"    callReference matches: {tok.call_reference == call_ref}")
         else:
-            print('✗ Token verification failed')
-            print('Token may have expired or been tampered with')
+            print("  ✗ Token did not verify → Direct Query fallback")
 
-        # STEP 4: Show token pool benefits
-        print('')
-        print('Token Pool Benefits:')
-        print('  ✓ Reduced query load (one create, many verifies)')
-        print('  ✓ Works with any SIP header')
-        print('  ✓ Short TTL limits fraud window')
-        print('  ✓ Shared pool enables analytics')
+        print("\n3. A call arrives with a forged token TK-AAAAAAAAAAAAAAAA")
+        v = await bravo.auth.verify_call(CALLER_ID, CALLED_ID, token_id="TK-AAAAAAAAAAAAAAAA")
+        print("  Token pool: not found → fell back to Direct Query")
+        print(f"  {'✓' if v.verified else '✗'} Direct Query result: verified={v.verified} trust={v.trust_level}"
+              f" (by {v.holder})")
 
-    except Exception as error:
-        print(f'Error with token pool: {error}')
-
-    await client.close()
+    print("\nDone.")
+    return 0
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

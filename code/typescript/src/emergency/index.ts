@@ -1,120 +1,72 @@
 /**
- * Emergency services module
- * Handles live location for emergency calls (POST /emergency/location)
+ * Emergency services (SPECIFICATION.md §8).
+ *
+ * The PSAP discovers the caller's current holder (§9) and asks it for live
+ * location: `POST {holder}/pstn2/v1/emergency/location`. Failures are
+ * THROWN (DiscoveryError / PSTN2Error) so the PSAP can see the query failed
+ * and use its other location sources; this method never returns null.
  */
 
 import { MessagingClient } from '../messaging';
 import {
+  CallReference,
+  CpRef,
+  DiscoveryResult,
   EmergencyLocationRequest,
   EmergencyLocationResponse,
+  NotHeldResponse,
   PhoneNumber,
-  CallReference,
 } from '../types';
+import { toE164 } from '../utils/numbering';
 import { getLogger } from '../utils/logger';
 
 const logger = getLogger();
 
 export interface GetLocationParams {
   callerID: PhoneNumber;
-  callReference: CallReference;
+  callReference?: CallReference;
+  /** PSAP identifier, e.g. UK-999-LONDON-01. */
   psapID: string;
 }
 
-export class EmergencyModule {
-  private messagingClient: MessagingClient;
-  private directoryLookup: (phoneNumber: PhoneNumber) => Promise<{ cpId: string; apiEndpoint: string }>;
+export type EmergencyLocationResult = EmergencyLocationResponse & {
+  holder: CpRef;
+  discovery: DiscoveryResult;
+  retried: boolean;
+};
 
-  constructor(
-    messagingClient: MessagingClient,
-    directoryLookup: (phoneNumber: PhoneNumber) => Promise<{ cpId: string; apiEndpoint: string }>
-  ) {
-    this.messagingClient = messagingClient;
-    this.directoryLookup = directoryLookup;
+export class EmergencyModule {
+  private readonly messaging: MessagingClient;
+
+  constructor(messaging: MessagingClient) {
+    this.messaging = messaging;
   }
 
-  /**
-   * Get live location for emergency call (PSAP use).
-   *
-   * Errors are logged and RETHROWN: a PSAP caller must be able to see that
-   * the location query failed so it can fall back to other location sources
-   * (e.g. billing address). This method never silently returns null.
-   */
-  async getLocation(params: GetLocationParams): Promise<EmergencyLocationResponse> {
-    const { callerID, callReference, psapID } = params;
-
-    logger.info('Emergency location request', {
-      callerID,
-      callReference,
-      psapID,
-    });
-
+  async getLocation(params: GetLocationParams): Promise<EmergencyLocationResult> {
+    const callerID = toE164(params.callerID);
+    const callReference = params.callReference || this.messaging.generateCallReference();
+    logger.info('Emergency location request', { callerID, psapID: params.psapID });
+    const request: EmergencyLocationRequest = { requestingPSAP: params.psapID, callerID, callReference };
     try {
-      // Lookup CP hosting the caller's number
-      const cpInfo = await this.directoryLookup(callerID);
-
-      logger.debug('Found CP for emergency caller', {
-        callerID,
-        cpId: cpInfo.cpId,
-      });
-
-      // Build location request
-      const request: EmergencyLocationRequest = {
-        callerID,
-        callReference,
-        requestingPSAP: psapID,
-        timestamp: this.messagingClient.getCurrentTimestamp(),
-      };
-
-      // Make request to CP
-      const { response } = await this.messagingClient.request<
-        EmergencyLocationRequest,
-        EmergencyLocationResponse
-      >('/emergency/location', cpInfo.apiEndpoint, request);
-
-      logger.info('Emergency location received', {
-        callReference,
-        hasLocation: !!response.location,
-        hasAddress: !!response.address,
-      });
-
-      return response;
-    } catch (error) {
-      logger.error('Failed to get emergency location', {
-        callerID,
-        callReference,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      // Rethrow: PSAP callers must see failures and apply their own fallback
-      throw error;
+      const r = await this.messaging.callHolder<EmergencyLocationResponse>(callerID, 'POST', '/emergency/location', request);
+      return { ...r.response, holder: r.holder, discovery: r.discovery, retried: r.retried };
+    } catch (err) {
+      logger.error('Emergency location query failed', { callerID, error: (err as Error).message });
+      throw err;
     }
   }
 
-  /**
-   * Handle emergency location request (CP server-side)
-   * Called when PSAP requests location for our customer
-   */
+  /** Server side: answer a PSAP's location request (NotHeldResponse if not our number). */
   async handleLocationRequest(
     request: EmergencyLocationRequest,
-    getLocationData: (
-      callerID: PhoneNumber,
-      callReference: CallReference
-    ) => Promise<EmergencyLocationResponse>
-  ): Promise<EmergencyLocationResponse> {
-    logger.info('Handling emergency location request', {
-      callerID: request.callerID,
-      callReference: request.callReference,
-      requestingPSAP: request.requestingPSAP,
-    });
-
-    // Get location from device/database
-    const locationData = await getLocationData(request.callerID, request.callReference);
-
-    logger.info('Providing emergency location', {
-      callReference: request.callReference,
-      accuracy: locationData.location?.accuracy,
-      source: locationData.location?.source,
-    });
-
-    return locationData;
+    options: {
+      holdsNumber: (number: PhoneNumber) => Promise<boolean> | boolean;
+      getLocation: (callerID: PhoneNumber, callReference: CallReference) => Promise<EmergencyLocationResponse>;
+    }
+  ): Promise<EmergencyLocationResponse | NotHeldResponse> {
+    if (!(await options.holdsNumber(request.callerID))) {
+      return { result: 'not_held', callReference: request.callReference, cache: { invalidate: true, scope: 'number' }, timestamp: new Date().toISOString() };
+    }
+    return options.getLocation(request.callerID, request.callReference);
   }
 }

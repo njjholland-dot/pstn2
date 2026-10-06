@@ -1,109 +1,123 @@
 /*
-Example 3: Token Pool Authentication
+Example 03: Token Pool authentication
 
-This example demonstrates Token Pool authentication (Option 2),
-which creates a shared token before placing the call.
+The originating CP (Alpha Telecom) creates a short-lived token for an outbound
+call from +442079460100 to +441614960123 at the CP holding the caller ID
+(found with Number Discovery — here Alpha's own server). The token travels with
+the call; the terminating CP (Bravo Networks) discovers the caller ID's holder
+and verifies the token there.
+
+An unknown token is rejected, and the terminating CP falls back to a Direct
+Query verification.
+
+	node test-environment/mock-network/server.mjs     # in another terminal
+	go run ./examples/03-token-pool
 */
-
 package main
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
+	"os/signal"
+	"strings"
 	"time"
 
-	"github.com/pstn2/pstn2-go/pkg/client"
-	"github.com/pstn2/pstn2-go/pkg/types"
+	"github.com/njjholland-dot/pstn2/code/go/pkg/pstn2"
 )
 
 func main() {
-	// Initialize client with Token Pool mode
-	pstn2Client, err := client.NewClient(&client.Config{
-		CPID:              "CP1-UK-0001",
-		APIEndpoint:       "https://api.yourcp.com/pstn2/v1",
-		PrivateKey:        os.Getenv("PSTN2_PRIVATE_KEY"),
-		AuthMode:          types.AuthModeTokenPool,
-		TokenPoolEndpoint: "https://tokenpool.pstn2.org",
-		TokenPoolAuth:     os.Getenv("TOKEN_POOL_JWT"),
-	})
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	env := pstn2.LoadEnv()
+	origCfg := env.Config() // Alpha Telecom (PSTN2_CP_ID, default CP1-UK-0101)
+	termCfg := env.Config()
+	termCfg.CPID = "CP1-UK-0102" // Bravo Networks
+
+	originating, err := pstn2.NewClient(origCfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize client: %v", err)
+		fmt.Println("Failed to initialise PSTN2 client:", err)
+		os.Exit(1)
 	}
-	defer pstn2Client.Close()
-
-	fmt.Println("Token Pool Authentication Example")
-	fmt.Println("---")
-
-	// STEP 1: Create token before placing call (Originating CP)
-	fmt.Println("Step 1: Creating authentication token...")
-
-	ctx := context.Background()
-
-	token, err := pstn2Client.Auth().CreateToken(ctx, &types.CreateTokenRequest{
-		CallerID:      "+441234567890",
-		CalledID:      "+447700900123",
-		CallReference: "token-call-123",
-		TTL:           30, // 30 seconds
-		Branding: &types.CallBranding{
-			DisplayName: "ACME Corp",
-			CallPurpose: "Customer Service",
-		},
-	})
-
+	defer originating.Close()
+	terminating, err := pstn2.NewClient(termCfg)
 	if err != nil {
-		log.Fatalf("Error creating token: %v", err)
+		fmt.Println("Failed to initialise PSTN2 client:", err)
+		os.Exit(1)
+	}
+	defer terminating.Close()
+
+	fmt.Println(strings.Repeat("=", 64))
+	fmt.Println("PSTN2 Example 03: Token Pool Authentication")
+	fmt.Println(strings.Repeat("=", 64))
+	fmt.Printf("Network: %s   Numbering list: %s\n", env.Network, env.NumberingListURL)
+	fmt.Printf("Originating CP: %s   Terminating CP: %s\n\n", origCfg.CPID, termCfg.CPID)
+
+	if err := originating.Discovery().NumberingList().EnsureFresh(ctx); err != nil {
+		fmt.Println("✗ Cannot load the numbering list:", err)
+		fmt.Println("  Start the mock network first: node test-environment/mock-network/server.mjs")
+		os.Exit(1)
 	}
 
-	fmt.Println("✓ Token created successfully")
-	fmt.Printf("  Token ID: %s\n", token.TokenID)
-	fmt.Printf("  Expires: %s\n", token.ExpiresAt.Format(time.RFC3339))
-	fmt.Printf("  Call Reference: %s\n", token.CallReference)
-	fmt.Println("")
+	caller, called := "+442079460100", "+441614960123"
 
-	// STEP 2: Place call with token in SIP INVITE
-	fmt.Println("Step 2: Placing call with token...")
-	fmt.Println("  SIP INVITE Header:")
-	fmt.Printf("    X-PSTN2-Token: %s\n", token.TokenID)
-	fmt.Println("")
-
-	// Simulate some time passing
-	time.Sleep(1 * time.Second)
-
-	// STEP 3: Recipient CP verifies token (on different CP)
-	fmt.Println("Step 3: Recipient CP verifying token...")
-
-	verification, err := pstn2Client.Auth().VerifyToken(ctx, token.TokenID)
+	// Step 1 — originating CP creates the token.
+	fmt.Println("Step 1: originating CP creates a token")
+	fmt.Printf("  Call %s → %s, TTL 30s\n", caller, called)
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	token, err := originating.Auth().CreateToken(cctx, pstn2.TokenRequest{CallerID: caller, CalledID: called, TTL: 30})
+	cancel()
 	if err != nil {
-		fmt.Printf("✗ Token verification failed: %v\n", err)
-		fmt.Println("Token may have expired or been tampered with")
-		return
+		fmt.Println("  ✗ Token creation failed:", err)
+		fmt.Println("  → Place the call without a token; the terminating CP can use Direct Query")
+		os.Exit(1)
 	}
+	fmt.Printf("  ✓ Token %s (format %s ✓)\n", token.TokenID, pstn2.TokenPattern.String())
+	fmt.Printf("    created at %s, expires %s\n", token.Via.Holder.CPName, token.ExpiresAt)
+	fmt.Printf("    call reference %s\n\n", token.CallReference)
 
-	if verification != nil {
-		fmt.Println("✓ Token verified successfully")
-		fmt.Printf("  Originating CP: %s\n", verification.OriginatingCP)
-		fmt.Printf("  Caller ID: %s\n", verification.CallerID)
-		fmt.Printf("  Called ID: %s\n", verification.CalledID)
-		fmt.Printf("  Verified: %t\n", verification.Verified)
+	// Step 2 — the token travels with the call (e.g. in a SIP header).
+	fmt.Println("Step 2: call signalled with header  X-PSTN2-Token: " + token.TokenID)
+	fmt.Println()
 
-		if verification.Branding != nil {
-			fmt.Printf("  Display Name: %s\n", verification.Branding.DisplayName)
-			fmt.Printf("  Call Purpose: %s\n", verification.Branding.CallPurpose)
-		}
-		fmt.Println("")
-		fmt.Println("Call can proceed with confidence!")
-	} else {
-		fmt.Println("✗ Token verification failed")
-		fmt.Println("Token may have expired or been tampered with")
+	// Step 3 — terminating CP verifies it at the caller ID's holder.
+	fmt.Println("Step 3: terminating CP verifies the token")
+	start := time.Now()
+	cctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	tv, err := terminating.Auth().VerifyToken(cctx, caller, token.TokenID)
+	cancel()
+	if err != nil {
+		fmt.Println("  ✗ Token verification failed:", err)
+		fmt.Println("  → Treat the call as unverified (traditional PSTN handling)")
+		os.Exit(1)
 	}
+	fmt.Printf("  ✓ Token verified by %s in %dms\n", tv.Via.Holder.CPName, time.Since(start).Milliseconds())
+	fmt.Printf("    Originating CP: %s\n", tv.OriginatingCP)
+	fmt.Printf("    Caller → called: %s → %s\n", tv.CallerID, tv.CalledID)
+	fmt.Printf("    Call reference matches: %v\n\n", tv.CallReference == token.CallReference)
 
-	// STEP 4: Show token pool benefits
-	fmt.Println("")
-	fmt.Println("Token Pool Benefits:")
-	fmt.Println("  ✓ Reduced query load (one create, many verifies)")
-	fmt.Println("  ✓ Works with any SIP header")
-	fmt.Println("  ✓ Short TTL limits fraud window")
-	fmt.Println("  ✓ Shared pool enables analytics")
+	// Step 4 — a forged token is rejected; fall back to Direct Query.
+	forged := "TK-AAAAAAAAAAAAAAAA"
+	fmt.Println("Step 4: a call arrives with an unknown token " + forged)
+	cctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	_, err = terminating.Auth().VerifyToken(cctx, caller, forged)
+	cancel()
+	if err == nil {
+		fmt.Println("  ✗ Unexpected: forged token accepted")
+		os.Exit(1)
+	}
+	fmt.Printf("  ✓ Rejected: %s\n", pstn2.ErrorCode(err))
+	fmt.Println("  → Falling back to Direct Query verification")
+	cctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	v, err := terminating.Auth().VerifyCall(cctx, pstn2.VerifyCallRequest{CallerID: caller, CalledID: called})
+	cancel()
+	switch {
+	case err != nil:
+		fmt.Println("  ✗ Direct Query failed:", err, "→ traditional PSTN handling")
+	case v.Verified:
+		fmt.Printf("  ✓ Direct Query: verified by %s (%s)\n", v.Via.Holder.CPName, v.TrustLevel)
+	default:
+		fmt.Printf("  ✗ Direct Query: not verified (%s) → flag the call\n", v.Reason)
+	}
 }

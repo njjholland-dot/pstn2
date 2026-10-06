@@ -1,46 +1,175 @@
 /**
- * Core type definitions for PSTN2
- * Aligned with docs/API-SPECIFICATION.yaml (OpenAPI 3.0.3, version 1.0)
+ * Core type definitions for PSTN2.
+ * Aligned with docs/API-SPECIFICATION.yaml (OpenAPI 3.0.3, protocol version 1.1).
  */
 
-/**
- * E.164 formatted phone number (e.g., +441234567890)
- */
+/** E.164 formatted phone number (e.g. +441614960123). */
 export type PhoneNumber = string;
 
-/**
- * Range-CP-ID: Globally unique identifier for a Communication Provider
- */
+/** Range-CP-ID: identifier of a Communication Provider (e.g. CP1-UK-0102). */
 export type RCPID = string;
 
-/**
- * UUID v4 for unique call references
- */
+/** UUID v4 call reference. */
 export type CallReference = string;
 
-/**
- * ISO 8601 timestamp
- */
+/** ISO 8601 timestamp. */
 export type Timestamp = string;
 
-/**
- * Base64 encoded string
- */
+/** Base64 encoded binary data. */
 export type Base64String = string;
 
-/**
- * Authentication mode
- */
+/** Authentication mode. */
 export enum AuthenticationMode {
   DirectQuery = 'direct_query',
   TokenPool = 'token_pool',
 }
 
-/**
- * Common message envelope fields (SPECIFICATION.md section 4.1).
- * All inter-CP messages carry these; the `signature` field in the JSON
- * body is the canonical location for the Ed25519 signature.
- */
+// ---------------------------------------------------------------------------
+// Number Discovery (SPECIFICATION.md §9)
+// ---------------------------------------------------------------------------
+
+/** Reference to a CP: its id, name and PSTN2 base URL (API base = `{url}/pstn2/v1`). */
+export interface CpRef {
+  cpId: RCPID;
+  cpName?: string;
+  url: string;
+}
+
+/** Caching instruction carried by any PSTN2 response (§9.4–9.5). */
+export interface CacheControl {
+  ttl?: number;
+  invalidate?: boolean;
+  scope?: 'number' | 'block';
+}
+
+/** One block of the regulator numbering list (§9.1). */
+export interface NumberingBlock {
+  prefix: string;
+  display?: string;
+  numberLength: number;
+  status: 'Allocated' | 'Free' | 'Reserved' | 'Protected' | string;
+  cpId: RCPID;
+  cpName?: string;
+  /** Absent or empty = the Range Holder does not participate (traditional PSTN). */
+  rangeHolderUrl?: string;
+}
+
+/** The numbering list document (GET /numbering-list.json). */
+export interface NumberingListDocument {
+  listVersion: string;
+  publisher?: string;
+  source?: string;
+  blocks: NumberingBlock[];
+}
+
+/** Wire answer of GET {url}/pstn2/v1/numbers/{digits} (§9.2). */
+export interface DiscoveryResponse {
+  version: string;
+  result: 'held' | 'redirect' | 'not_held' | 'unknown';
+  number: PhoneNumber;
+  holder?: CpRef;
+  ported?: boolean;
+  portedTo?: CpRef;
+  cache?: CacheControl;
+  issued?: Timestamp;
+  kid?: string;
+  signature?: Base64String;
+}
+
+/** HTTP 200 from a CP that no longer holds the subject number (§5.1.2, §9.5). */
+export interface NotHeldResponse {
+  verified?: false;
+  result: 'not_held';
+  callReference?: CallReference;
+  cache: CacheControl;
+  timestamp?: Timestamp;
+}
+
+/** A CP's public signing keys (GET {url}/pstn2/v1/keys). */
+export interface KeySet {
+  cpId: RCPID;
+  keys: Array<{
+    kid: string;
+    algorithm: 'ed25519' | string;
+    publicKey: Base64String;
+    validFrom?: Timestamp;
+    validTo?: Timestamp;
+  }>;
+}
+
+export type DiscoveryOutcome = 'held' | 'unknown' | 'unallocated' | 'not_participating' | 'error';
+
+export type DiscoveryErrorReason =
+  | 'hop_limit_exceeded'
+  | 'loop_detected'
+  | 'timeout'
+  | 'invalid_response'
+  | 'invalid_signature'
+  | 'numbering_list_unavailable';
+
+/** Result of DiscoveryClient.discover() — identical in shape to the reference engine. */
+export interface DiscoveryResult {
+  /** The number, E.164. */
+  number: PhoneNumber;
+  result: DiscoveryOutcome;
+  /** The CP currently holding the number (result "held"). */
+  holder?: CpRef;
+  /** True when the holder is not the Range Holder (number ported in). */
+  ported: boolean;
+  /** CP ids queried, in order. */
+  hops: RCPID[];
+  /** True when the first query went to a cached holder. */
+  fromCache: boolean;
+  /** True when a response told us to purge the cache entry (stale cache). */
+  invalidated: boolean;
+  /** Failure reason (result "error"). */
+  error?: DiscoveryErrorReason;
+  /** The Range Holder named in the list (result "not_participating"). */
+  rangeHolder?: { cpId: RCPID; cpName?: string };
+}
+
+export type DiscoveryEventType =
+  | 'cache-hit'
+  | 'cache-miss'
+  | 'list-lookup'
+  | 'query'
+  | 'response'
+  | 'redirect'
+  | 'cache-purge'
+  | 'cache-store'
+  | 'result';
+
+/** Event emitted during discovery (same types as the reference engine). */
+export interface DiscoveryEvent {
+  type: DiscoveryEventType;
+  number: PhoneNumber;
+  entry?: DiscoveryCacheEntry & { number: PhoneNumber };
+  block?: NumberingBlock | null;
+  to?: CpRef;
+  from?: CpRef;
+  url?: string;
+  status?: number;
+  body?: unknown;
+  error?: string;
+  reason?: string;
+  result?: DiscoveryResult;
+}
+
+export type DiscoveryEventHandler = (event: DiscoveryEvent) => void | Promise<void>;
+
+/** One number → holder cache entry. */
+export interface DiscoveryCacheEntry {
+  holder: CpRef;
+  ported: boolean;
+  /** Epoch milliseconds. */
+  expiresAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Authentication (§5)
+// ---------------------------------------------------------------------------
+
+/** Common message envelope fields (§4.1). */
 export interface MessageEnvelope {
   messageId?: string;
   version?: string;
@@ -48,35 +177,31 @@ export interface MessageEnvelope {
   signature?: Base64String;
 }
 
-/**
- * Call verification request (POST /auth/verify)
- */
+/** POST /auth/verify request. */
 export interface CallVerificationRequest extends MessageEnvelope {
+  requestingCP: RCPID;
   callerID: PhoneNumber;
   calledID: PhoneNumber;
   callReference: CallReference;
-  requestingCP: RCPID;
 }
 
-/**
- * Call verification response
- */
+/** POST /auth/verify response (wire). */
 export interface CallVerificationResponse {
   verified: boolean;
   callReference: CallReference;
   callerName?: string;
   callerOrg?: string;
   callPurpose?: string;
-  branding?: BrandingInfo;
   trustLevel?: 'low' | 'medium' | 'high' | 'verified';
+  branding?: BrandingInfo;
   timestamp?: Timestamp;
   signature?: Base64String;
-  portingChain?: RCPID[]; // Added by client during resolution
+  /** Present when the CP no longer holds the caller ID. */
+  result?: 'not_held';
+  cache?: CacheControl;
 }
 
-/**
- * Branding information
- */
+/** Branding information. */
 export interface BrandingInfo {
   logo?: string;
   backgroundColor?: string;
@@ -85,9 +210,39 @@ export interface BrandingInfo {
   callPurpose?: string;
 }
 
-/**
- * Media capabilities
- */
+/** POST /auth/tokens request. */
+export interface TokenCreateRequest extends MessageEnvelope {
+  originatingCP: RCPID;
+  callerID: PhoneNumber;
+  calledID: PhoneNumber;
+  callReference: CallReference;
+  ttl: number;
+  branding?: BrandingInfo;
+}
+
+/** POST /auth/tokens response. */
+export interface TokenCreateResponse {
+  tokenId: string;
+  expiresAt: Timestamp;
+  callReference: CallReference;
+}
+
+/** GET /auth/tokens/{tokenId} response. */
+export interface TokenData {
+  tokenId: string;
+  originatingCP: RCPID;
+  callerID: PhoneNumber;
+  calledID: PhoneNumber;
+  callReference: CallReference;
+  verified: boolean;
+  branding?: BrandingInfo;
+  expiresAt: Timestamp;
+}
+
+// ---------------------------------------------------------------------------
+// Routing (§6)
+// ---------------------------------------------------------------------------
+
 export interface MediaCapabilities {
   codecs: string[];
   encryption: string[];
@@ -95,103 +250,66 @@ export interface MediaCapabilities {
   maxBandwidth?: number;
 }
 
-/**
- * Connection details for media
- */
 export interface ConnectionDetails {
   fqdn: string;
   port: number;
+  protocol: 'udp' | 'tcp' | 'tls';
   ipv4?: string;
   ipv6?: string;
   publicKey?: Base64String;
-  protocol?: 'udp' | 'tcp' | 'tls';
 }
 
-/**
- * Routing request (POST /routing/request)
- */
+/** POST /routing/request request. */
 export interface RoutingRequest extends MessageEnvelope {
-  destinationNumber: PhoneNumber;
-  callerID: PhoneNumber;
-  callReference: CallReference;
   requestingCP: RCPID;
+  callerID: PhoneNumber;
+  destinationNumber: PhoneNumber;
+  callReference: CallReference;
   mediaCapabilities: MediaCapabilities;
   publicKey?: Base64String;
-  connectionDetails?: ConnectionDetails;
   branding?: BrandingInfo;
 }
 
-/**
- * Routing response - accepted.
- * Discriminated on `accepted` so callers can narrow with `if (routing.accepted)`.
- */
+/** Routing accepted (200). */
 export interface RoutingResponseAccepted {
   accepted: true;
   callReference: CallReference;
   connectionDetails: ConnectionDetails;
   agreedCapabilities: MediaCapabilities;
-  destinationCP?: RCPID;
   timestamp?: Timestamp;
   signature?: Base64String;
 }
 
-/**
- * Routing response - rejected.
- * The SDK does NOT throw on rejection; callers inspect `accepted`/`rejectReason`.
- */
+/** Routing rejected (503 RoutingRejection, or no PSTN2 path to the destination). */
 export interface RoutingResponseRejected {
   accepted: false;
   callReference: CallReference;
-  rejectReason?: string;
+  reason?: string;
   fallbackToTraditional?: boolean;
   retryAfter?: number;
   timestamp?: Timestamp;
-  signature?: Base64String;
 }
 
-/**
- * Routing response
- */
 export type RoutingResponse = RoutingResponseAccepted | RoutingResponseRejected;
 
-/**
- * Number porting information
- */
-export interface PortingResponse {
-  numberStatus: 'ported' | 'returned';
-  portedTo: {
-    cpID: RCPID;
-    apiEndpoint: string;
-    portDate?: string;
-  };
-  cacheUntil?: Timestamp;
-}
+// ---------------------------------------------------------------------------
+// Emergency (§8)
+// ---------------------------------------------------------------------------
 
-/**
- * Emergency location request (POST /emergency/location)
- */
 export interface EmergencyLocationRequest extends MessageEnvelope {
+  requestingPSAP: string;
   callerID: PhoneNumber;
   callReference: CallReference;
-  requestingPSAP: string;
 }
 
-/**
- * Location data
- */
 export interface LocationData {
   latitude: number;
   longitude: number;
   accuracy: number;
   altitude?: number;
-  altitudeAccuracy?: number;
-  source?: 'gps' | 'cell' | 'wifi' | 'user' | 'billing';
-  timestamp?: Timestamp;
+  source?: 'gps' | 'wifi' | 'cell' | 'user' | 'billing';
 }
 
-/**
- * Address data
- */
 export interface AddressData {
   street?: string;
   city?: string;
@@ -199,18 +317,12 @@ export interface AddressData {
   country?: string;
 }
 
-/**
- * Additional emergency location context
- */
 export interface EmergencyAdditionalInfo {
   cellTowerId?: string;
   wifiAccessPoints?: string[];
   lastUpdated?: Timestamp;
 }
 
-/**
- * Emergency location response
- */
 export interface EmergencyLocationResponse {
   callReference: CallReference;
   location: LocationData;
@@ -220,176 +332,67 @@ export interface EmergencyLocationResponse {
   signature?: Base64String;
 }
 
-/**
- * A number range held by a CP
- */
-export interface NumberRange {
-  numberRange: string;
-  status: 'active' | 'ported' | 'reserved' | 'deactivated';
-  portedTo?: RCPID;
-  portedAt?: Timestamp;
-}
+// ---------------------------------------------------------------------------
+// Errors (§10)
+// ---------------------------------------------------------------------------
 
 /**
- * Per-service API endpoints published by a CP
- */
-export interface DirectoryEndpoints {
-  auth?: string;
-  routing?: string;
-  emergency?: string;
-}
-
-/**
- * Directory entry (one per CP, GET /directory/all)
- */
-export interface DirectoryEntry {
-  cpId: RCPID;
-  ranges: NumberRange[];
-  endpoints: DirectoryEndpoints;
-  publicKey?: Base64String;
-  lastUpdated?: Timestamp;
-  version?: number;
-}
-
-/**
- * Directory response (GET /directory/all)
- */
-export interface DirectoryResponse {
-  entries: DirectoryEntry[];
-  lastModified?: Timestamp;
-  version?: number;
-}
-
-/**
- * Token create request (POST /auth/tokens)
- */
-export interface TokenCreateRequest extends MessageEnvelope {
-  callerID: PhoneNumber;
-  calledID: PhoneNumber;
-  originatingCP: RCPID;
-  callReference?: CallReference;
-  ttl?: number;
-  branding?: BrandingInfo;
-}
-
-/**
- * Token create response
- */
-export interface TokenCreateResponse {
-  tokenId: string;
-  expiresAt: Timestamp;
-  callReference: CallReference;
-}
-
-/**
- * Token data (GET /auth/tokens/{tokenId})
- */
-export interface TokenData {
-  tokenId?: string;
-  callerID: PhoneNumber;
-  calledID: PhoneNumber;
-  originatingCP: RCPID;
-  callReference?: CallReference;
-  verified?: boolean;
-  branding?: BrandingInfo;
-  expiresAt?: Timestamp;
-}
-
-/**
- * Error codes
+ * Error codes: the spec's ErrorResponse codes (§10.2) plus a few SDK-local
+ * transport codes (network_error, service_unavailable, unauthorized,
+ * forbidden, not_found, invalid_response, discovery_failed).
  */
 export enum ErrorCode {
-  // Network errors
-  Timeout = 'timeout',
-  NetworkError = 'network_error',
-  ConnectionRefused = 'connection_refused',
-
-  // Authentication errors
+  // Spec (§10.2)
   CallNotFound = 'call_not_found',
-  VerificationFailed = 'verification_failed',
   InvalidSignature = 'invalid_signature',
-
-  // Routing errors
-  NumberPorted = 'number_ported',
+  ExpiredToken = 'expired_token',
+  InvalidToken = 'invalid_token',
+  CapacityExceeded = 'capacity_exceeded',
+  UnsupportedCodec = 'unsupported_codec',
   NumberNotFound = 'number_not_found',
-  CallRejected = 'call_rejected',
-
-  // Token pool errors
-  TokenExpired = 'token_expired',
-  TokenNotFound = 'token_not_found',
-  TokenPoolUnavailable = 'token_pool_unavailable',
-
-  // General errors
-  InvalidRequest = 'invalid_request',
+  HopLimitExceeded = 'hop_limit_exceeded',
+  LoopDetected = 'loop_detected',
+  LocationUnavailable = 'location_unavailable',
+  UnauthorizedPsap = 'unauthorized_psap',
+  Timeout = 'timeout',
   RateLimitExceeded = 'rate_limit_exceeded',
+  InvalidRequest = 'invalid_request',
   InternalError = 'internal_error',
+
+  // SDK-local
+  NetworkError = 'network_error',
   ServiceUnavailable = 'service_unavailable',
+  Unauthorized = 'unauthorized',
+  Forbidden = 'forbidden',
+  NotFound = 'not_found',
+  InvalidResponse = 'invalid_response',
+  /** Number Discovery did not find a PSTN2 holder (unallocated/unknown/not_participating/error). */
+  DiscoveryFailed = 'discovery_failed',
 }
 
-/**
- * Error response
- */
+/** Spec ErrorResponse (§10.1). */
 export interface ErrorResponse {
-  error: string;
-  message: string;
-  details?: Record<string, unknown>;
-  timestamp?: Timestamp;
+  error: {
+    code: string;
+    message: string;
+    timestamp: Timestamp;
+    requestId?: string;
+  };
 }
 
-/**
- * PSTN2 configuration
- */
-export interface PSTN2Config {
-  // CP identification
-  cpId: RCPID;
-  apiEndpoint: string;
+// ---------------------------------------------------------------------------
+// HTTP
+// ---------------------------------------------------------------------------
 
-  // Security
-  privateKey: string;
-  publicKey?: string;
+export type HttpMethod = 'GET' | 'POST';
 
-  // Authentication
-  authMode: AuthenticationMode;
-  tokenPoolEndpoint?: string;
-  tokenPoolAuth?: string;
-
-  // Caching
-  cacheDirectory?: boolean;
-  cacheTTL?: number; // seconds (default: 86400 for directory, 3600 for branding)
-
-  // Network
-  timeout?: number; // milliseconds
-  retries?: number;
-
-  // Fallback
-  fallbackToTraditional?: boolean; // default: true
-
-  // Logging
-  logLevel?: 'error' | 'warn' | 'info' | 'debug';
-}
-
-/**
- * HTTP method types
- */
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-
-/**
- * HTTP request options
- */
-export interface HttpRequestOptions {
-  method: HttpMethod;
-  url: string;
-  data?: unknown;
-  headers?: Record<string, string>;
-  timeout?: number;
-  retries?: number;
-}
-
-/**
- * HTTP response
- */
 export interface HttpResponse<T = unknown> {
   status: number;
+  /** Parsed JSON body (any Content-Type), or null when the body is not JSON. */
   data: T;
+  /** Raw body text. */
+  text: string;
   headers: Record<string, string>;
 }
+
+export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;

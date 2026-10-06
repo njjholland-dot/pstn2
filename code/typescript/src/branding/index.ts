@@ -30,41 +30,25 @@ export class BrandingModule {
   }
 
   /**
-   * Get branding information for a phone number
+   * Get branding for a caller ID from the CP that currently holds it
+   * (found with Number Discovery). Returns null when unavailable.
    */
-  async getBranding(
-    callerID: PhoneNumber,
-    callReference: CallReference,
-    cpEndpoint: string
-  ): Promise<BrandingInfo | null> {
-    // Check cache first
+  async getBranding(callerID: PhoneNumber, callReference: CallReference): Promise<BrandingInfo | null> {
     const cached = this.getCachedBranding(callerID);
     if (cached) {
       logger.debug('Using cached branding', { callerID });
       return cached;
     }
 
-    logger.info('Fetching branding information', {
-      callerID,
-      callReference,
-    });
-
     try {
       // /branding is an extension endpoint, not part of the core spec
-      const response = await this.messagingClient.request<
-        { callerID: PhoneNumber; callReference: CallReference },
-        { branding: BrandingInfo; callReference: CallReference }
-      >('/branding', cpEndpoint, {
+      const r = await this.messagingClient.callHolder<{ branding?: BrandingInfo }>(callerID, 'POST', '/branding', {
         callerID,
         callReference,
       });
-
-      // Cache the branding
-      if (response.response.branding) {
-        this.cacheBranding(callerID, response.response.branding);
-      }
-
-      return response.response.branding || null;
+      const branding = r.response && r.response.branding;
+      if (branding) this.cacheBranding(callerID, branding);
+      return branding || null;
     } catch (error) {
       logger.warn('Failed to fetch branding', {
         callerID,
@@ -106,7 +90,8 @@ export class BrandingModule {
     }
 
     // Return branding without timestamp
-    const { timestamp, ...branding } = cached;
+    const { timestamp: _t, ...branding } = cached;
+    void _t;
     return branding;
   }
 

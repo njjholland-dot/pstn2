@@ -1,272 +1,163 @@
 /*
-Example 5: Complete Call Flow
+Example 05: Complete call flow
 
-This example demonstrates a complete end-to-end call from Alice to Bob,
-showing all PSTN2 features working together.
+Alice (+442079460100, Alpha Telecom) calls Bob (+441134960456). Bob's number
+is in Charlie Comms' range but has been ported to Bravo Networks.
+
+	Phase 1  Number Discovery  Alpha asks the Range Holder (Charlie), follows the
+	                           redirect to Bravo, caches the answer
+	Phase 2  Authentication    Bravo verifies Alice's caller ID with Alpha
+	Phase 3  Direct routing    Alpha asks Bravo for a direct media route
+	Phase 4  Summary
+	Then a second call to Bob goes straight to Bravo from the cache.
+
+	node test-environment/mock-network/server.mjs     # in another terminal
+	go run ./examples/05-complete-call-flow
 */
-
 package main
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"fmt"
-	"log"
-	"math/rand"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
-	"github.com/pstn2/pstn2-go/pkg/client"
-	"github.com/pstn2/pstn2-go/pkg/types"
+	"github.com/njjholland-dot/pstn2/code/go/pkg/pstn2"
 )
 
 func main() {
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("COMPLETE PSTN2 CALL FLOW")
-	fmt.Println("Alice (CP1) → Bob (CP2)")
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("")
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
-	// Initialize Alice's CP (CP1)
-	cp1, err := client.NewClient(&client.Config{
-		CPID:        "CP1-UK-0001",
-		APIEndpoint: "https://api.cp1.example.com/pstn2/v1",
-		PrivateKey:  os.Getenv("CP1_PRIVATE_KEY"),
-		AuthMode:    types.AuthModeDirectQuery,
-	})
+	env := pstn2.LoadEnv()
+	aliceCfg := env.Config() // Alpha Telecom
+	bobCfg := env.Config()
+	bobCfg.CPID = "CP1-UK-0102" // Bravo Networks, Bob's CP since the port
+
+	var trace []string
+	aliceCfg.OnEvent = func(e pstn2.DiscoveryEvent) {
+		switch e.Type {
+		case pstn2.EventCacheHit:
+			trace = append(trace, fmt.Sprintf("cache hit → %s", e.Entry.Holder.CPName))
+		case pstn2.EventCacheMiss:
+			trace = append(trace, "cache miss")
+		case pstn2.EventListLookup:
+			if e.Block != nil {
+				trace = append(trace, fmt.Sprintf("numbering list: %s → Range Holder %s", e.Block.Display, e.Block.CPName))
+			}
+		case pstn2.EventQuery:
+			trace = append(trace, fmt.Sprintf("query %s: GET %s", e.To.CPName, e.URL))
+		case pstn2.EventRedirect:
+			trace = append(trace, fmt.Sprintf("redirect: %s says the number was ported to %s", e.From.CPName, e.To.CPName))
+		case pstn2.EventCachePurge:
+			trace = append(trace, fmt.Sprintf("cache purged (%s from %s)", e.Reason, e.From.CPName))
+		case pstn2.EventCacheStore:
+			trace = append(trace, fmt.Sprintf("cached → %s until %s", e.Entry.Holder.CPName, e.Entry.ExpiresAt.UTC().Format(time.RFC3339)))
+		}
+	}
+
+	alpha, err := pstn2.NewClient(aliceCfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize client: %v", err)
+		fmt.Println("Failed to initialise PSTN2 client:", err)
+		os.Exit(1)
 	}
-	defer cp1.Close()
-
-	alice := struct {
-		Number string
-		Name   string
-		Device string
-	}{
-		Number: "+441234567890",
-		Name:   "Alice Smith",
-		Device: "iPhone 15",
-	}
-
-	bob := struct {
-		Number string
-		Name   string
-		CPID   string
-	}{
-		Number: "+447700900123",
-		Name:   "Bob Johnson",
-		CPID:   "CP1-UK-0002",
-	}
-
-	callReference := fmt.Sprintf("call-%d-%s", time.Now().UnixMilli(), randomString(9))
-	startTime := time.Now()
-
-	ctx := context.Background()
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 1: Directory Lookup
-	// ═══════════════════════════════════════════════════════════════
-	fmt.Println("📱 Phase 1: Alice dials Bob's number")
-	fmt.Printf("   Alice: %s\n", alice.Number)
-	fmt.Printf("   Bob:   %s\n", bob.Number)
-	fmt.Println("")
-
-	phase1Start := time.Now()
-	fmt.Println("🔍 Looking up Bob's CP in directory...")
-	cpInfo, err := cp1.Directory().Lookup(ctx, bob.Number)
+	defer alpha.Close()
+	bravo, err := pstn2.NewClient(bobCfg)
 	if err != nil {
-		handleError("Directory lookup failed", err)
+		fmt.Println("Failed to initialise PSTN2 client:", err)
+		os.Exit(1)
+	}
+	defer bravo.Close()
+
+	alice := struct{ Name, Number string }{"Alice Smith", "+442079460100"}
+	bob := struct{ Name, Number string }{"Bob Johnson", "+441134960456"}
+
+	fmt.Println(strings.Repeat("=", 64))
+	fmt.Println("PSTN2 Example 05: Complete Call Flow")
+	fmt.Printf("%s (%s, %s) → %s (%s)\n", alice.Name, alice.Number, aliceCfg.CPID, bob.Name, bob.Number)
+	fmt.Println(strings.Repeat("=", 64))
+	fmt.Printf("Network: %s   Numbering list: %s\n\n", env.Network, env.NumberingListURL)
+
+	if err := alpha.Discovery().NumberingList().EnsureFresh(ctx); err != nil {
+		fmt.Println("✗ Cannot load the numbering list:", err)
+		fmt.Println("  Start the mock network first: node test-environment/mock-network/server.mjs")
+		os.Exit(1)
+	}
+	callRef := pstn2.NewCallReference()
+	total := time.Now()
+
+	// Phase 1 — Number Discovery
+	fmt.Println("Phase 1: Number Discovery — who holds Bob's number?")
+	t1 := time.Now()
+	disc := alpha.Discover(ctx, bob.Number)
+	p1 := time.Since(t1)
+	for _, line := range trace {
+		fmt.Println("   ·", line)
+	}
+	if !disc.Held() {
+		fmt.Printf("   ✗ %s %s → traditional PSTN call\n", disc.Result, disc.Error)
 		return
 	}
-	phase1Time := time.Since(phase1Start).Milliseconds()
+	fmt.Printf("   ✓ Held by %s (ported: %v), hops %s, %dms\n\n", disc.Holder.CPName, disc.Ported, strings.Join(disc.Hops, " → "), p1.Milliseconds())
 
-	fmt.Printf("   ✓ Found: %s\n", cpInfo.CPID)
-	fmt.Printf("   ✓ Endpoint: %s\n", cpInfo.Endpoints.Routing)
-	fmt.Printf("   ⏱  Time: %dms\n", phase1Time)
-	fmt.Println("")
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 2: Authentication
-	// ═══════════════════════════════════════════════════════════════
-	phase2Start := time.Now()
-	fmt.Println("🔐 Phase 2: Authenticating call with Bob's CP...")
-
-	verification, err := cp1.Auth().VerifyCall(ctx, &types.VerifyCallRequest{
-		CallerID:      alice.Number,
-		CalledID:      bob.Number,
-		CallReference: callReference,
-	})
-	if err != nil {
-		handleError("Authentication failed", err)
+	// Phase 2 — Authentication (performed by the terminating CP)
+	fmt.Println("Phase 2: Authentication — Bravo verifies Alice's caller ID")
+	t2 := time.Now()
+	v, err := bravo.Auth().VerifyCall(ctx, pstn2.VerifyCallRequest{CallerID: alice.Number, CalledID: bob.Number, CallReference: callRef})
+	p2 := time.Since(t2)
+	if err != nil || !v.Verified {
+		reason := ""
+		if v != nil {
+			reason = v.Reason
+		}
+		fmt.Printf("   ✗ Not verified (%v %s) → deliver as traditional PSTN call, flagged\n", err, reason)
 		return
 	}
-	phase2Time := time.Since(phase2Start).Milliseconds()
+	fmt.Printf("   ✓ Verified by %s: %s, trust %s, %dms\n\n", v.Via.Holder.CPName, v.CallerOrg, v.TrustLevel, p2.Milliseconds())
 
-	if verification.Verified {
-		fmt.Println("   ✓ Call authenticated")
-		fmt.Printf("   ✓ Trust Level: %s\n", verification.TrustLevel)
-		fmt.Printf("   ⏱  Time: %dms\n", phase2Time)
+	// Phase 3 — Direct routing
+	fmt.Println("Phase 3: Direct Routing — Alpha requests a media route from Bravo")
+	identity, _, _ := ed25519.GenerateKey(rand.Reader)
+	t3 := time.Now()
+	route, err := alpha.Routing().RequestRouting(ctx, pstn2.RoutingRequest{
+		CallerID: alice.Number, DestinationNumber: bob.Number, CallReference: callRef,
+		MediaCapabilities: pstn2.DefaultMediaCapabilities(), PublicKey: pstn2.PublicKeyBase64(identity),
+	})
+	p3 := time.Since(t3)
+	if err != nil || !route.Accepted {
+		fmt.Printf("   ✗ No direct route (%v) → route via traditional PSTN\n", err)
+		return
+	}
+	cd := route.ConnectionDetails
+	fmt.Printf("   ✓ Route accepted: %s:%d (%s), codec %v, %v, %dms\n", cd.FQDN, cd.Port, cd.Protocol,
+		route.AgreedCapabilities.Codecs, route.AgreedCapabilities.Encryption, p3.Milliseconds())
+	fmt.Printf("   ✓ Discovery for routing came from cache: %v\n\n", route.Via.Discovery.FromCache)
+
+	// Phase 4 — Summary
+	fmt.Println("Phase 4: Summary")
+	fmt.Printf("   Call reference:   %s\n", callRef)
+	fmt.Printf("   Discovery:        %4dms  (%d hops, redirect via Range Holder)\n", p1.Milliseconds(), len(disc.Hops))
+	fmt.Printf("   Authentication:   %4dms\n", p2.Milliseconds())
+	fmt.Printf("   Routing:          %4dms\n", p3.Milliseconds())
+	fmt.Printf("   Total setup:      %4dms  (target < 1000ms)\n", time.Since(total).Milliseconds())
+	fmt.Printf("   Media:            SIP INVITE sips:%s@%s:%d, SRTP %v\n\n", bob.Number, cd.FQDN, cd.Port, route.AgreedCapabilities.Encryption)
+
+	// Second call — straight from the cache
+	fmt.Println("Second call to Bob")
+	trace = nil
+	t5 := time.Now()
+	again := alpha.Discover(ctx, bob.Number)
+	for _, line := range trace {
+		fmt.Println("   ·", line)
+	}
+	if again.Held() {
+		fmt.Printf("   ✓ fromCache=%v: one query, direct to %s (hops %s), %dms\n", again.FromCache, again.Holder.CPName,
+			strings.Join(again.Hops, " → "), time.Since(t5).Milliseconds())
 	} else {
-		fmt.Println("   ✗ Authentication failed - aborting call")
-		return
+		fmt.Printf("   ✗ %s → traditional PSTN call\n", again.Result)
 	}
-	fmt.Println("")
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 3: Direct Routing
-	// ═══════════════════════════════════════════════════════════════
-	phase3Start := time.Now()
-	fmt.Println("🔄 Phase 3: Requesting direct routing...")
-
-	routing, err := cp1.Routing().RequestRouting(ctx, &types.RoutingRequest{
-		DestinationNumber: bob.Number,
-		CallerID:          alice.Number,
-		CallReference:     callReference,
-		MediaCapabilities: &types.MediaCapabilities{
-			Codecs:     []string{"opus", "g722"},
-			Encryption: []string{"srtp-aes256"},
-			Video:      false,
-		},
-		Branding: &types.CallBranding{
-			DisplayName: alice.Name,
-			CallPurpose: "Personal Call",
-		},
-	})
-	if err != nil {
-		handleError("Routing request failed", err)
-		return
-	}
-	phase3Time := time.Since(phase3Start).Milliseconds()
-
-	if !routing.Accepted {
-		fmt.Println("   ✗ Routing rejected - falling back to PSTN")
-		return
-	}
-
-	fmt.Println("   ✓ Routing accepted")
-	fmt.Printf("   ✓ Media Server: %s\n", routing.ConnectionDetails.FQDN)
-	fmt.Printf("   ✓ Codec: %s\n", routing.AgreedCapabilities.Codecs[0])
-	fmt.Printf("   ✓ Encryption: %s\n", routing.AgreedCapabilities.Encryption[0])
-	fmt.Printf("   ⏱  Time: %dms\n", phase3Time)
-	fmt.Println("")
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 4: Key Exchange
-	// ═══════════════════════════════════════════════════════════════
-	phase4Start := time.Now()
-	fmt.Println("🔑 Phase 4: Exchanging encryption keys...")
-
-	// Keys already exchanged in routing request/response
-	fmt.Println("   ✓ DTLS handshake completed")
-	fmt.Println("   ✓ SRTP keys derived")
-	fmt.Println("   ✓ End-to-end encryption ready")
-	phase4Time := time.Since(phase4Start).Milliseconds()
-	fmt.Printf("   ⏱  Time: %dms\n", phase4Time)
-	fmt.Println("")
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 5: Media Setup
-	// ═══════════════════════════════════════════════════════════════
-	phase5Start := time.Now()
-	fmt.Println("📞 Phase 5: Establishing media connection...")
-
-	fmt.Println("   ✓ RTP session created")
-	fmt.Println("   ✓ Opus codec initialized (48kHz)")
-	fmt.Println("   ✓ Quality: HD Audio")
-	fmt.Println("   ✓ Direct path: No transit providers")
-	phase5Time := time.Since(phase5Start).Milliseconds()
-	fmt.Printf("   ⏱  Time: %dms\n", phase5Time)
-	fmt.Println("")
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 6: Call Branding & Ringing
-	// ═══════════════════════════════════════════════════════════════
-	fmt.Println("📲 Phase 6: Bob's phone ringing...")
-	fmt.Println("")
-	fmt.Println("   Bob sees on his screen:")
-	fmt.Println("   ┌─────────────────────────────┐")
-	fmt.Println("   │  📱 Incoming Call            │")
-	fmt.Println("   │                             │")
-	fmt.Printf("   │  %-28s│\n", alice.Name)
-	fmt.Printf("   │  %-28s│\n", alice.Number)
-	fmt.Println("   │                             │")
-	fmt.Println("   │  ✓ Verified Caller          │")
-	fmt.Println("   │  Purpose: Personal Call     │")
-	fmt.Println("   │                             │")
-	fmt.Println("   │  [Accept]  [Decline]        │")
-	fmt.Println("   └─────────────────────────────┘")
-	fmt.Println("")
-
-	time.Sleep(1 * time.Second)
-
-	// ═══════════════════════════════════════════════════════════════
-	// PHASE 7: Call Connected
-	// ═══════════════════════════════════════════════════════════════
-	fmt.Println("✅ Phase 7: Bob answers - Call connected!")
-	fmt.Println("")
-	fmt.Println("   🔊 Crystal clear HD audio")
-	fmt.Println("   🔒 End-to-end encrypted")
-	fmt.Println("   ⚡ Low latency (direct path)")
-	fmt.Println("   💰 No transit fees")
-	fmt.Println("")
-
-	// ═══════════════════════════════════════════════════════════════
-	// SUMMARY
-	// ═══════════════════════════════════════════════════════════════
-	totalTime := time.Since(startTime).Milliseconds()
-
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("CALL SUMMARY")
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("")
-	fmt.Println("Timing Breakdown:")
-	fmt.Printf("  Directory Lookup:     %dms\n", phase1Time)
-	fmt.Printf("  Authentication:       %dms\n", phase2Time)
-	fmt.Printf("  Routing Request:      %dms\n", phase3Time)
-	fmt.Printf("  Key Exchange:         %dms\n", phase4Time)
-	fmt.Printf("  Media Setup:          %dms\n", phase5Time)
-	fmt.Println("  " + strings.Repeat("-", 35))
-	fmt.Printf("  Total Setup Time:     %dms\n", totalTime)
-	fmt.Println("")
-
-	fmt.Println("Traditional PSTN Comparison:")
-	fmt.Printf("  PSTN2:        ~%dms setup time\n", totalTime)
-	fmt.Println("  Traditional:  5,000-8,000ms setup time")
-	fmt.Printf("  Improvement:  %dx faster! 🚀\n", 5000/totalTime)
-	fmt.Println("")
-
-	fmt.Println("Features Enabled:")
-	fmt.Println("  ✓ Caller ID verification (fraud prevention)")
-	fmt.Println("  ✓ Direct routing (cost reduction)")
-	fmt.Println("  ✓ End-to-end encryption (privacy)")
-	fmt.Println("  ✓ Call branding (trust)")
-	fmt.Println("  ✓ HD audio quality (Opus codec)")
-	fmt.Println("")
-
-	fmt.Println("Security:")
-	fmt.Println("  ✓ Cryptographically signed messages")
-	fmt.Println("  ✓ Ed25519 signatures verified")
-	fmt.Println("  ✓ SRTP media encryption (AES-256)")
-	fmt.Println("  ✓ TLS 1.3 for all signaling")
-	fmt.Println("")
-
-	fmt.Println("💚 Call in progress - Alice and Bob are talking!")
-	fmt.Println("")
-}
-
-func handleError(message string, err error) {
-	fmt.Printf("❌ Error: %s: %v\n", message, err)
-	fmt.Println("")
-	fmt.Println("Fallback: Routing via traditional PSTN")
-	fmt.Println("Call will still connect (backward compatible)")
-}
-
-func randomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	result := make([]byte, length)
-	for i := range result {
-		result[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(result)
 }

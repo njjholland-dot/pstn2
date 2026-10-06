@@ -1,133 +1,112 @@
 /**
- * Custom error classes for PSTN2
+ * Error classes for PSTN2.
+ *
+ * Number Discovery outcomes (unallocated, unknown, not_participating, …) are
+ * RESULTS, not errors (SPECIFICATION.md §9.3, §10.2). Modules that cannot
+ * continue without a holder raise DiscoveryError, which carries the full
+ * DiscoveryResult so callers can fall back to traditional PSTN.
  */
 
-import { ErrorCode } from './types';
+import { DiscoveryResult, ErrorCode, ErrorResponse } from './types';
 
-// Re-export so consumers can import ErrorCode alongside the error classes
 export { ErrorCode } from './types';
 
-/**
- * Base PSTN2 error class
- */
+/** Base PSTN2 error. */
 export class PSTN2Error extends Error {
-  public readonly code: ErrorCode;
+  public readonly code: ErrorCode | string;
+  public readonly status?: number;
   public readonly details?: Record<string, unknown>;
   public readonly timestamp: Date;
 
-  constructor(code: ErrorCode, message: string, details?: Record<string, unknown>) {
+  constructor(code: ErrorCode | string, message: string, details?: Record<string, unknown>, status?: number) {
     super(message);
     this.name = 'PSTN2Error';
     this.code = code;
     this.details = details;
+    this.status = status;
     this.timestamp = new Date();
-
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, PSTN2Error);
-    }
+    if (Error.captureStackTrace) Error.captureStackTrace(this, new.target);
   }
 
-  toJSON(): Record<string, unknown> {
+  /** Spec-shaped ErrorResponse (§10.1). */
+  toJSON(): ErrorResponse {
     return {
-      error: this.code,
-      message: this.message,
-      details: this.details,
-      timestamp: this.timestamp.toISOString(),
+      error: {
+        code: String(this.code),
+        message: this.message,
+        timestamp: this.timestamp.toISOString(),
+      },
     };
   }
 }
 
-/**
- * Network timeout error
- */
+/** Request timed out (after retries). */
 export class TimeoutError extends PSTN2Error {
-  constructor(message: string = 'Request timed out', details?: Record<string, unknown>) {
+  constructor(message = 'Request timed out', details?: Record<string, unknown>) {
     super(ErrorCode.Timeout, message, details);
     this.name = 'TimeoutError';
   }
 }
 
-/**
- * Network connection error
- */
+/** Connection failed (after retries). */
 export class NetworkError extends PSTN2Error {
-  constructor(message: string = 'Network error occurred', details?: Record<string, unknown>) {
+  constructor(message = 'Network error occurred', details?: Record<string, unknown>) {
     super(ErrorCode.NetworkError, message, details);
     this.name = 'NetworkError';
   }
 }
 
-/**
- * Call not found error (potential fraud)
- */
-export class CallNotFoundError extends PSTN2Error {
-  constructor(
-    message: string = 'Call not found - potential spoofed caller ID',
-    details?: Record<string, unknown>
-  ) {
-    super(ErrorCode.CallNotFound, message, details);
-    this.name = 'CallNotFoundError';
-  }
-}
-
-/**
- * Number ported error (need to retry with new CP)
- */
-export class NumberPortedError extends PSTN2Error {
-  public readonly newCP: string;
-  public readonly newEndpoint: string;
-
-  constructor(newCP: string, newEndpoint: string, details?: Record<string, unknown>) {
-    super(ErrorCode.NumberPorted, `Number ported to ${newCP}`, details);
-    this.name = 'NumberPortedError';
-    this.newCP = newCP;
-    this.newEndpoint = newEndpoint;
-  }
-}
-
-/**
- * Call rejected error
- */
-export class CallRejectedError extends PSTN2Error {
-  public readonly reason?: string;
-
-  constructor(reason?: string, details?: Record<string, unknown>) {
-    super(ErrorCode.CallRejected, reason || 'Call rejected by recipient', details);
-    this.name = 'CallRejectedError';
-    this.reason = reason;
-  }
-}
-
-/**
- * Token expired error
- */
-export class TokenExpiredError extends PSTN2Error {
-  constructor(message: string = 'Token has expired', details?: Record<string, unknown>) {
-    super(ErrorCode.TokenExpired, message, details);
-    this.name = 'TokenExpiredError';
-  }
-}
-
-/**
- * Rate limit exceeded error
- */
+/** Rate limit exceeded (429). */
 export class RateLimitError extends PSTN2Error {
   public readonly retryAfter?: number;
 
   constructor(retryAfter?: number, details?: Record<string, unknown>) {
-    super(ErrorCode.RateLimitExceeded, 'Rate limit exceeded', details);
+    super(ErrorCode.RateLimitExceeded, 'Rate limit exceeded', details, 429);
     this.name = 'RateLimitError';
     this.retryAfter = retryAfter;
   }
 }
 
-/**
- * Validation error for invalid requests
- */
+/** Invalid input supplied to the SDK. */
 export class ValidationError extends PSTN2Error {
   constructor(message: string, details?: Record<string, unknown>) {
     super(ErrorCode.InvalidRequest, message, details);
     this.name = 'ValidationError';
+  }
+}
+
+/**
+ * Number Discovery did not yield a PSTN2 holder for the number.
+ * The caller MUST fall back to traditional PSTN handling (§9.3).
+ */
+export class DiscoveryError extends PSTN2Error {
+  public readonly discovery: DiscoveryResult;
+
+  constructor(discovery: DiscoveryResult) {
+    const code =
+      discovery.error === 'hop_limit_exceeded'
+        ? ErrorCode.HopLimitExceeded
+        : discovery.error === 'loop_detected'
+        ? ErrorCode.LoopDetected
+        : discovery.error === 'invalid_signature'
+        ? ErrorCode.InvalidSignature
+        : discovery.error === 'timeout'
+        ? ErrorCode.Timeout
+        : ErrorCode.DiscoveryFailed;
+    super(
+      code,
+      `Number Discovery for ${discovery.number}: ${discovery.result}${discovery.error ? ` (${discovery.error})` : ''}`,
+      { discovery }
+    );
+    this.name = 'DiscoveryError';
+    this.discovery = discovery;
+  }
+}
+
+/** A CP still answered not_held after the cache was purged and the holder rediscovered. */
+export class NotHeldError extends PSTN2Error {
+  constructor(number: string, cpId: string) {
+    super(ErrorCode.NumberNotFound, `${cpId} does not hold ${number} (after rediscovery)`, { number, cpId });
+    this.name = 'NotHeldError';
   }
 }

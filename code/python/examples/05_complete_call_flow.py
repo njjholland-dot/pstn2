@@ -1,234 +1,137 @@
 """
-Example 5: Complete Call Flow
+Example 5: Complete call flow
 
-This example demonstrates a complete end-to-end call from Alice to Bob,
-showing all PSTN2 features working together.
+Alice (+442079460100, Alpha Telecom) calls Bob on +441134960456. Bob's number is in
+Charlie Comms' range but has been ported to Bravo Networks.
+
+  Phase 1  Number Discovery  Alpha: numbering list → Charlie (Range Holder) → redirect → Bravo
+  Phase 2  Authentication    Bravo verifies Alice's caller ID with its holder (Alpha)
+  Phase 3  Direct routing    Alpha asks Bravo for a direct media route (reusing Phase 1's answer)
+  Phase 4  Summary
+  …then Alice calls Bob again: discovery is answered from the cache, straight to Bravo.
+
+Any failure falls back to traditional PSTN — PSTN2 never blocks a call.
+
+Run the local mock network first:
+    node test-environment/mock-network/server.mjs
+then:
+    python examples/05_complete_call_flow.py
 """
 
+from __future__ import annotations
+
 import asyncio
+import dataclasses
+import logging
 import os
+import sys
 import time
-import random
-import string
-from pstn2.client import PSTN2Client, AuthenticationMode
-from pstn2.types import MediaCapabilities, CallBranding
+
+from pstn2 import DiscoveryEvent, MediaCapabilities, NetworkConfig, PSTN2Client, PSTN2Error, display_number
+
+ALICE = {"number": "+442079460100", "name": "Alice Smith"}
+BOB = {"number": "+441134960456", "name": "Bob Johnson"}
 
 
-async def main():
-    print('=' * 60)
-    print('COMPLETE PSTN2 CALL FLOW')
-    print('Alice (CP1) → Bob (CP2)')
-    print('=' * 60)
-    print('')
+def show_event(e: DiscoveryEvent) -> None:
+    if e.type == "cache-hit":
+        print(f"     cache hit → {e['entry']['holder']['cpName']}")
+    elif e.type == "list-lookup":
+        b = e["block"]
+        print(f"     numbering list: block {b['display']} → Range Holder {b['cpName']}" if b else "     numbering list: no block")
+    elif e.type == "query":
+        print(f"     GET {e['url']}")
+    elif e.type == "response":
+        body = e["body"] or {}
+        print(f"       ← {e['status']} {body.get('result', '')}")
+    elif e.type == "redirect":
+        print(f"     redirect: ported to {e['to']['cpName']}")
+    elif e.type == "cache-purge":
+        print(f"     cache purged ({e['reason']})")
 
-    # Initialize Alice's CP (CP1)
-    cp1 = PSTN2Client(
-        cp_id='CP1-UK-0001',
-        api_endpoint='https://api.cp1.example.com/pstn2/v1',
-        private_key=os.environ['CP1_PRIVATE_KEY'],
-        auth_mode=AuthenticationMode.DIRECT_QUERY,
+
+def ms(t0: float) -> int:
+    return round((time.perf_counter() - t0) * 1000)
+
+
+async def place_call(alpha: PSTN2Client, bravo: PSTN2Client, label: str) -> bool:
+    print("=" * 64)
+    print(f"{label}: {ALICE['name']} {ALICE['number']} → {BOB['name']} {BOB['number']} ({display_number(BOB['number'])})")
+    print("=" * 64)
+    timings: dict[str, int] = {}
+    t_call = time.perf_counter()
+
+    # Phase 1 — Number Discovery
+    print("\nPhase 1: Number Discovery (who holds Bob's number?)")
+    t0 = time.perf_counter()
+    d = await alpha.discover(BOB["number"], on_event=show_event)
+    timings["Number Discovery"] = ms(t0)
+    if not d.held:
+        print(f"  ✗ {d.result} {d.error or ''} → route via traditional PSTN")
+        return False
+    print(f"  ✓ Holder: {d.holder}  ported={d.ported}  hops={' → '.join(d.hops)}  fromCache={d.from_cache}")
+
+    # Phase 2 — Authentication (at the terminating CP)
+    print(f"\nPhase 2: Authentication ({bravo.cp_id} verifies Alice's caller ID)")
+    t0 = time.perf_counter()
+    call_ref = alpha.generate_call_reference()
+    v = await bravo.auth.verify_call(ALICE["number"], BOB["number"], call_ref)
+    timings["Authentication"] = ms(t0)
+    if v.verified:
+        print(f"  ✓ Verified by {v.holder} — {v.caller_name}, trust {v.trust_level}"
+              f" (discovery hops {' → '.join(v.discovery.hops) if v.discovery else '-'})")
+    else:
+        print(f"  ✗ Not verified ({v.reason}) → flag the call; continue on traditional PSTN")
+        return False
+
+    # Phase 3 — Direct routing
+    print("\nPhase 3: Direct routing")
+    t0 = time.perf_counter()
+    r = await alpha.routing.request_routing(
+        BOB["number"], ALICE["number"],
+        MediaCapabilities(codecs=["opus", "g722", "pcmu"], encryption=["srtp-aes256", "srtp-aes128"]),
+        call_ref, holder=d, branding={"displayName": ALICE["name"], "callPurpose": "Personal call"},
     )
+    timings["Routing request"] = ms(t0)
+    if not r.accepted:
+        print(f"  ✗ Rejected ({r.reason}) → route via traditional PSTN")
+        return False
+    cd = r.connection_details
+    print(f"  ✓ {r.holder} accepted: {cd.fqdn}:{cd.port}/{cd.protocol}, codec {r.agreed_capabilities.codecs[0]},"
+          f" {r.agreed_capabilities.encryption[0]}{'  (rediscovered)' if r.rediscovered else ''}")
 
-    alice = {
-        'number': '+441234567890',
-        'name': 'Alice Smith',
-        'device': 'iPhone 15',
-    }
-
-    bob = {
-        'number': '+447700900123',
-        'name': 'Bob Johnson',
-        'cp_id': 'CP1-UK-0002',
-    }
-
-    call_reference = f"call-{int(time.time() * 1000)}-{''.join(random.choices(string.ascii_lowercase + string.digits, k=9))}"
-    start_time = time.time()
-
-    try:
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 1: Directory Lookup
-        # ═══════════════════════════════════════════════════════════════
-        print('📱 Phase 1: Alice dials Bob\'s number')
-        print(f'   Alice: {alice["number"]}')
-        print(f'   Bob:   {bob["number"]}')
-        print('')
-
-        phase1_start = time.time()
-        print('🔍 Looking up Bob\'s CP in directory...')
-        cp_info = await cp1.directory.lookup(bob['number'])
-        phase1_time = int((time.time() - phase1_start) * 1000)
-
-        print(f'   ✓ Found: {cp_info.cp_id}')
-        print(f'   ✓ Endpoint: {cp_info.endpoints.routing}')
-        print(f'   ⏱  Time: {phase1_time}ms')
-        print('')
-
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 2: Authentication
-        # ═══════════════════════════════════════════════════════════════
-        phase2_start = time.time()
-        print('🔐 Phase 2: Authenticating call with Bob\'s CP...')
-
-        verification = await cp1.auth.verify_call(
-            caller_id=alice['number'],
-            called_id=bob['number'],
-            call_reference=call_reference,
-        )
-        phase2_time = int((time.time() - phase2_start) * 1000)
-
-        if verification.verified:
-            print('   ✓ Call authenticated')
-            print(f'   ✓ Trust Level: {verification.trust_level}')
-            print(f'   ⏱  Time: {phase2_time}ms')
-        else:
-            print('   ✗ Authentication failed - aborting call')
-            return
-        print('')
-
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 3: Direct Routing
-        # ═══════════════════════════════════════════════════════════════
-        phase3_start = time.time()
-        print('🔄 Phase 3: Requesting direct routing...')
-
-        routing = await cp1.routing.request_routing(
-            destination_number=bob['number'],
-            caller_id=alice['number'],
-            call_reference=call_reference,
-            media_capabilities=MediaCapabilities(
-                codecs=['opus', 'g722'],
-                encryption=['srtp-aes256'],
-                video=False,
-            ),
-            branding=CallBranding(
-                display_name=alice['name'],
-                call_purpose='Personal Call',
-            ),
-        )
-        phase3_time = int((time.time() - phase3_start) * 1000)
-
-        if not routing.accepted:
-            print('   ✗ Routing rejected - falling back to PSTN')
-            return
-
-        print('   ✓ Routing accepted')
-        print(f'   ✓ Media Server: {routing.connection_details.fqdn}')
-        print(f'   ✓ Codec: {routing.agreed_capabilities.codecs[0]}')
-        print(f'   ✓ Encryption: {routing.agreed_capabilities.encryption[0]}')
-        print(f'   ⏱  Time: {phase3_time}ms')
-        print('')
-
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 4: Key Exchange
-        # ═══════════════════════════════════════════════════════════════
-        phase4_start = time.time()
-        print('🔑 Phase 4: Exchanging encryption keys...')
-
-        # Keys already exchanged in routing request/response
-        print('   ✓ DTLS handshake completed')
-        print('   ✓ SRTP keys derived')
-        print('   ✓ End-to-end encryption ready')
-        phase4_time = int((time.time() - phase4_start) * 1000)
-        print(f'   ⏱  Time: {phase4_time}ms')
-        print('')
-
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 5: Media Setup
-        # ═══════════════════════════════════════════════════════════════
-        phase5_start = time.time()
-        print('📞 Phase 5: Establishing media connection...')
-
-        print('   ✓ RTP session created')
-        print('   ✓ Opus codec initialized (48kHz)')
-        print('   ✓ Quality: HD Audio')
-        print('   ✓ Direct path: No transit providers')
-        phase5_time = int((time.time() - phase5_start) * 1000)
-        print(f'   ⏱  Time: {phase5_time}ms')
-        print('')
-
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 6: Call Branding & Ringing
-        # ═══════════════════════════════════════════════════════════════
-        print('📲 Phase 6: Bob\'s phone ringing...')
-        print('')
-        print('   Bob sees on his screen:')
-        print('   ┌─────────────────────────────┐')
-        print('   │  📱 Incoming Call            │')
-        print('   │                             │')
-        print(f'   │  {alice["name"]}                │')
-        print(f'   │  {alice["number"]}      │')
-        print('   │                             │')
-        print('   │  ✓ Verified Caller          │')
-        print('   │  Purpose: Personal Call     │')
-        print('   │                             │')
-        print('   │  [Accept]  [Decline]        │')
-        print('   └─────────────────────────────┘')
-        print('')
-
-        await asyncio.sleep(1)
-
-        # ═══════════════════════════════════════════════════════════════
-        # PHASE 7: Call Connected
-        # ═══════════════════════════════════════════════════════════════
-        print('✅ Phase 7: Bob answers - Call connected!')
-        print('')
-        print('   🔊 Crystal clear HD audio')
-        print('   🔒 End-to-end encrypted')
-        print('   ⚡ Low latency (direct path)')
-        print('   💰 No transit fees')
-        print('')
-
-        # ═══════════════════════════════════════════════════════════════
-        # SUMMARY
-        # ═══════════════════════════════════════════════════════════════
-        total_time = int((time.time() - start_time) * 1000)
-
-        print('=' * 60)
-        print('CALL SUMMARY')
-        print('=' * 60)
-        print('')
-        print('Timing Breakdown:')
-        print(f'  Directory Lookup:     {phase1_time}ms')
-        print(f'  Authentication:       {phase2_time}ms')
-        print(f'  Routing Request:      {phase3_time}ms')
-        print(f'  Key Exchange:         {phase4_time}ms')
-        print(f'  Media Setup:          {phase5_time}ms')
-        print('  ' + '-' * 35)
-        print(f'  Total Setup Time:     {total_time}ms')
-        print('')
-
-        print('Traditional PSTN Comparison:')
-        print(f'  PSTN2:        ~{total_time}ms setup time')
-        print('  Traditional:  5,000-8,000ms setup time')
-        print(f'  Improvement:  {round(5000/total_time)}x faster! 🚀')
-        print('')
-
-        print('Features Enabled:')
-        print('  ✓ Caller ID verification (fraud prevention)')
-        print('  ✓ Direct routing (cost reduction)')
-        print('  ✓ End-to-end encryption (privacy)')
-        print('  ✓ Call branding (trust)')
-        print('  ✓ HD audio quality (Opus codec)')
-        print('')
-
-        print('Security:')
-        print('  ✓ Cryptographically signed messages')
-        print('  ✓ Ed25519 signatures verified')
-        print('  ✓ SRTP media encryption (AES-256)')
-        print('  ✓ TLS 1.3 for all signaling')
-        print('')
-
-        print('💚 Call in progress - Alice and Bob are talking!')
-        print('')
-
-    except Exception as error:
-        print(f'❌ Error during call setup: {error}')
-        print('')
-        print('Fallback: Routing via traditional PSTN')
-        print('Call will still connect (backward compatible)')
-    finally:
-        await cp1.close()
+    # Phase 4 — Summary
+    total = ms(t_call)
+    print("\nPhase 4: Summary")
+    for k, val in timings.items():
+        print(f"  {k:<18} {val:>5} ms")
+    print(f"  {'Total':<18} {total:>5} ms")
+    print(f"  Bob's screen: \"{ALICE['name']}\" ✓ verified caller — Personal call")
+    print("  Media: direct, DTLS-SRTP encrypted, no transit")
+    return True
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
+async def main() -> int:
+    logging.basicConfig(level=os.environ.get("PSTN2_LOG_LEVEL", "WARNING"))
+    alpha_cfg = NetworkConfig.from_env(default_cp_id="CP1-UK-0101")
+    bravo_cfg = dataclasses.replace(alpha_cfg, cp_id=os.environ.get("PSTN2_TERMINATING_CP_ID", "CP1-UK-0102"))
+    print("PSTN2 Example 5: Complete Call Flow")
+    print(f"  Network: {alpha_cfg.network}  ({alpha_cfg.numbering_list_url})\n")
+    ok = True
+    async with PSTN2Client.from_config(alpha_cfg) as alpha, PSTN2Client.from_config(bravo_cfg) as bravo:
+        try:
+            ok = await place_call(alpha, bravo, "Call 1")
+            print()
+            ok = await place_call(alpha, bravo, "Call 2 (same number again)") and ok
+            entry = alpha.cache.get(BOB["number"])
+            if entry:
+                print(f"\nAlpha's cache: {BOB['number']} → {entry.holder.cp_name} (ported={entry.ported})")
+        except PSTN2Error as error:
+            ok = False
+            print(f"\n✗ Call setup error: {error}\n→ Fallback: route via traditional PSTN (the call still connects)")
+    print("\nDone.")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

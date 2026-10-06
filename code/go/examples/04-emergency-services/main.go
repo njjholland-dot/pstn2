@@ -1,127 +1,91 @@
 /*
-Example 4: Emergency Services
+Example 04: Emergency Services location
 
-This example demonstrates how PSAPs query real-time location
-data for emergency calls (999/112/911).
+A 999 call from +441614960123 reaches the Manchester PSAP. The PSAP discovers
+the CP that currently holds the caller's number (Bravo Networks) and asks it
+for the caller's live location. A second caller on a non-participating
+network (+441174960555) shows the fallback to traditional location sources.
+
+	node test-environment/mock-network/server.mjs     # in another terminal
+	go run ./examples/04-emergency-services
+
+Environment: PSTN2_PSAP_ID (default UK-999-MANCHESTER-01).
 */
-
 package main
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
+	"os/signal"
+	"strings"
 	"time"
 
-	"github.com/pstn2/pstn2-go/pkg/client"
-	"github.com/pstn2/pstn2-go/pkg/types"
+	"github.com/njjholland-dot/pstn2/code/go/pkg/pstn2"
 )
 
 func main() {
-	// Initialize as a PSAP (Public Safety Answering Point)
-	psapClient, err := client.NewClient(&client.Config{
-		CPID:        "PSAP-UK-LONDON-01",
-		APIEndpoint: "https://api.psap-london.gov.uk/pstn2/v1",
-		PrivateKey:  os.Getenv("PSAP_PRIVATE_KEY"),
-		AuthMode:    types.AuthModeDirectQuery,
-	})
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	psapID := os.Getenv("PSTN2_PSAP_ID")
+	if psapID == "" {
+		psapID = "UK-999-MANCHESTER-01"
+	}
+	env := pstn2.LoadEnv()
+	cfg := env.Config()
+	if os.Getenv("PSTN2_CP_ID") == "" {
+		cfg.CPID = psapID
+	}
+	client, err := pstn2.NewClient(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize PSAP client: %v", err)
+		fmt.Println("Failed to initialise PSTN2 client:", err)
+		os.Exit(1)
 	}
-	defer psapClient.Close()
+	defer client.Close()
 
-	fmt.Println("Emergency Services Location Query")
-	fmt.Println("PSAP: London Central 999")
-	fmt.Println("---")
+	fmt.Println(strings.Repeat("=", 64))
+	fmt.Println("PSTN2 Example 04: Emergency Services Location")
+	fmt.Println(strings.Repeat("=", 64))
+	fmt.Printf("Network: %s   Numbering list: %s\n", env.Network, env.NumberingListURL)
+	fmt.Printf("PSAP: %s\n\n", psapID)
 
-	// Scenario: Someone calls 999
-	emergencyCall := struct {
-		CallerID      string
-		CallReference string
-		Timestamp     time.Time
-	}{
-		CallerID:      "+441234567890",
-		CallReference: "emergency-456-789",
-		Timestamp:     time.Now(),
+	if err := client.Discovery().NumberingList().EnsureFresh(ctx); err != nil {
+		fmt.Println("✗ Cannot load the numbering list:", err)
+		fmt.Println("  Start the mock network first: node test-environment/mock-network/server.mjs")
+		os.Exit(1)
 	}
 
-	fmt.Println("Emergency call received:")
-	fmt.Printf("  From: %s\n", emergencyCall.CallerID)
-	fmt.Printf("  Time: %s\n", emergencyCall.Timestamp.Format(time.RFC3339))
-	fmt.Println("")
-	fmt.Println("Querying real-time location...")
-
-	ctx := context.Background()
-
-	// Query the CP for caller's location
-	location, err := psapClient.Emergency().GetLocation(ctx, &types.LocationRequest{
-		CallerID:      emergencyCall.CallerID,
-		CallReference: emergencyCall.CallReference,
-		PSAPID:        "UK-999-LONDON-CENTRAL",
-	})
-
-	if err != nil {
-		fmt.Printf("Error retrieving location: %v\n", err)
-		fmt.Println("Falling back to billing address...")
-		return
-	}
-
-	fmt.Println("✓ Location retrieved successfully")
-	fmt.Println("")
-	fmt.Println("GPS Coordinates:")
-	fmt.Printf("  Latitude: %.6f\n", location.Location.Latitude)
-	fmt.Printf("  Longitude: %.6f\n", location.Location.Longitude)
-	fmt.Printf("  Accuracy: %.1f meters\n", location.Location.Accuracy)
-	if location.Location.Altitude != nil {
-		fmt.Printf("  Altitude: %.1f meters\n", *location.Location.Altitude)
-	} else {
-		fmt.Println("  Altitude: N/A")
-	}
-	fmt.Printf("  Source: %s\n", location.Location.Source)
-	fmt.Println("")
-	fmt.Println("Address:")
-	fmt.Printf("  Street: %s\n", location.Address.Street)
-	fmt.Printf("  City: %s\n", location.Address.City)
-	fmt.Printf("  Postcode: %s\n", location.Address.Postcode)
-	fmt.Printf("  Country: %s\n", location.Address.Country)
-	fmt.Println("")
-
-	if location.AdditionalInfo != nil {
-		fmt.Println("Additional Information:")
-		if location.AdditionalInfo.CellTowerID != "" {
-			fmt.Printf("  Cell Tower: %s\n", location.AdditionalInfo.CellTowerID)
+	for _, caller := range []string{"+441614960123", "+441174960555"} {
+		fmt.Printf("999 call from %s (%s)\n", caller, pstn2.DisplayNumber(caller))
+		start := time.Now()
+		cctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		loc, err := client.Emergency().GetLocation(cctx, pstn2.LocationRequest{CallerID: caller, PSAPID: psapID})
+		cancel()
+		if err != nil {
+			if de, ok := pstn2.IsDiscoveryError(err); ok {
+				fmt.Printf("  Discovery: %s", de.Result.Result)
+				if de.Result.RangeHolder != nil {
+					fmt.Printf(" (%s is not on PSTN2)", de.Result.RangeHolder.CPName)
+				}
+				fmt.Println()
+			} else {
+				fmt.Println("  ✗ Location request failed:", err)
+			}
+			fmt.Println("  → Fallback: use network cell location / billing address (traditional 999 handling)")
+			fmt.Println()
+			continue
 		}
-		if len(location.AdditionalInfo.WiFiAccessPoints) > 0 {
-			fmt.Printf("  WiFi APs: %d detected\n", len(location.AdditionalInfo.WiFiAccessPoints))
+		l := loc.Location
+		fmt.Printf("  Discovery: held by %s, hops %v\n", loc.Via.Holder.CPName, loc.Via.Discovery.Hops)
+		fmt.Printf("  ✓ Location received in %dms\n", time.Since(start).Milliseconds())
+		fmt.Printf("    %.6f, %.6f  ±%.0fm  (source: %s)\n", l.Latitude, l.Longitude, l.Accuracy, l.Source)
+		if loc.Address != nil {
+			a := loc.Address
+			fmt.Printf("    Address: %s, %s %s, %s\n", a.Street, a.City, a.Postcode, a.Country)
 		}
-		fmt.Printf("  Last Updated: %s\n", location.AdditionalInfo.LastUpdated.Format(time.RFC3339))
-		fmt.Println("")
+		fmt.Printf("    Map: https://www.openstreetmap.org/?mlat=%.6f&mlon=%.6f#map=18/%.6f/%.6f\n", l.Latitude, l.Longitude, l.Latitude, l.Longitude)
+		fmt.Println("  → Dispatch emergency services to this location")
+		fmt.Println()
 	}
-
-	// Calculate response recommendations
-	accuracy := location.Location.Accuracy
-	fmt.Println("Dispatch Recommendations:")
-	if accuracy < 20 {
-		fmt.Println("  ✓ Excellent accuracy - dispatch to exact location")
-		fmt.Println("  ✓ GPS lock strong")
-	} else if accuracy < 100 {
-		fmt.Println("  ⚠ Good accuracy - dispatch to general area")
-		fmt.Println("  ⚠ May need caller confirmation")
-	} else {
-		fmt.Println("  ⚠ Low accuracy - use cell tower triangulation")
-		fmt.Println("  ⚠ Caller assistance required")
-	}
-	fmt.Println("")
-
-	// Compare with traditional PSTN
-	fmt.Println("Traditional PSTN comparison:")
-	fmt.Println("  Old: Billing address (often incorrect)")
-	fmt.Println("  Old: 100-1000m accuracy")
-	fmt.Println("  Old: 30-60 second delay")
-	fmt.Println("  ---")
-	fmt.Println("  New: Real-time GPS location")
-	fmt.Println("  New: 5-15m accuracy")
-	fmt.Println("  New: < 100ms response time")
-	fmt.Println("  Result: Faster response, lives saved! 🚑")
 }

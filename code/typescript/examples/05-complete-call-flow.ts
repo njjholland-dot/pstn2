@@ -1,231 +1,120 @@
 /**
  * Example 5: Complete Call Flow
  *
- * This example demonstrates a complete end-to-end call from Alice to Bob,
- * showing all PSTN2 features working together.
+ * Alice (+442079460100, Alpha Telecom) calls Bob (+441134960456). Bob's number
+ * is in Charlie Comms' range but was ported to Bravo Networks.
+ *
+ *   Phase 1  Number Discovery — Alpha asks the Range Holder (Charlie), which
+ *            redirects to Bravo; Bravo answers "held". Cached per number.
+ *   Phase 2  Authentication   — Bravo verifies Alice's caller ID with Alpha.
+ *   Phase 3  Direct routing   — Alpha asks Bravo for a direct media path.
+ *   Phase 4  Summary          — then a second call shows the cache hit:
+ *            one query, straight to Bravo.
+ *
+ * Run:  node test-environment/mock-network/server.mjs   (repo root)
+ *       npm run example:05
  */
 
-// In your application, import from the published package instead:
-//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
-import { PSTN2Client, AuthenticationMode } from '../src';
+// In your application: import { PSTN2Client, DiscoveryEvent } from '@pstn2/core';
+import { PSTN2Client, DiscoveryEvent } from '../src';
+import { banner, cpName, describeDiscovery, fmt, startOrExit, rule } from './shared';
+
+const alice = { number: '+442079460100', name: 'Alice' };
+const bob = { number: '+441134960456', name: 'Bob' };
+
+function hopPrinter(client: PSTN2Client) {
+  return (e: DiscoveryEvent) => {
+    if (e.type === 'cache-hit') console.log(`     · cache hit: ${e.number} → ${e.entry!.holder.cpName}`);
+    if (e.type === 'cache-miss') console.log(`     · cache miss for ${e.number}`);
+    if (e.type === 'list-lookup' && e.block) console.log(`     · numbering list: block ${e.block.display || e.block.prefix} → Range Holder ${e.block.cpName}`);
+    if (e.type === 'query') console.log(`     · GET ${e.url}`);
+    if (e.type === 'response') {
+      const b = e.body as { result?: string } | null;
+      console.log(`       ← ${e.status} ${b?.result || (e.status === 404 ? 'unknown' : '')} from ${cpName(client, e.from!.cpId)}`);
+    }
+    if (e.type === 'redirect') console.log(`     · redirect: ported to ${e.to!.cpName}`);
+    if (e.type === 'cache-store') console.log(`     · cached ${e.number} → ${e.entry!.holder.cpName}`);
+  };
+}
 
 async function main() {
-  console.log('='.repeat(60));
-  console.log('COMPLETE PSTN2 CALL FLOW');
-  console.log('Alice (CP1) → Bob (CP2)');
-  console.log('='.repeat(60));
-  console.log('');
-
-  // Initialize Alice's CP (CP1)
-  const cp1 = new PSTN2Client({
-    cpId: 'CP1-UK-0001',
-    apiEndpoint: 'https://api.cp1.example.com/pstn2/v1',
-    privateKey: process.env.CP1_PRIVATE_KEY!,
-    authMode: AuthenticationMode.DirectQuery,
-  });
-
-  const alice = {
-    number: '+441234567890',
-    name: 'Alice Smith',
-    device: 'iPhone 15',
-  };
-
-  const bob = {
-    number: '+447700900123',
-    name: 'Bob Johnson',
-    cpId: 'CP1-UK-0002',
-  };
-
-  const callReference = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const startTime = Date.now();
+  banner('PSTN2 Example 5 — Complete Call Flow', `${alice.name} (Alpha Telecom) → ${bob.name} (ported: Charlie → Bravo)`);
+  const alpha = PSTN2Client.fromEnv({ cpId: 'CP1-UK-0101', cpName: 'Alpha Telecom' });
+  const bravo = new PSTN2Client({ cpId: 'CP1-UK-0102', cpName: 'Bravo Networks', numberingListUrl: alpha.numberingList.url, verifySignatures: alpha.discovery.verifySignatures });
+  await startOrExit(alpha);
+  const callReference = alpha.generateCallReference();
+  const t0 = Date.now();
 
   try {
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 1: Directory Lookup
-    // ═══════════════════════════════════════════════════════════════
-    console.log('📱 Phase 1: Alice dials Bob\'s number');
-    console.log(`   Alice: ${alice.number}`);
-    console.log(`   Bob:   ${bob.number}`);
+    // ── Phase 1: Number Discovery ─────────────────────────────────────
+    console.log(`📱 ${alice.name} ${fmt(alice.number)} dials ${bob.name} ${fmt(bob.number)}`);
     console.log('');
-
-    const phase1Start = Date.now();
-    console.log('🔍 Looking up Bob\'s CP in directory...');
-    const cpInfo = await cp1.directory.lookup(bob.number);
-    const phase1Time = Date.now() - phase1Start;
-
-    console.log(`   ✓ Found: ${cpInfo.cpId}`);
-    console.log(`   ✓ Endpoint: ${cpInfo.endpoints.routing}`);
-    console.log(`   ⏱  Time: ${phase1Time}ms`);
-    console.log('');
-
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 2: Authentication
-    // ═══════════════════════════════════════════════════════════════
-    const phase2Start = Date.now();
-    console.log('🔐 Phase 2: Authenticating call with Bob\'s CP...');
-
-    const verification = await cp1.auth.verifyCall({
-      callerID: alice.number,
-      calledID: bob.number,
-      callReference,
-    });
-    const phase2Time = Date.now() - phase2Start;
-
-    if (verification.verified) {
-      console.log('   ✓ Call authenticated');
-      console.log(`   ✓ Trust Level: ${verification.trustLevel}`);
-      console.log(`   ⏱  Time: ${phase2Time}ms`);
-    } else {
-      console.log('   ✗ Authentication failed - aborting call');
+    console.log('🔍 Phase 1 — Number Discovery: who holds the destination?');
+    let t = Date.now();
+    const found = await alpha.discover(bob.number, { onEvent: hopPrinter(alpha) });
+    const tDiscovery = Date.now() - t;
+    console.log(`   ${found.result === 'held' ? '✓' : '✗'} ${describeDiscovery(alpha, found)} [${tDiscovery}ms]`);
+    if (found.result !== 'held') {
+      console.log('   → No PSTN2 holder: route the call via traditional PSTN');
       return;
     }
     console.log('');
 
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 3: Direct Routing
-    // ═══════════════════════════════════════════════════════════════
-    const phase3Start = Date.now();
-    console.log('🔄 Phase 3: Requesting direct routing...');
+    // ── Phase 2: Authentication (terminating CP verifies the caller ID) ──
+    console.log(`🔐 Phase 2 — Authentication: ${bravo.config.cpId} verifies ${alice.name}'s caller ID`);
+    t = Date.now();
+    const v = await bravo.verifyCall({ callerID: alice.number, calledID: bob.number, callReference });
+    const tAuth = Date.now() - t;
+    console.log(`   Discovery (caller ID): ${describeDiscovery(bravo, v.discovery)}`);
+    console.log(`   ${v.verified ? '✓ verified by ' + (v.holder?.cpName || v.holder?.cpId) : '✗ not verified (' + v.reason + ')'} — trust ${v.trustLevel} [${tAuth}ms]`);
+    console.log('');
 
-    const routing = await cp1.routing.requestRouting({
+    // ── Phase 3: Direct routing ─────────────────────────────────────────
+    console.log(`🔄 Phase 3 — Direct routing: ${alpha.config.cpId} asks the holder for a media path`);
+    t = Date.now();
+    const r = await alpha.requestRouting({
       destinationNumber: bob.number,
       callerID: alice.number,
       callReference,
-      mediaCapabilities: {
-        codecs: ['opus', 'g722'],
-        encryption: ['srtp-aes256'],
-        video: false,
-      },
-      branding: {
-        displayName: alice.name,
-        callPurpose: 'Personal Call',
-      },
+      mediaCapabilities: { codecs: ['opus', 'g722'], encryption: ['srtp-aes256'], video: false },
+      branding: { displayName: alice.name, callPurpose: 'Personal call' },
     });
-    const phase3Time = Date.now() - phase3Start;
-
-    if (!routing.accepted) {
-      console.log('   ✗ Routing rejected - falling back to PSTN');
-      return;
+    const tRouting = Date.now() - t;
+    console.log(`   Discovery: ${describeDiscovery(alpha, r.discovery)}`);
+    if (r.accepted) {
+      console.log(`   ✓ accepted by ${r.holder?.cpName}: ${r.connectionDetails.fqdn}:${r.connectionDetails.port}/${r.connectionDetails.protocol}, ${r.agreedCapabilities.codecs[0]} + ${r.agreedCapabilities.encryption[0]} [${tRouting}ms]`);
+    } else {
+      console.log(`   ✗ rejected (${r.reason}) — call continues over traditional PSTN [${tRouting}ms]`);
     }
-
-    console.log('   ✓ Routing accepted');
-    console.log(`   ✓ Media Server: ${routing.connectionDetails.fqdn}`);
-    console.log(`   ✓ Codec: ${routing.agreedCapabilities.codecs[0]}`);
-    console.log(`   ✓ Encryption: ${routing.agreedCapabilities.encryption[0]}`);
-    console.log(`   ⏱  Time: ${phase3Time}ms`);
     console.log('');
 
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 4: Key Exchange
-    // ═══════════════════════════════════════════════════════════════
-    const phase4Start = Date.now();
-    console.log('🔑 Phase 4: Exchanging encryption keys...');
-
-    // Keys already exchanged in routing request/response
-    console.log('   ✓ DTLS handshake completed');
-    console.log('   ✓ SRTP keys derived');
-    console.log('   ✓ End-to-end encryption ready');
-    const phase4Time = Date.now() - phase4Start;
-    console.log(`   ⏱  Time: ${phase4Time}ms`);
+    // ── Phase 4: Summary ────────────────────────────────────────────────
+    const total = Date.now() - t0;
+    console.log('📋 Phase 4 — Summary');
+    console.log(rule());
+    console.log(`   Number Discovery: ${String(tDiscovery).padStart(4)}ms  ${found.hops.length} hops (${found.hops.join(' → ')})`);
+    console.log(`   Authentication:   ${String(tAuth).padStart(4)}ms  ${v.verified ? 'verified' : 'NOT verified'}`);
+    console.log(`   Direct routing:   ${String(tRouting).padStart(4)}ms  ${r.accepted ? 'accepted' : 'PSTN fallback'}`);
+    console.log(`   Total setup:      ${String(total).padStart(4)}ms`);
+    console.log(rule());
     console.log('');
 
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 5: Media Setup
-    // ═══════════════════════════════════════════════════════════════
-    const phase5Start = Date.now();
-    console.log('📞 Phase 5: Establishing media connection...');
-
-    console.log('   ✓ RTP session created');
-    console.log('   ✓ Opus codec initialized (48kHz)');
-    console.log('   ✓ Quality: HD Audio');
-    console.log('   ✓ Direct path: No transit providers');
-    const phase5Time = Date.now() - phase5Start;
-    console.log(`   ⏱  Time: ${phase5Time}ms`);
-    console.log('');
-
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 6: Call Branding & Ringing
-    // ═══════════════════════════════════════════════════════════════
-    console.log('📲 Phase 6: Bob\'s phone ringing...');
-    console.log('');
-    console.log('   Bob sees on his screen:');
-    console.log('   ┌─────────────────────────────┐');
-    console.log('   │  📱 Incoming Call            │');
-    console.log('   │                             │');
-    console.log(`   │  ${alice.name}                │`);
-    console.log(`   │  ${alice.number}      │`);
-    console.log('   │                             │');
-    console.log('   │  ✓ Verified Caller          │');
-    console.log('   │  Purpose: Personal Call     │');
-    console.log('   │                             │');
-    console.log('   │  [Accept]  [Decline]        │');
-    console.log('   └─────────────────────────────┘');
-    console.log('');
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // ═══════════════════════════════════════════════════════════════
-    // PHASE 7: Call Connected
-    // ═══════════════════════════════════════════════════════════════
-    console.log('✅ Phase 7: Bob answers - Call connected!');
-    console.log('');
-    console.log('   🔊 Crystal clear HD audio');
-    console.log('   🔒 End-to-end encrypted');
-    console.log('   ⚡ Low latency (direct path)');
-    console.log('   💰 No transit fees');
-    console.log('');
-
-    // ═══════════════════════════════════════════════════════════════
-    // SUMMARY
-    // ═══════════════════════════════════════════════════════════════
-    const totalTime = Date.now() - startTime;
-
-    console.log('='.repeat(60));
-    console.log('CALL SUMMARY');
-    console.log('='.repeat(60));
-    console.log('');
-    console.log('Timing Breakdown:');
-    console.log(`  Directory Lookup:     ${phase1Time}ms`);
-    console.log(`  Authentication:       ${phase2Time}ms`);
-    console.log(`  Routing Request:      ${phase3Time}ms`);
-    console.log(`  Key Exchange:         ${phase4Time}ms`);
-    console.log(`  Media Setup:          ${phase5Time}ms`);
-    console.log('  ' + '-'.repeat(35));
-    console.log(`  Total Setup Time:     ${totalTime}ms`);
-    console.log('');
-
-    console.log('Traditional PSTN Comparison:');
-    console.log('  PSTN2:        ~' + totalTime + 'ms setup time');
-    console.log('  Traditional:  5,000-8,000ms setup time');
-    console.log(`  Improvement:  ${Math.round(5000/totalTime)}x faster! 🚀`);
-    console.log('');
-
-    console.log('Features Enabled:');
-    console.log('  ✓ Caller ID verification (fraud prevention)');
-    console.log('  ✓ Direct routing (cost reduction)');
-    console.log('  ✓ End-to-end encryption (privacy)');
-    console.log('  ✓ Call branding (trust)');
-    console.log('  ✓ HD audio quality (Opus codec)');
-    console.log('');
-
-    console.log('Security:');
-    console.log('  ✓ Cryptographically signed messages');
-    console.log('  ✓ Ed25519 signatures verified');
-    console.log('  ✓ SRTP media encryption (AES-256)');
-    console.log('  ✓ TLS 1.3 for all signaling');
-    console.log('');
-
-    console.log('💚 Call in progress - Alice and Bob are talking!');
-    console.log('');
-
-  } catch (error) {
-    console.error('❌ Error during call setup:', error);
-    console.log('');
-    console.log('Fallback: Routing via traditional PSTN');
-    console.log('Call will still connect (backward compatible)');
+    // ── Second call: cache hit ──────────────────────────────────────────
+    console.log(`📱 Second call to ${bob.name}: the number → holder answer is cached`);
+    t = Date.now();
+    const again = await alpha.discover(bob.number, { onEvent: hopPrinter(alpha) });
+    console.log(`   ✓ ${describeDiscovery(alpha, again)} [${Date.now() - t}ms]`);
+    console.log(`   ${again.fromCache ? 'Cache hit: one query straight to the holder, no Range Holder redirect.' : 'Expected a cache hit!'}`);
+  } catch (err) {
+    console.log(`❌ ${(err as Error).message}`);
+    console.log('   Fallback: route via traditional PSTN — the call still connects.');
   } finally {
-    await cp1.close();
+    await alpha.close();
+    await bravo.close();
   }
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error('Unexpected error:', err);
+  process.exit(1);
+});

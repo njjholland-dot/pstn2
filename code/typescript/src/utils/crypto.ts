@@ -9,16 +9,21 @@
 
 import crypto from 'crypto';
 import { Base64String } from '../types';
+import { canonicalJson } from '../discovery/canonical-json';
 
 /**
  * Generate an Ed25519 signature for message authentication.
  *
- * @param data - The payload to sign (objects are JSON stringified)
- * @param privateKey - PEM-encoded Ed25519 private key (PKCS#8)
+ * Objects are signed over their canonical JSON (keys sorted, no whitespace,
+ * any `signature` field removed) — the same encoding as Number Discovery
+ * signatures (SPECIFICATION.md §9.6).
+ *
+ * @param data - The payload to sign
+ * @param privateKey - PEM-encoded Ed25519 private key (PKCS#8) or KeyObject
  * @returns Base64-encoded signature
  */
-export function generateSignature(data: string | object, privateKey: string): Base64String {
-  const payload = typeof data === 'string' ? data : JSON.stringify(data);
+export function generateSignature(data: string | object, privateKey: string | crypto.KeyObject): Base64String {
+  const payload = typeof data === 'string' ? data : canonicalJson(stripSignature(data));
   const signature = crypto.sign(null, Buffer.from(payload, 'utf8'), privateKey);
   return signature.toString('base64');
 }
@@ -31,15 +36,15 @@ export function generateSignature(data: string | object, privateKey: string): Ba
  *
  * @param data - The payload that was signed
  * @param signature - Base64-encoded Ed25519 signature (64 bytes decoded)
- * @param publicKey - PEM-encoded Ed25519 public key (SPKI)
+ * @param publicKey - PEM-encoded Ed25519 public key (SPKI) or KeyObject
  */
 export function verifySignature(
   data: string | object,
   signature: Base64String,
-  publicKey: string
+  publicKey: string | crypto.KeyObject
 ): boolean {
   try {
-    const payload = typeof data === 'string' ? data : JSON.stringify(data);
+    const payload = typeof data === 'string' ? data : canonicalJson(stripSignature(data));
     const signatureBuffer = Buffer.from(signature, 'base64');
 
     // Ed25519 signatures are always 64 bytes; reject anything else early
@@ -51,6 +56,12 @@ export function verifySignature(
   } catch {
     return false;
   }
+}
+
+function stripSignature(data: object): object {
+  const { signature: _omit, ...rest } = data as Record<string, unknown>;
+  void _omit;
+  return rest;
 }
 
 /**

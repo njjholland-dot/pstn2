@@ -1,95 +1,67 @@
 /**
  * Example 2: Direct Routing
  *
- * This example demonstrates how to request direct peer-to-peer routing
- * for an outbound call, including media capability negotiation.
+ * Alpha Telecom (CP1-UK-0101) places a call from +442079460100 to
+ * +441614960123. It discovers the destination's holder (Bravo Networks) and
+ * asks it for direct connection details, negotiating codecs and SRTP.
+ * If there is no PSTN2 path, the call goes via traditional PSTN.
+ *
+ * Run:  node test-environment/mock-network/server.mjs   (repo root)
+ *       npm run example:02
  */
 
-// In your application, import from the published package instead:
-//   import { PSTN2Client, AuthenticationMode, ConnectionDetails } from '@pstn2/core';
-import { PSTN2Client, AuthenticationMode, ConnectionDetails } from '../src';
+// In your application: import { PSTN2Client } from '@pstn2/core';
+import { PSTN2Client } from '../src';
+import { banner, describeDiscovery, fmt, startOrExit, rule } from './shared';
+
+const CALLER = '+442079460100';
+const DESTINATION = '+441614960123';
 
 async function main() {
-  const client = new PSTN2Client({
-    cpId: 'CP1-UK-0001',
-    apiEndpoint: 'https://api.yourcp.com/pstn2/v1',
-    privateKey: process.env.PSTN2_PRIVATE_KEY!,
-    authMode: AuthenticationMode.DirectQuery,
-  });
-
-  console.log('Requesting direct routing for outbound call...');
-  console.log('---');
+  banner('PSTN2 Example 2 — Direct Routing', 'Originating CP asks the destination holder for a direct media path');
+  const client = PSTN2Client.fromEnv({ cpId: 'CP1-UK-0101', cpName: 'Alpha Telecom' });
+  await startOrExit(client);
 
   try {
-    // Request routing with media capabilities
-    const routing = await client.routing.requestRouting({
-      destinationNumber: '+447700900123',
-      callerID: '+441234567890',
-      callReference: 'xyz-789-abc-012',
-      mediaCapabilities: {
-        codecs: ['opus', 'g722', 'pcmu'],
-        encryption: ['srtp-aes256', 'srtp-aes128'],
-        video: false,
-        maxBandwidth: 128000, // 128 kbps
-      },
-      branding: {
-        displayName: 'ACME Support',
-        logo: 'https://cdn.acme.com/logo.png',
-        backgroundColor: '#0066cc',
-        textColor: '#ffffff',
-        callPurpose: 'Account Security Alert',
-      },
+    console.log(`Outbound call ${fmt(CALLER)} → ${fmt(DESTINATION)}`);
+    const offered = { codecs: ['opus', 'g722', 'pcmu'], encryption: ['srtp-aes256', 'srtp-aes128'], video: false, maxBandwidth: 128000 };
+    console.log(`  Offering codecs ${offered.codecs.join(', ')}; encryption ${offered.encryption.join(', ')}`);
+
+    const routing = await client.requestRouting({
+      destinationNumber: DESTINATION,
+      callerID: CALLER,
+      callReference: client.generateCallReference(),
+      mediaCapabilities: offered,
+      branding: { displayName: 'Alpha Telecom Support', callPurpose: 'Account enquiry' },
     });
+    console.log(`  Discovery: ${describeDiscovery(client, routing.discovery)}`);
+    console.log(rule());
 
     if (routing.accepted) {
-      console.log('✓ Routing accepted!');
+      const cd = routing.connectionDetails;
+      console.log(`✓ Routing accepted by ${routing.holder?.cpName || routing.holder?.cpId}`);
+      console.log('  Connection details:');
+      console.log(`    FQDN:      ${cd.fqdn}`);
+      console.log(`    IPv4/IPv6: ${cd.ipv4 || '-'} / ${cd.ipv6 || '-'}`);
+      console.log(`    Port:      ${cd.port}/${cd.protocol}`);
+      console.log(`    Peer key:  ${cd.publicKey ? cd.publicKey.slice(0, 24) + '…' : 'n/a'} (Ed25519 identity, authenticates DTLS)`);
+      console.log('  Agreed capabilities:');
+      console.log(`    Codec:      ${routing.agreedCapabilities.codecs.join(', ')}`);
+      console.log(`    Encryption: ${routing.agreedCapabilities.encryption.join(', ')}`);
+      console.log(`    Video:      ${routing.agreedCapabilities.video ? 'yes' : 'no'}`);
       console.log('');
-      console.log('Connection Details:');
-      console.log('  FQDN:', routing.connectionDetails.fqdn);
-      console.log('  IPv4:', routing.connectionDetails.ipv4);
-      console.log('  IPv6:', routing.connectionDetails.ipv6 || 'N/A');
-      console.log('  Port:', routing.connectionDetails.port);
-      console.log('  Protocol:', routing.connectionDetails.protocol);
-      console.log('');
-      console.log('Agreed Capabilities:');
-      console.log('  Codecs:', routing.agreedCapabilities.codecs.join(', '));
-      console.log('  Encryption:', routing.agreedCapabilities.encryption.join(', '));
-      console.log('  Video:', routing.agreedCapabilities.video ? 'Yes' : 'No');
-      console.log('');
-      console.log('Encryption:');
-      console.log('  Public Key:', routing.connectionDetails.publicKey?.substring(0, 32) + '...');
-      console.log('  Algorithm: Ed25519');
-      console.log('');
-
-      // Now you can establish the media connection
-      console.log('Ready to establish encrypted media connection!');
-      console.log(`Connect to: ${routing.connectionDetails.fqdn}:${routing.connectionDetails.port}`);
-
-      // Simulate media connection
-      await simulateMediaConnection(routing.connectionDetails);
-
+      console.log(`Next: send the SIP INVITE directly to ${cd.fqdn}:${cd.port}; media keys come from DTLS-SRTP.`);
     } else {
-      console.log('✗ Routing rejected');
-      console.log('Reason:', routing.rejectReason);
-      console.log('Falling back to traditional PSTN');
+      console.log(`✗ No direct route (${routing.reason}) — routing via traditional PSTN`);
     }
-  } catch (error) {
-    console.error('Error requesting routing:', error);
-    console.log('Falling back to traditional PSTN');
+  } catch (err) {
+    console.log(`✗ Routing error: ${(err as Error).message} — routing via traditional PSTN`);
+  } finally {
+    await client.close();
   }
-
-  await client.close();
 }
 
-async function simulateMediaConnection(details: ConnectionDetails) {
-  console.log('');
-  console.log(`Establishing media connection to ${details.fqdn}:${details.port}...`);
-  console.log('  1. Performing DTLS handshake');
-  console.log('  2. Exchanging SRTP keys');
-  console.log('  3. Setting up Opus codec');
-  console.log('  4. Media connection established!');
-  console.log('');
-  console.log('✓ Call connected - encrypted HD audio ready');
-}
-
-main().catch(console.error);
+main().catch((err) => {
+  console.error('Unexpected error:', err);
+  process.exit(1);
+});

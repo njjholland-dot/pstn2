@@ -1,112 +1,53 @@
 /**
  * Example 4: Emergency Services
  *
- * This example demonstrates how PSAPs query real-time location
- * data for emergency calls (999/112/911).
+ * A PSAP answers a 999 call from +441614960123. It discovers the CP that
+ * holds the caller's number (Bravo Networks) and asks it for live location.
+ * A second caller, +441134960456, was ported from Charlie to Bravo: the
+ * Range Holder's redirect sends the PSAP to the right CP. If PSTN2 cannot
+ * provide location, the PSAP uses its other sources (cell, billing address).
+ *
+ * Run:  node test-environment/mock-network/server.mjs   (repo root)
+ *       npm run example:04
  */
 
-// In your application, import from the published package instead:
-//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
-import { PSTN2Client, AuthenticationMode } from '../src';
+// In your application: import { PSTN2Client, DiscoveryError } from '@pstn2/core';
+import { PSTN2Client, DiscoveryError } from '../src';
+import { banner, describeDiscovery, fmt, startOrExit, rule } from './shared';
+
+const PSAP_ID = 'UK-999-MANCHESTER-01';
+const callers = ['+441614960123', '+441134960456', '+441614960999'];
 
 async function main() {
-  // Initialize as a PSAP (Public Safety Answering Point)
-  const psapClient = new PSTN2Client({
-    cpId: 'PSAP-UK-LONDON-01',
-    apiEndpoint: 'https://api.psap-london.gov.uk/pstn2/v1',
-    privateKey: process.env.PSAP_PRIVATE_KEY!,
-    authMode: AuthenticationMode.DirectQuery,
-  });
-
-  console.log('Emergency Services Location Query');
-  console.log('PSAP: London Central 999');
-  console.log('---');
-
-  // Scenario: Someone calls 999
-  const emergencyCall = {
-    callerID: '+441234567890',
-    callReference: 'emergency-456-789',
-    timestamp: new Date(),
-  };
-
-  console.log('Emergency call received:');
-  console.log('  From:', emergencyCall.callerID);
-  console.log('  Time:', emergencyCall.timestamp.toISOString());
-  console.log('');
-  console.log('Querying real-time location...');
+  banner('PSTN2 Example 4 — Emergency Services', `PSAP ${PSAP_ID} queries live caller location`);
+  const psap = PSTN2Client.fromEnv({ cpId: 'PSAP-UK-999-01' });
+  await startOrExit(psap);
 
   try {
-    // Query the CP for caller's location
-    const location = await psapClient.emergency.getLocation({
-      callerID: emergencyCall.callerID,
-      callReference: emergencyCall.callReference,
-      psapID: 'UK-999-LONDON-CENTRAL',
-    });
-
-    console.log('✓ Location retrieved successfully');
-    console.log('');
-    console.log('GPS Coordinates:');
-    console.log('  Latitude:', location.location.latitude);
-    console.log('  Longitude:', location.location.longitude);
-    console.log('  Accuracy:', location.location.accuracy, 'meters');
-    console.log('  Altitude:', location.location.altitude || 'N/A', 'meters');
-    console.log('  Source:', location.location.source);
-    console.log('');
-    if (location.address) {
-      console.log('Address:');
-      console.log('  Street:', location.address.street);
-      console.log('  City:', location.address.city);
-      console.log('  Postcode:', location.address.postcode);
-      console.log('  Country:', location.address.country);
-      console.log('');
-    }
-
-    if (location.additionalInfo) {
-      console.log('Additional Information:');
-      if (location.additionalInfo.cellTowerId) {
-        console.log('  Cell Tower:', location.additionalInfo.cellTowerId);
+    for (const callerID of callers) {
+      console.log(rule());
+      console.log(`999 call from ${fmt(callerID)}`);
+      const start = Date.now();
+      try {
+        const loc = await psap.getEmergencyLocation({ callerID, psapID: PSAP_ID, callReference: psap.generateCallReference() });
+        console.log(`  Discovery: ${describeDiscovery(psap, loc.discovery)}`);
+        console.log(`  ✓ Location from ${loc.holder.cpName || loc.holder.cpId} in ${Date.now() - start}ms`);
+        console.log(`    Lat/long:  ${loc.location.latitude}, ${loc.location.longitude} (±${loc.location.accuracy}m, ${loc.location.source || 'unknown source'})`);
+        if (loc.address) console.log(`    Address:   ${[loc.address.street, loc.address.city, loc.address.postcode, loc.address.country].filter(Boolean).join(', ')}`);
+        console.log('    → Dispatch to the location above');
+      } catch (err) {
+        if (err instanceof DiscoveryError) console.log(`  Discovery: ${describeDiscovery(psap, err.discovery)}`);
+        console.log(`  ✗ No PSTN2 location (${(err as Error).message})`);
+        console.log('    → Fall back to cell-tower / billing-address location');
       }
-      if (location.additionalInfo.wifiAccessPoints?.length) {
-        console.log('  WiFi APs:', location.additionalInfo.wifiAccessPoints.length, 'detected');
-      }
-      console.log('  Last Updated:', location.additionalInfo.lastUpdated);
-      console.log('');
     }
-
-    // Calculate response recommendations
-    const accuracy = location.location.accuracy;
-    console.log('Dispatch Recommendations:');
-    if (accuracy < 20) {
-      console.log('  ✓ Excellent accuracy - dispatch to exact location');
-      console.log('  ✓ GPS lock strong');
-    } else if (accuracy < 100) {
-      console.log('  ⚠ Good accuracy - dispatch to general area');
-      console.log('  ⚠ May need caller confirmation');
-    } else {
-      console.log('  ⚠ Low accuracy - use cell tower triangulation');
-      console.log('  ⚠ Caller assistance required');
-    }
-    console.log('');
-
-    // Compare with traditional PSTN
-    console.log('Traditional PSTN comparison:');
-    console.log('  Old: Billing address (often incorrect)');
-    console.log('  Old: 100-1000m accuracy');
-    console.log('  Old: 30-60 second delay');
-    console.log('  ---');
-    console.log('  New: Real-time GPS location');
-    console.log('  New: 5-15m accuracy');
-    console.log('  New: < 100ms response time');
-    console.log('  Result: Faster response, lives saved! 🚑');
-
-  } catch (error) {
-    // getLocation() rethrows on failure so the PSAP can apply its own fallback
-    console.error('Error retrieving location:', error);
-    console.log('Falling back to traditional PSTN location (billing address)...');
-    console.log('Dispatch with caller-confirmed address.');
+    console.log(rule());
+  } finally {
+    await psap.close();
   }
-
-  await psapClient.close();
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error('Unexpected error:', err);
+  process.exit(1);
+});

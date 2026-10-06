@@ -1,25 +1,34 @@
 /**
- * Number-range utilities for PSTN2.
+ * Number-format helpers (SPECIFICATION.md §9.8).
  *
- * NOTE: This reference implementation assumes UK (+44) E.164 numbering,
- * where a number range is identified by the country code plus the first
- * six subscriber digits (e.g. +441234567890 -> +44123456). Production
- * implementations should apply per-country numbering plans.
+ * Wire format is E.164 (`+441614960123`); Number Discovery URLs use the
+ * digits without the `+`. Porting is per number, so nothing here derives a
+ * "range" key from a number — block matching is done only by
+ * NumberingList.findBlock() against the regulator's list.
  */
 
-/**
- * Extract the number range key from an E.164 phone number or a directory
- * range pattern (trailing 'X' wildcards are stripped first).
- *
- * @param phoneNumber - E.164 number (e.g. +441234567890) or range pattern
- *                      (e.g. +4412345678XX)
- * @param prefixDigits - Number of digits (including country code) that
- *                       identify the range. Default 8 = UK country code
- *                       (44) + 6 range digits.
- * @returns Range key, e.g. '+44123456'
- */
-export function extractNumberRange(phoneNumber: string, prefixDigits: number = 8): string {
-  const normalized = phoneNumber.replace(/X+$/i, '');
-  // +1 accounts for the leading '+' sign
-  return normalized.substring(0, prefixDigits + 1);
+/** E.164 digits without `+` (non-digits removed). */
+export function digitsOf(number: string): string {
+  return String(number).replace(/^\+/, '').replace(/\D/g, '');
+}
+
+/** Normalise to E.164 with a leading `+`. */
+export function toE164(number: string): string {
+  return '+' + digitsOf(number);
+}
+
+/** True for a syntactically valid E.164 number (`+` and 2–15 digits, no leading 0). */
+export function isE164(number: string): boolean {
+  return /^\+[1-9]\d{1,14}$/.test(number);
+}
+
+/** UK national display form for a +44 number, e.g. +441614960123 → 0161 496 0123. */
+export function displayNumber(number: string): string {
+  const d = digitsOf(number);
+  if (!d.startsWith('44')) return '+' + d;
+  const n = '0' + d.slice(2);
+  if (/^02\d/.test(n)) return `${n.slice(0, 3)} ${n.slice(3, 7)} ${n.slice(7)}`;
+  if (/^07/.test(n)) return `${n.slice(0, 5)} ${n.slice(5)}`;
+  if (/^01\d1/.test(n) || /^011/.test(n)) return `${n.slice(0, 4)} ${n.slice(4, 7)} ${n.slice(7)}`;
+  return `${n.slice(0, 5)} ${n.slice(5)}`;
 }

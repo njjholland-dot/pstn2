@@ -1,68 +1,81 @@
 /**
- * Logger utility using Winston
+ * Minimal, dependency-free logger.
+ *
+ * The SDK logs through a single shared logger. The default level is `warn`
+ * so library output never drowns out the host application; set
+ * `logLevel: 'info' | 'debug'` on the client (or PSTN2_LOG_LEVEL in the
+ * examples) to see protocol traffic, or `'silent'` to turn it off.
+ * A custom sink can be installed with `setLogSink()` (e.g. to forward to
+ * pino/winston in your application).
  */
 
-import winston from 'winston';
+export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 
-type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+const ORDER: Record<LogLevel, number> = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 };
 
-class Logger {
-  private logger: winston.Logger;
+export type LogSink = (level: Exclude<LogLevel, 'silent'>, message: string, meta?: Record<string, unknown>) => void;
 
-  constructor(level: LogLevel = 'info') {
-    this.logger = winston.createLogger({
-      level,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json()
-      ),
-      defaultMeta: { service: 'pstn2' },
-      transports: [
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.printf(({ level, message, timestamp, ...meta }) => {
-              const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-              return `${timestamp} [${level}]: ${message} ${metaStr}`;
-            })
-          ),
-        }),
-      ],
-    });
+const defaultSink: LogSink = (level, message, meta) => {
+  const line = `${new Date().toISOString()} [pstn2 ${level}] ${message}${
+    meta && Object.keys(meta).length ? ' ' + JSON.stringify(meta) : ''
+  }`;
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+};
+
+export class Logger {
+  private level: LogLevel;
+  private sink: LogSink = defaultSink;
+
+  constructor(level: LogLevel = 'warn') {
+    this.level = level;
   }
 
   setLevel(level: LogLevel): void {
-    this.logger.level = level;
+    this.level = level;
+  }
+
+  getLevel(): LogLevel {
+    return this.level;
+  }
+
+  setSink(sink: LogSink | undefined): void {
+    this.sink = sink || defaultSink;
+  }
+
+  private log(level: Exclude<LogLevel, 'silent'>, message: string, meta?: Record<string, unknown>): void {
+    if (ORDER[level] <= ORDER[this.level]) this.sink(level, message, meta);
   }
 
   error(message: string, meta?: Record<string, unknown>): void {
-    this.logger.error(message, meta);
+    this.log('error', message, meta);
   }
 
   warn(message: string, meta?: Record<string, unknown>): void {
-    this.logger.warn(message, meta);
+    this.log('warn', message, meta);
   }
 
   info(message: string, meta?: Record<string, unknown>): void {
-    this.logger.info(message, meta);
+    this.log('info', message, meta);
   }
 
   debug(message: string, meta?: Record<string, unknown>): void {
-    this.logger.debug(message, meta);
+    this.log('debug', message, meta);
   }
 }
 
-// Singleton instance
-let loggerInstance: Logger | null = null;
+const shared = new Logger((process.env.PSTN2_LOG_LEVEL as LogLevel) in ORDER ? (process.env.PSTN2_LOG_LEVEL as LogLevel) : 'warn');
 
+/** The shared SDK logger. Passing a level changes it for every module. */
 export function getLogger(level?: LogLevel): Logger {
-  if (!loggerInstance) {
-    loggerInstance = new Logger(level);
-  } else if (level) {
-    loggerInstance.setLevel(level);
-  }
-  return loggerInstance;
+  if (level) shared.setLevel(level);
+  return shared;
+}
+
+/** Install a custom log sink (or `undefined` to restore console output). */
+export function setLogSink(sink: LogSink | undefined): void {
+  shared.setSink(sink);
 }
 
 export default Logger;

@@ -1,106 +1,70 @@
 """
-Example 4: Emergency Services
+Example 4: Emergency Services location
 
-This example demonstrates how PSAPs query real-time location
-data for emergency calls (999/112/911).
+A 999 call arrives at the PSAP from +441614960123. The PSAP (here acting through
+the SDK) discovers the caller ID's holder — Bravo Networks — and asks it for the
+caller's live location (POST /pstn2/v1/emergency/location).
+
+A second 999 call from a number not in service (+441614960999) cannot be located
+via PSTN2: discovery returns "unknown", the SDK raises DiscoveryError, and the PSAP
+uses its other location sources (cell, billing address).
+
+Run the local mock network first:
+    node test-environment/mock-network/server.mjs
+then:
+    python examples/04_emergency_services.py
 """
 
+from __future__ import annotations
+
 import asyncio
+import logging
 import os
-from datetime import datetime
-from pstn2.client import PSTN2Client, AuthenticationMode
+import sys
+import time
+
+from pstn2 import DiscoveryError, NetworkConfig, PSTN2Client, PSTN2Error, display_number
+
+PSAP_ID = os.environ.get("PSTN2_PSAP_ID", "UK-999-MANCHESTER-01")
 
 
-async def main():
-    # Initialize as a PSAP (Public Safety Answering Point)
-    psap_client = PSTN2Client(
-        cp_id='PSAP-UK-LONDON-01',
-        api_endpoint='https://api.psap-london.gov.uk/pstn2/v1',
-        private_key=os.environ['PSAP_PRIVATE_KEY'],
-        auth_mode=AuthenticationMode.DIRECT_QUERY,
-    )
-
-    print('Emergency Services Location Query')
-    print('PSAP: London Central 999')
-    print('---')
-
-    # Scenario: Someone calls 999
-    emergency_call = {
-        'caller_id': '+441234567890',
-        'call_reference': 'emergency-456-789',
-        'timestamp': datetime.now(),
-    }
-
-    print('Emergency call received:')
-    print(f'  From: {emergency_call["caller_id"]}')
-    print(f'  Time: {emergency_call["timestamp"].isoformat()}')
-    print('')
-    print('Querying real-time location...')
-
+async def locate(client: PSTN2Client, caller_id: str) -> bool:
+    print(f"\n999 call from {caller_id} ({display_number(caller_id)})")
+    start = time.perf_counter()
     try:
-        # Query the CP for caller's location
-        location = await psap_client.emergency.get_location(
-            caller_id=emergency_call['caller_id'],
-            call_reference=emergency_call['call_reference'],
-            psap_id='UK-999-LONDON-CENTRAL',
-        )
-
-        print('✓ Location retrieved successfully')
-        print('')
-        print('GPS Coordinates:')
-        print(f'  Latitude: {location.location.latitude}')
-        print(f'  Longitude: {location.location.longitude}')
-        print(f'  Accuracy: {location.location.accuracy} meters')
-        print(f'  Altitude: {location.location.altitude or "N/A"} meters')
-        print(f'  Source: {location.location.source}')
-        print('')
-        print('Address:')
-        print(f'  Street: {location.address.street}')
-        print(f'  City: {location.address.city}')
-        print(f'  Postcode: {location.address.postcode}')
-        print(f'  Country: {location.address.country}')
-        print('')
-
-        if location.additional_info:
-            print('Additional Information:')
-            if location.additional_info.cell_tower_id:
-                print(f'  Cell Tower: {location.additional_info.cell_tower_id}')
-            if location.additional_info.wifi_access_points:
-                print(f'  WiFi APs: {len(location.additional_info.wifi_access_points)} detected')
-            print(f'  Last Updated: {location.additional_info.last_updated}')
-            print('')
-
-        # Calculate response recommendations
-        accuracy = location.location.accuracy
-        print('Dispatch Recommendations:')
-        if accuracy < 20:
-            print('  ✓ Excellent accuracy - dispatch to exact location')
-            print('  ✓ GPS lock strong')
-        elif accuracy < 100:
-            print('  ⚠ Good accuracy - dispatch to general area')
-            print('  ⚠ May need caller confirmation')
-        else:
-            print('  ⚠ Low accuracy - use cell tower triangulation')
-            print('  ⚠ Caller assistance required')
-        print('')
-
-        # Compare with traditional PSTN
-        print('Traditional PSTN comparison:')
-        print('  Old: Billing address (often incorrect)')
-        print('  Old: 100-1000m accuracy')
-        print('  Old: 30-60 second delay')
-        print('  ---')
-        print('  New: Real-time GPS location')
-        print('  New: 5-15m accuracy')
-        print('  New: < 100ms response time')
-        print('  Result: Faster response, lives saved! 🚑')
-
-    except Exception as error:
-        print(f'Error retrieving location: {error}')
-        print('Falling back to billing address...')
-
-    await psap_client.close()
+        loc = await client.emergency.get_location(caller_id, PSAP_ID)
+    except DiscoveryError as error:
+        print(f"  ✗ No PSTN2 holder for the caller ID (discovery: {error.discovery.result},"
+              f" hops {error.discovery.hops})")
+        print("  → Use network cell location / billing address (traditional emergency handling)")
+        return False
+    except PSTN2Error as error:
+        print(f"  ✗ Location query failed: {error}")
+        print("  → Use network cell location / billing address (traditional emergency handling)")
+        return False
+    ms = (time.perf_counter() - start) * 1000
+    p, a = loc.location, loc.address
+    print(f"  ✓ Location from {loc.holder} in {ms:.0f} ms")
+    print(f"    Position: {p.latitude:.4f}, {p.longitude:.4f}  ±{p.accuracy:g} m  (source: {p.source})")
+    if a:
+        print(f"    Address:  {a.street}, {a.city} {a.postcode}, {a.country}")
+    print("    → Dispatch to the caller's position")
+    return True
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
+async def main() -> int:
+    logging.basicConfig(level=os.environ.get("PSTN2_LOG_LEVEL", "WARNING"))
+    config = NetworkConfig.from_env()
+    print("PSTN2 Example 4: Emergency Services")
+    print(f"  Network:   {config.network}  ({config.numbering_list_url})")
+    print(f"  PSAP:      {PSAP_ID}  (requests sent as {config.cp_id})")
+    print("---")
+    async with PSTN2Client.from_config(config) as client:
+        located = await locate(client, "+441614960123")
+        await locate(client, "+441614960999")  # expected to fall back
+    print("\nDone.")
+    return 0 if located else 1
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

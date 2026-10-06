@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pstn2"
+version = "1.1.0"
+description = "PSTN2 Python SDK: Number Discovery, caller ID verification, direct routing and emergency location (protocol v1.1)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Nick Holland", email = "nick.holland@8x8.com" }]
+keywords = ["pstn", "pstn2", "telecommunications", "number-discovery", "caller-id", "fraud-prevention"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Telecommunications Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Communications :: Telephony",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.27",
+    "pydantic>=2",
+    "cryptography>=42",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+]
+
+[project.urls]
+Homepage = "https://pstn2.org"
+Repository = "https://github.com/njjholland-dot/pstn2"
+Documentation = "https://pstn2.org/docs/SPECIFICATION.md"
+
+[tool.setuptools]
+packages = ["pstn2"]
+
+[tool.setuptools.package-data]
+pstn2 = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

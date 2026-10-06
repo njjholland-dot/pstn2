@@ -1,220 +1,166 @@
 /**
- * PSTN2 messaging client
- * Handles all inter-CP communication with authentication and retry logic
+ * PSTN2 messaging client.
+ *
+ * Every CP-to-CP call goes to the CP that currently HOLDS the subject number,
+ * found with Number Discovery (SPECIFICATION.md §9). If that CP answers
+ * `200 {result: "not_held", cache: {invalidate: true}}` (§5.1.2, §9.5) —
+ * typically because our cached holder is stale — the cache entry is purged,
+ * the holder is rediscovered from the Range Holder, and the request is
+ * retried ONCE at the new holder.
  */
 
-import { HttpClient } from './http-client';
+import { KeyObject } from 'node:crypto';
+import { HttpClient, errorFromResponse } from './http-client';
 import { generateSignature, generateUUID } from '../utils/crypto';
-import { extractNumberRange } from '../utils/numbering';
+import { CpRef, DiscoveryResult, HttpMethod, HttpResponse, CacheControl } from '../types';
+import { DiscoveryClient } from '../discovery/client';
+import { DiscoveryError, NotHeldError } from '../errors';
+import { PROTOCOL_VERSION } from '../version';
 import { getLogger } from '../utils/logger';
-import { PSTN2Config } from '../types';
-import { PSTN2Error } from '../errors';
 
 const logger = getLogger();
 
-const PSTN2_VERSION = '1.0';
+export interface MessagingClientOptions {
+  cpId: string;
+  http: HttpClient;
+  discovery: DiscoveryClient;
+  /** Ed25519 private key used to sign request bodies (§4.1). */
+  privateKey?: KeyObject | string;
+}
 
-interface RequestOptions {
-  skipSignature?: boolean;
-  maxPortingHops?: number;
-  portingChain?: string[];
+export interface HolderCallOptions {
+  /** Non-2xx statuses to return instead of throwing (e.g. [503] for RoutingRejection). */
+  acceptStatuses?: number[];
+  /** Extra headers (e.g. Authorization for a token pool). */
+  headers?: Record<string, string>;
+  /** Skip the message envelope + signature (raw body). */
+  raw?: boolean;
+}
+
+export interface HolderCallResult<T> {
+  /** Final response body. */
+  response: T;
+  /** Final HTTP status. */
+  status: number;
+  /** The CP that answered. */
+  holder: CpRef;
+  /** The discovery that found `holder`. */
+  discovery: DiscoveryResult;
+  /** Every discovery made (2 when a not_held forced a rediscovery). */
+  discoveries: DiscoveryResult[];
+  /** True when the first holder answered not_held and the call was retried. */
+  retried: boolean;
+}
+
+/** `{url}/pstn2/v1` for a CP. */
+export function apiBase(cp: CpRef): string {
+  return `${cp.url.replace(/\/$/, '')}/pstn2/v1`;
+}
+
+/** True for a NotHeldResponse (`result: not_held` with `cache.invalidate`). */
+export function isNotHeld(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  const b = body as { result?: unknown; cache?: CacheControl };
+  return b.result === 'not_held' && !!b.cache && !!b.cache.invalidate;
 }
 
 export class MessagingClient {
-  private httpClient: HttpClient;
-  private config: PSTN2Config;
+  readonly cpId: string;
+  readonly http: HttpClient;
+  readonly discovery: DiscoveryClient;
+  private readonly privateKey?: KeyObject | string;
 
-  constructor(config: PSTN2Config) {
-    this.config = config;
-    this.httpClient = new HttpClient(config.timeout, config.retries);
-
-    // Set log level
-    if (config.logLevel) {
-      getLogger(config.logLevel);
-    }
+  constructor(options: MessagingClientOptions) {
+    this.cpId = options.cpId;
+    this.http = options.http;
+    this.discovery = options.discovery;
+    this.privateKey = options.privateKey;
   }
 
-  /**
-   * Get this client's CP identifier
-   */
   getCpId(): string {
-    return this.config.cpId;
+    return this.cpId;
   }
 
-  /**
-   * Make authenticated request to another CP.
-   *
-   * Wraps the payload in the PSTN2 message envelope (SPECIFICATION.md
-   * section 4.1): messageId, version, timestamp, and a body-level Ed25519
-   * `signature` field (the canonical signature location). The signature is
-   * also mirrored in the X-PSTN2-Signature header for middleboxes.
-   */
-  async request<TRequest, TResponse>(
-    endpoint: string,
-    url: string,
-    data: TRequest,
-    options?: RequestOptions
-  ): Promise<{ response: TResponse; portingChain: string[] }> {
-    const portingChain = options?.portingChain || [];
-    const maxPortingHops = options?.maxPortingHops || 10;
-
-    // Check for porting loop
-    if (portingChain.length >= maxPortingHops) {
-      throw new PSTN2Error(
-        'internal_error' as any,
-        'Maximum porting hops exceeded - possible loop',
-        { portingChain }
-      );
-    }
-
-    // Build the message envelope (messageId, version, timestamp)
-    const envelope = {
-      ...data,
-      messageId: (data as any).messageId || generateUUID(),
-      version: (data as any).version || PSTN2_VERSION,
-      timestamp: (data as any).timestamp || new Date().toISOString(),
-    };
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'X-PSTN2-Version': PSTN2_VERSION,
-      'X-PSTN2-CP-ID': this.config.cpId,
-    };
-
-    // Sign the envelope; the body `signature` field is canonical
-    let requestData: typeof envelope & { signature?: string } = envelope;
-    if (!options?.skipSignature && this.config.privateKey) {
-      const signature = generateSignature(envelope, this.config.privateKey);
-      requestData = { ...envelope, signature };
-      headers['X-PSTN2-Signature'] = signature;
-    }
-
-    try {
-      logger.info(`Request to ${url}${endpoint}`, {
-        endpoint,
-        cpId: this.config.cpId,
-      });
-
-      const response = await this.httpClient.post<TResponse>(
-        `${url}${endpoint}`,
-        requestData,
-        headers
-      );
-
-      logger.info(`Response from ${url}${endpoint}`, {
-        status: response.status,
-      });
-
-      return {
-        response: response.data,
-        portingChain,
-      };
-    } catch (error) {
-      // Handle porting (410 Gone)
-      if (error instanceof PSTN2Error && error.code === 'number_ported') {
-        return this.handlePorting(endpoint, requestData, portingChain, error, options);
-      }
-
-      throw error;
-    }
-  }
-
-  /**
-   * Handle number porting - retry with new CP
-   */
-  private async handlePorting<TRequest, TResponse>(
-    endpoint: string,
-    data: TRequest,
-    portingChain: string[],
-    error: PSTN2Error,
-    options?: RequestOptions
-  ): Promise<{ response: TResponse; portingChain: string[] }> {
-    const portingInfo = (error.details?.response as any)?.portedTo;
-
-    if (!portingInfo || !portingInfo.apiEndpoint) {
-      throw new PSTN2Error(
-        'number_ported' as any,
-        'Number ported but no forwarding information provided',
-        error.details
-      );
-    }
-
-    const newCP = portingInfo.cpID;
-    const newEndpoint = portingInfo.apiEndpoint;
-
-    logger.info(`Number ported to ${newCP}, retrying`, {
-      from: portingChain[portingChain.length - 1] || 'initial',
-      to: newCP,
-      endpoint: newEndpoint,
-    });
-
-    // Check for loop
-    if (portingChain.includes(newCP)) {
-      throw new PSTN2Error(
-        'internal_error' as any,
-        'Porting loop detected',
-        { portingChain: [...portingChain, newCP] }
-      );
-    }
-
-    // Add to porting chain
-    const updatedChain = [...portingChain, newCP];
-
-    // Cache the porting information if caching is enabled
-    if (this.config.cacheDirectory) {
-      // TODO: Implement caching in directory module
-      logger.debug('Caching porting info', { from: data, to: newCP });
-    }
-
-    // Retry with new CP, preserving the caller's options
-    return this.request<TRequest, TResponse>(endpoint, newEndpoint, data, {
-      ...options,
-      portingChain: updatedChain,
-    });
-  }
-
-  /**
-   * Make GET request
-   */
-  async get<TResponse>(url: string, endpoint: string): Promise<TResponse> {
-    const headers: Record<string, string> = {
-      'X-PSTN2-Version': PSTN2_VERSION,
-      'X-PSTN2-CP-ID': this.config.cpId,
-    };
-
-    const response = await this.httpClient.get<TResponse>(`${url}${endpoint}`, headers);
-    return response.data;
-  }
-
-  /**
-   * Generate call reference UUID
-   */
   generateCallReference(): string {
     return generateUUID();
   }
 
-  /**
-   * Get current timestamp in ISO format
-   */
   getCurrentTimestamp(): string {
     return new Date().toISOString();
   }
 
-  /**
-   * Validate phone number format (basic E.164 validation)
-   */
-  validatePhoneNumber(phoneNumber: string): boolean {
-    // E.164 format: +[country code][subscriber number]
-    // Length: 1-15 digits after the +
-    const e164Regex = /^\+[1-9]\d{1,14}$/;
-    return e164Regex.test(phoneNumber);
+  /** Wrap a payload in the §4.1 envelope (messageId, timestamp, version) and sign it. */
+  envelope<T extends object>(data: T): T & { messageId: string; timestamp: string; version: string; signature?: string } {
+    const env = {
+      ...data,
+      messageId: (data as { messageId?: string }).messageId || generateUUID(),
+      timestamp: (data as { timestamp?: string }).timestamp || this.getCurrentTimestamp(),
+      version: (data as { version?: string }).version || PROTOCOL_VERSION,
+    };
+    if (!this.privateKey) return env;
+    return { ...env, signature: generateSignature(env, this.privateKey) };
+  }
+
+  /** Send to a specific CP (`{url}/pstn2/v1{path}`). Returns non-2xx responses unchanged. */
+  async sendTo<T>(cp: CpRef, method: HttpMethod, path: string, body?: object, options: HolderCallOptions = {}): Promise<HttpResponse<T>> {
+    const url = apiBase(cp) + path;
+    const payload = body === undefined ? undefined : options.raw ? body : this.envelope(body);
+    logger.info(`${method} ${url}`, { to: cp.cpId });
+    const res = await this.http.send<T>(method, url, { body: payload, headers: options.headers });
+    logger.info(`HTTP ${res.status} from ${cp.cpId}`, { path });
+    return res;
   }
 
   /**
-   * Extract number range from phone number for cache lookup.
-   * Delegates to the shared UK-centric numbering utility.
+   * Discover the holder of `number` and send the request there, handling
+   * not_held → purge → rediscover → retry once.
+   *
+   * @throws DiscoveryError when there is no PSTN2 holder (fall back to PSTN)
+   * @throws NotHeldError when the rediscovered holder also answers not_held
+   * @throws PSTN2Error for non-2xx responses not listed in acceptStatuses
    */
-  extractNumberRange(phoneNumber: string, prefixDigits?: number): string {
-    return extractNumberRange(phoneNumber, prefixDigits);
+  async callHolder<T>(
+    number: string,
+    method: HttpMethod,
+    path: string,
+    body?: object,
+    options: HolderCallOptions = {}
+  ): Promise<HolderCallResult<T>> {
+    let discovery = await this.discovery.discover(number);
+    const discoveries = [discovery];
+    if (discovery.result !== 'held' || !discovery.holder) throw new DiscoveryError(discovery);
+
+    let holder = discovery.holder;
+    let res = await this.sendTo<T>(holder, method, path, body, options);
+    let retried = false;
+
+    if (res.status === 200 && isNotHeld(res.data)) {
+      logger.info('Holder answered not_held: purging cache and rediscovering', { number, from: holder.cpId });
+      this.applyInvalidation(number, res.data);
+      discovery = await this.discovery.discover(number);
+      discoveries.push(discovery);
+      if (discovery.result !== 'held' || !discovery.holder) throw new DiscoveryError(discovery);
+      holder = discovery.holder;
+      res = await this.sendTo<T>(holder, method, path, body, options);
+      retried = true;
+      if (res.status === 200 && isNotHeld(res.data)) throw new NotHeldError(number, holder.cpId);
+    } else if (res.data && typeof res.data === 'object' && (res.data as { cache?: CacheControl }).cache?.invalidate) {
+      // Any PSTN2 response may carry an invalidation (§9.5).
+      this.applyInvalidation(number, res.data);
+    }
+
+    const ok = (res.status >= 200 && res.status < 300) || (options.acceptStatuses || []).includes(res.status);
+    if (!ok) throw errorFromResponse(res, apiBase(holder) + path);
+    return { response: res.data, status: res.status, holder, discovery, discoveries, retried };
+  }
+
+  private applyInvalidation(number: string, body: unknown): void {
+    this.discovery.purge(number);
+    const scope = (body as { cache?: CacheControl }).cache?.scope;
+    if (scope === 'block') {
+      this.discovery.numberingList.refresh(true).catch((err) => {
+        logger.warn('Numbering list refresh after block invalidation failed', { error: (err as Error).message });
+      });
+    }
   }
 }

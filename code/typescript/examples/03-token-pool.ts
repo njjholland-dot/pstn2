@@ -1,94 +1,82 @@
 /**
- * Example 3: Token Pool Authentication
+ * Example 3: Token Pool Authentication (Option 2)
  *
- * This example demonstrates Token Pool authentication (Option 2),
- * which creates a shared token before placing the call.
+ * Alpha Telecom (originating CP) creates a short-lived token for a call from
+ * +442079460100 to +441614960123 before sending the INVITE. Bravo Networks
+ * (terminating CP) receives the token id in the INVITE, finds the caller ID's
+ * holder with Number Discovery, and verifies the token there.
+ *
+ * Run:  node test-environment/mock-network/server.mjs   (repo root)
+ *       npm run example:03
  */
 
-// In your application, import from the published package instead:
-//   import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+// In your application: import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
 import { PSTN2Client, AuthenticationMode } from '../src';
+import { banner, describeDiscovery, fmt, startOrExit, rule } from './shared';
+
+const CALLER = '+442079460100';
+const CALLED = '+441614960123';
 
 async function main() {
-  // Initialize client with Token Pool mode
-  const client = new PSTN2Client({
-    cpId: 'CP1-UK-0001',
-    apiEndpoint: 'https://api.yourcp.com/pstn2/v1',
-    privateKey: process.env.PSTN2_PRIVATE_KEY!,
+  banner('PSTN2 Example 3 — Token Pool', 'Originating CP creates a token; terminating CP verifies it');
+  const alpha = PSTN2Client.fromEnv({ cpId: 'CP1-UK-0101', cpName: 'Alpha Telecom', authMode: AuthenticationMode.TokenPool });
+  // The terminating side is a different CP (PSTN2_CP_ID only changes the originating CP).
+  const bravo = new PSTN2Client({
+    cpId: 'CP1-UK-0102',
+    cpName: 'Bravo Networks',
+    numberingListUrl: alpha.numberingList.url,
+    verifySignatures: alpha.discovery.verifySignatures,
     authMode: AuthenticationMode.TokenPool,
-    tokenPoolEndpoint: 'https://tokenpool.pstn2.org',
-    tokenPoolAuth: process.env.TOKEN_POOL_JWT!,
   });
-
-  console.log('Token Pool Authentication Example');
-  console.log('---');
-
-  // STEP 1: Create token before placing call (Originating CP)
-  console.log('Step 1: Creating authentication token...');
+  await startOrExit(alpha);
 
   try {
-    const token = await client.auth.createToken({
-      callerID: '+441234567890',
-      calledID: '+447700900123',
-      callReference: 'token-call-123',
-      ttl: 30, // 30 seconds
-      branding: {
-        displayName: 'ACME Corp',
-        callPurpose: 'Customer Service',
-      },
+    console.log(`Step 1 — ${alpha.config.cpId} creates a token for ${fmt(CALLER)} → ${fmt(CALLED)}`);
+    const token = await alpha.createToken({
+      callerID: CALLER,
+      calledID: CALLED,
+      callReference: alpha.generateCallReference(),
+      ttl: 30,
+      branding: { displayName: 'Alpha Telecom', callPurpose: 'Delivery update' },
     });
-
-    console.log('✓ Token created successfully');
-    console.log('  Token ID:', token.tokenId);
-    console.log('  Expires:', token.expiresAt);
-    console.log('  Call Reference:', token.callReference);
+    console.log(`  ✓ Token ${token.tokenId} held by ${token.pool.cpName || token.pool.cpId}, expires ${token.expiresAt}`);
+    if (token.discovery) console.log(`  Discovery (caller ID): ${describeDiscovery(alpha, token.discovery)}`);
+    console.log('');
+    console.log('Step 2 — INVITE carries the token:');
+    console.log(`  X-PSTN2-Token: ${token.tokenId}`);
     console.log('');
 
-    // STEP 2: Place call with token in SIP INVITE
-    console.log('Step 2: Placing call with token...');
-    console.log('  SIP INVITE Header:');
-    console.log(`    X-PSTN2-Token: ${token.tokenId}`);
-    console.log('');
-
-    // Simulate some time passing
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // STEP 3: Recipient CP verifies token (on different CP)
-    console.log('Step 3: Recipient CP verifying token...');
-
-    const verification = await client.auth.verifyToken(token.tokenId);
-
-    if (verification) {
-      console.log('✓ Token verified successfully');
-      console.log('  Originating CP:', verification.originatingCP);
-      console.log('  Caller ID:', verification.callerID);
-      console.log('  Called ID:', verification.calledID);
-      console.log('  Verified:', verification.verified);
-
-      if (verification.branding) {
-        console.log('  Display Name:', verification.branding.displayName);
-        console.log('  Call Purpose:', verification.branding.callPurpose);
-      }
-      console.log('');
-      console.log('Call can proceed with confidence!');
+    console.log(`Step 3 — ${bravo.config.cpId} verifies the token on the inbound call`);
+    const data = await bravo.verifyToken(token.tokenId, CALLER);
+    if (data && data.verified && data.callerID === CALLER && data.calledID === CALLED) {
+      console.log('  ✓ Token verified');
+      console.log(`    Originating CP: ${data.originatingCP}`);
+      console.log(`    Caller → called: ${data.callerID} → ${data.calledID}`);
+      console.log(`    Expires: ${data.expiresAt}`);
     } else {
-      console.log('✗ Token verification failed');
-      console.log('Token may have expired or been tampered with');
+      console.log('  ✗ Token not verified — flag the call / fall back to direct query');
     }
 
-    // STEP 4: Show token pool benefits
     console.log('');
-    console.log('Token Pool Benefits:');
-    console.log('  ✓ Reduced query load (one create, many verifies)');
-    console.log('  ✓ Works with any SIP header');
-    console.log('  ✓ Short TTL limits fraud window');
-    console.log('  ✓ Shared pool enables analytics');
+    console.log('Step 4 — the same check through verifyCall() (token first, direct query fallback):');
+    const v = await bravo.verifyCall({ callerID: CALLER, calledID: CALLED, tokenId: token.tokenId });
+    console.log(`  ${v.verified ? '✓ verified' : '✗ not verified'} (trust level ${v.trustLevel})`);
 
-  } catch (error) {
-    console.error('Error with token pool:', error);
+    console.log('');
+    console.log('Step 5 — a forged token id is rejected:');
+    const forged = await bravo.verifyToken('TK-AAAAAAAAAAAAAAAA', CALLER);
+    console.log(`  ${forged ? '✗ unexpectedly accepted' : '✓ unknown token → null (treat as unverified)'}`);
+    console.log(rule());
+    console.log('Token Pool: one create per call, verified with a single GET; short TTL limits the fraud window.');
+  } catch (err) {
+    console.log(`✗ Token pool error: ${(err as Error).message} — fall back to direct query / traditional PSTN`);
+  } finally {
+    await alpha.close();
+    await bravo.close();
   }
-
-  await client.close();
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error('Unexpected error:', err);
+  process.exit(1);
+});
