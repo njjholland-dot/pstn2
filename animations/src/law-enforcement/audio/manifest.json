@@ -1,0 +1,284 @@
+{
+ "deck": "law-enforcement",
+ "voice": "Daniel (English (UK))",
+ "rate": 172,
+ "generated": "2026-10-06T11:59:42.326Z",
+ "loudness": "-16 LUFS / -1.5 dBTP",
+ "scenes": {
+  "insight": {
+   "file": "insight.mp3",
+   "duration": 20.431,
+   "voice": "Daniel (English (UK))",
+   "sig": "ecc565db49963a8b",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 6.622
+    },
+    {
+     "id": "b",
+     "start": 7.072,
+     "end": 14.262
+    },
+    {
+     "id": "c",
+     "start": 14.712,
+     "end": 16.516
+    },
+    {
+     "id": "d",
+     "start": 16.966,
+     "end": 19.531
+    }
+   ]
+  },
+  "how": {
+   "file": "how.mp3",
+   "duration": 48.236,
+   "voice": "Daniel (English (UK))",
+   "sig": "b6f740eac26bf414",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.024
+    },
+    {
+     "id": "b",
+     "start": 5.474,
+     "end": 10.092
+    },
+    {
+     "id": "c",
+     "start": 10.542,
+     "end": 17.614
+    },
+    {
+     "id": "d",
+     "start": 18.064,
+     "end": 27.262
+    },
+    {
+     "id": "e",
+     "start": 27.712,
+     "end": 30.176
+    },
+    {
+     "id": "f",
+     "start": 30.626,
+     "end": 32.809
+    },
+    {
+     "id": "g",
+     "start": 33.259,
+     "end": 39.901
+    },
+    {
+     "id": "h",
+     "start": 40.351,
+     "end": 44.246
+    },
+    {
+     "id": "i",
+     "start": 44.696,
+     "end": 47.336
+    }
+   ]
+  },
+  "authorised": {
+   "file": "authorised.mp3",
+   "duration": 23.71,
+   "voice": "Daniel (English (UK))",
+   "sig": "a120940fc09185af",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 6.256
+    },
+    {
+     "id": "b",
+     "start": 6.706,
+     "end": 11.936
+    },
+    {
+     "id": "c",
+     "start": 12.386,
+     "end": 17.357
+    },
+    {
+     "id": "d",
+     "start": 17.807,
+     "end": 22.81
+    }
+   ]
+  },
+  "lookup": {
+   "file": "lookup.mp3",
+   "duration": 29.277,
+   "voice": "Daniel (English (UK))",
+   "sig": "6e7f9c0687011b0c",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.509
+    },
+    {
+     "id": "b",
+     "start": 5.959,
+     "end": 13.568
+    },
+    {
+     "id": "c",
+     "start": 14.018,
+     "end": 21.335
+    },
+    {
+     "id": "d",
+     "start": 21.785,
+     "end": 28.377
+    }
+   ]
+  },
+  "data": {
+   "file": "data.mp3",
+   "duration": 25.976,
+   "voice": "Daniel (English (UK))",
+   "sig": "49b1f5cfc7e2c1e5",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.231
+    },
+    {
+     "id": "b",
+     "start": 5.681,
+     "end": 11.133
+    },
+    {
+     "id": "c",
+     "start": 11.583,
+     "end": 13.776
+    },
+    {
+     "id": "d",
+     "start": 14.226,
+     "end": 18.504
+    },
+    {
+     "id": "e",
+     "start": 18.954,
+     "end": 25.075
+    }
+   ]
+  },
+  "validate": {
+   "file": "validate.mp3",
+   "duration": 33.562,
+   "voice": "Daniel (English (UK))",
+   "sig": "fe7f2a70a988defc",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.362
+    },
+    {
+     "id": "b",
+     "start": 5.812,
+     "end": 12.241
+    },
+    {
+     "id": "c",
+     "start": 12.691,
+     "end": 17.318
+    },
+    {
+     "id": "d",
+     "start": 17.768,
+     "end": 26.886
+    },
+    {
+     "id": "e",
+     "start": 27.336,
+     "end": 32.662
+    }
+   ]
+  },
+  "regulator": {
+   "file": "regulator.mp3",
+   "duration": 63.104,
+   "voice": "Daniel (English (UK))",
+   "sig": "81d6765883592c21",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 7.871
+    },
+    {
+     "id": "b",
+     "start": 8.321,
+     "end": 15.457
+    },
+    {
+     "id": "c",
+     "start": 15.907,
+     "end": 24.244
+    },
+    {
+     "id": "d",
+     "start": 24.694,
+     "end": 32.802
+    },
+    {
+     "id": "e",
+     "start": 33.252,
+     "end": 39.701
+    },
+    {
+     "id": "f",
+     "start": 40.151,
+     "end": 44.539
+    },
+    {
+     "id": "g",
+     "start": 44.989,
+     "end": 52.272
+    },
+    {
+     "id": "h",
+     "start": 52.722,
+     "end": 62.204
+    }
+   ]
+  },
+  "learn": {
+   "file": "learn.mp3",
+   "duration": 30.241,
+   "voice": "Daniel (English (UK))",
+   "sig": "53e26596f099ed2a",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 9.108
+    },
+    {
+     "id": "b",
+     "start": 9.558,
+     "end": 20.102
+    },
+    {
+     "id": "c",
+     "start": 20.552,
+     "end": 29.34
+    }
+   ]
+  }
+ },
+ "phrases": {}
+}

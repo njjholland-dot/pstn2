@@ -1,0 +1,93 @@
+{
+  "deck": "problem-statement",
+  "title": "The Problem",
+  "titleHtml": "Why the PSTN <span>must change</span>",
+  "kicker": "Core presentation",
+  "subtitle": "Spoofed caller IDs, lost trust and a regulatory gap: why today’s all-IP telephone network cannot protect the people who use it.",
+  "endNote": "Next: how PSTN2 solves this, without a central database.",
+  "scenes": [
+    {
+      "id": "vulnerable",
+      "title": "A network people no longer trust",
+      "segments": [
+        { "id": "a", "text": "Today’s public telephone network is highly vulnerable." },
+        { "id": "b", "text": "The move to all-IP did not come with matching safeguards, and the network now struggles against modern threats." },
+        { "id": "c", "text": "Fraud losses are estimated at $38bn a year.", "say": "Fraud losses are estimated at thirty-eight billion dollars a year." },
+        { "id": "d", "text": "Trust in what was once the most trusted network has fallen so far that people have stopped answering the phone." },
+        { "id": "e", "text": "That is a threat to the industry, and to the wider economy." }
+      ]
+    },
+    {
+      "id": "fraud",
+      "title": "The fraud problem",
+      "segments": [
+        { "id": "a", "text": "Fraudsters thrive, because they face almost no risk of being caught." },
+        { "id": "b", "text": "Spoofing a caller ID is technically trivial. The screen shows whatever name and number the fraudster chooses." },
+        { "id": "c", "text": "Victims trust what their phone tells them, and some see their lives destroyed." },
+        { "id": "d", "text": "As the public learns how easy spoofing is, the historic trust in the telephone network keeps eroding." }
+      ]
+    },
+    {
+      "id": "innovation",
+      "title": "The innovation problem",
+      "segments": [
+        { "id": "a", "text": "Industry effort goes into regulatory compliance, rather than into advancing privacy, security and consumer protection." },
+        { "id": "b", "text": "When consumers are harmed, the sector’s long-term credibility is weakened." },
+        { "id": "c", "text": "The industry must work with regulators to restore trust in the network, while letting innovation flourish safely." },
+        { "id": "d", "text": "In the all-IP era, the greatest gains have gone to social networks and over-the-top messaging platforms." },
+        { "id": "e", "text": "Not to the industry that built the internet, still maintains it, and should have benefited." }
+      ]
+    },
+    {
+      "id": "regulation",
+      "title": "The regulatory gap",
+      "segments": [
+        { "id": "a", "text": "All-IP has outpaced regulation, leaving critical gaps that allow criminal activity on a large scale." },
+        { "id": "b", "text": "To protect consumers and the integrity of communications, regulators must act against this existential threat." },
+        { "id": "c", "text": "Mandatory technical safeguards are needed: safeguards that recognise the shift from physical to digital sources of truth, and keep pace with the threat." },
+        { "id": "d", "text": "And the pace of change driven by artificial intelligence makes action more urgent than ever." }
+      ]
+    },
+    {
+      "id": "cdb",
+      "title": "The central database dilemma",
+      "segments": [
+        { "id": "a", "text": "Take the proposal for a central numbering database, now recognised as a key enabler for many of today’s challenges." },
+        { "id": "b", "text": "It was estimated at around £2m to build, and around £600k a year to run: thirty percent of the build cost, every year." },
+        { "id": "c", "text": "Industry raised economic, technical and time-to-value concerns, and the proposal was not progressed." },
+        { "id": "d", "text": "One-Touch Switch raised similar concerns. But it went ahead, because the regulator mandated it." },
+        { "id": "e", "text": "Future innovations may need the same regulatory push." }
+      ]
+    },
+    {
+      "id": "gaps",
+      "title": "Missing capabilities and policies",
+      "segments": [
+        { "id": "a", "text": "The industry lacks effective tools to prevent fraud, and essential safeguards for all-IP are missing from regulatory policy." },
+        { "id": "b", "text": "An assertive regulatory strategy for the all-IP network is needed, to keep it commercially viable and trusted by consumers." },
+        { "id": "c", "text": "All-IP should have unlocked real innovation for the only global public communications network. Treating it as a mere back-end replacement has stifled that." },
+        { "id": "d", "text": "Regulation needs a policy shift: from competition through switching, to competition through innovation that takes advantage of all-IP." }
+      ]
+    },
+    {
+      "id": "strategy",
+      "title": "A new strategy",
+      "segments": [
+        { "id": "a", "text": "But what if there were another way?" },
+        { "id": "b", "text": "What if we could deliver all of these capabilities without a central database?" },
+        { "id": "c", "text": "Without big-bang changes, and without investment that cannot be justified?" },
+        { "id": "d", "text": "Without waiting for everyone to agree? And perhaps, without waiting for the regulator to acquire the latest technology skills?" }
+      ]
+    },
+    {
+      "id": "introducing",
+      "title": "Introducing PSTN2",
+      "segments": [
+        { "id": "a", "text": "Introducing PSTN2." },
+        { "id": "b", "text": "PSTN2 is a set of free-to-use software libraries and documentation." },
+        { "id": "c", "text": "It lets providers add privacy and security to their customers’ calls with every other PSTN2 participant." },
+        { "id": "d", "text": "At last, it adds value back into person-to-person communication, instead of joining the race to the bottom on commodity pricing." }
+      ]
+    }
+  ]
+}

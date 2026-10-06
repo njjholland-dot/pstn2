@@ -1,0 +1,117 @@
+{
+  "deck": "solution-overview",
+  "title": "Solution Overview",
+  "titleHtml": "PSTN2: <span>the solution</span>",
+  "kicker": "Core presentation",
+  "subtitle": "How PSTN2 makes every call verifiable, private and direct, without a central database.",
+  "endNote": "Download the code and read the specification at pstn2.org.",
+  "scenes": [
+    {
+      "id": "insight",
+      "title": "The core insight",
+      "segments": [
+        { "id": "a", "text": "Many believe the answer to phone fraud is a central database, holding one national copy of every number." },
+        { "id": "b", "text": "But here is the breakthrough insight. All of that numbering information already exists, in each provider’s own databases." },
+        { "id": "c", "text": "We don’t need to centralise it." },
+        { "id": "d", "text": "We just need to ask the provider that holds it." }
+      ]
+    },
+    {
+      "id": "distributed",
+      "title": "A distributed architecture",
+      "segments": [
+        { "id": "a", "text": "PSTN2 finds up-to-date information about a phone number directly from the provider that controls that number." },
+        { "id": "b", "text": "Each provider answers only for its own numbers, and any provider can ask any other." },
+        { "id": "c", "text": "That simple process removes the need for a physical central database." }
+      ]
+    },
+    {
+      "id": "capabilities",
+      "title": "Six capabilities, one network",
+      "segments": [
+        { "id": "a", "text": "PSTN2 enables real-time authentication to stop fraud, and direct routing to reduce costs." },
+        { "id": "b", "text": "End-to-end encryption protects privacy. And call branding means you know when it really is your bank calling." },
+        { "id": "c", "text": "Better emergency location data can enhance, or replace, today’s overnight updates." },
+        { "id": "d", "text": "And most importantly, an open messaging framework lets any process be automated, from porting to fault tracing and diagnostics." }
+      ]
+    },
+    {
+      "id": "optional",
+      "title": "Optional participation",
+      "segments": [
+        { "id": "a", "text": "Here is the key. Participation is optional." },
+        { "id": "b", "text": "Providers can adopt PSTN2 at their own pace, or not at all." },
+        { "id": "c", "text": "Calls between PSTN2 providers connect directly. Calls to providers that don’t take part simply fall back to today’s network." },
+        { "id": "d", "text": "No big bang. No forced migration. Just steady, voluntary improvement, driven by customer demand for new features." }
+      ]
+    },
+    {
+      "id": "nocdb",
+      "title": "No central database required",
+      "segments": [
+        { "id": "a", "text": "Compare the two approaches. A central database is estimated at around £2m to build, and around £600k a year to run." },
+        { "id": "b", "text": "It would take years to deliver, and it would create a single point of failure." },
+        { "id": "c", "text": "PSTN2 has no central cost and no single point of failure. Providers invest no more than they would have done to use a central database." },
+        { "id": "d", "text": "Freely available, tested software cuts set-up costs, so providers gain value and make savings quickly." },
+        { "id": "e", "text": "And advances in artificial intelligence mean legacy systems can be integrated reliably without new APIs, a challenge once used as an argument against a central database." }
+      ]
+    },
+    {
+      "id": "how",
+      "title": "How it works",
+      "segments": [
+        { "id": "a", "text": "Here is how a provider obtains all the available information about a phone number." },
+        { "id": "b", "text": "First, it checks its local cache, to see if it already has the answer." },
+        { "id": "c", "text": "Every PSTN2 response can carry an instruction to invalidate the cache, so cached values stay up to date." },
+        { "id": "d", "text": "If the cache has no entry, or the entry has been invalidated, the provider uses Ofcom’s S1 to S9 lists to find the Range Holder for the number block." },
+        { "id": "e", "text": "It then sends a request to that Range Holder." },
+        { "id": "f", "text": "The Range Holder may answer directly." },
+        { "id": "g", "text": "Or, if the number has been ported, it replies with a redirect, and the provider tries the new provider instead." },
+        { "id": "h", "text": "The provider updates its cache, and goes direct next time." },
+        { "id": "i", "text": "So there is no need for a central database." }
+      ]
+    },
+    {
+      "id": "regulator",
+      "title": "One new field on Ofcom’s lists",
+      "segments": [
+        { "id": "a", "text": "The root of all numbering information is each country’s regulator. This presentation focuses on the UK, and Ofcom." },
+        { "id": "b", "text": "The PSTN2 programme will also share how numbering data can be obtained in other countries, for global expansion." },
+        { "id": "c", "text": "For PSTN2 to work, the regulator adds one field to its numbering lists: the URL of the Range Holder for each number block." },
+        { "id": "d", "text": "Providers download and cache the lists, rather than querying them for every call. And other bodies can host copies, for resilience." },
+        { "id": "e", "text": "But the regulator may decline to host this field. Then another body would have to step in as the single source of truth." },
+        { "id": "f", "text": "That would create a new target for attack, and it would need strict governance." },
+        { "id": "g", "text": "So an early priority for PSTN2 is to persuade the regulator to host this one extra field on its numbering files." }
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Security by design",
+      "segments": [
+        { "id": "a", "text": "Security is fundamental, and it is built in from the start." },
+        { "id": "b", "text": "Zero trust. Every message is challenged and verified, so a forged message is simply rejected." },
+        { "id": "c", "text": "Encrypt everything. TLS protects the signalling, and every call gets its own unique SRTP keys." },
+        { "id": "d", "text": "Data minimisation. Share only what is actually needed, and only with authorised parties." }
+      ]
+    },
+    {
+      "id": "maps",
+      "title": "Managed Access Providers",
+      "segments": [
+        { "id": "a", "text": "Providers don’t need to build everything themselves. Some have no technical team, or only a limited budget." },
+        { "id": "b", "text": "Managed Access Providers, or MAPs, can host it for them: the PSTN2 API, number discovery, security and a web portal." },
+        { "id": "c", "text": "Small providers can take part without major investment. Larger ones can dip a toe in the water, to see whether the benefits are real." },
+        { "id": "d", "text": "MAPs compete on service and on price." },
+        { "id": "e", "text": "Existing wholesale carriers are expected to offer MAP services to their customers: a valuable new revenue stream, at almost no running cost." }
+      ]
+    },
+    {
+      "id": "join",
+      "title": "Join the movement",
+      "segments": [
+        { "id": "a", "text": "Visit pstn2.org to download working code, read the complete specification, and join the move towards a safer, more secure telephone network.", "say": "Visit P S T N two dot org to download working code, read the complete specification, and join the move towards a safer, more secure telephone network." },
+        { "id": "b", "text": "No central database. No £2m build, and no £600k a year to run it. Just better technology, available now." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+/* Law Enforcement Access — deck-specific styles (core scenes styled by ../solution-overview/core.css) */
+@import url('../solution-overview/core.css');
+
+/* lookup page mock-up */
+.le-page { border-radius: 20px; overflow: hidden; background: #0b1631; border: 1.5px solid var(--line-2); box-shadow: 0 26px 70px rgba(0,0,0,.5); }
+.le-bar { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 20px; background: rgba(148,163,184,.12); border-bottom: 1px solid var(--line); }
+.le-bar i { width: 14px; height: 14px; border-radius: 50%; background: rgba(148,163,184,.4); }
+.le-bar span { display: flex; align-items: center; gap: 8px; margin-left: 18px; font-size: 18px; color: var(--ink-2); font-weight: 600; }
+.le-pg { padding: 22px 28px; }
+.le-pg label { display: block; font-size: 16px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-4); margin: 22px 0 8px; }
+.le-src { display: flex; gap: 14px; }
+.le-src span { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 650; padding: 6px 14px; border-radius: 999px; color: var(--ink-4); border: 1px solid var(--line); transition: all .5s var(--ease); }
+.le-src span.le-on { color: var(--violet-2); border-color: rgba(139,92,246,.6); background: rgba(139,92,246,.14); }
+.le-row { display: flex; gap: 14px; }
+.le-in { flex: 1; height: 62px; border-radius: 12px; border: 1.5px solid var(--line-2); background: rgba(2,8,23,.85); font-family: var(--mono); font-size: 30px; font-weight: 700; color: #fff; padding: 10px 16px; }
+.le-btn { display: flex; align-items: center; gap: 10px; padding: 0 22px; border-radius: 12px; background: var(--violet); color: #fff; font-size: 22px; font-weight: 700; }
+.le-status { display: flex; align-items: center; gap: 10px; margin-top: 24px; min-height: 34px; font-size: 24px; color: var(--ink-2); }
+.le-status.le-ok { color: var(--green-2); font-weight: 700; }
+
+.le-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.le-list li { display: flex; align-items: center; gap: 14px; font-size: 27px; color: var(--ink); padding: 12px 0; border-bottom: 1px solid rgba(148,163,184,.12); }
+.le-list li:last-child { border-bottom: 0; }
+.le-list li .pi { color: var(--c); flex: none; }
+
+.le-opt { font-size: 25px; line-height: 1.38; color: var(--ink); margin-top: 6px; }
+.so-tagrow { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.so-tagrow .p2-tag { font-size: 17px; }
+.so-cta { display: flex; align-items: center; gap: 22px; text-decoration: none; color: #fff; }
+.so-cta small { display: block; font-size: 22px; color: var(--ink-3); margin-top: 6px; }
+
+.le-pillrow { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+.le-pillrow .p2-pill { position: static; }
+.le-soft { opacity: .55 !important; filter: saturate(.6) !important; transition: opacity .6s var(--ease), filter .6s; }

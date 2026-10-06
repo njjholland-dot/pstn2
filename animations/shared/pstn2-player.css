@@ -167,7 +167,7 @@ button { font-family: inherit; }
 .p2-from-scale { opacity: 0; transform: scale(0.88); }
 .p2-from-fade { opacity: 0; }
 .p2-shown { opacity: 1 !important; transform: none !important; filter: none !important; }
-.p2-dim { opacity: 0.28 !important; filter: saturate(0.4); transition: opacity .6s var(--ease), filter .6s; }
+.p2-dim, .p2-shown.p2-dim { opacity: 0.28 !important; filter: saturate(0.4) !important; transition: opacity .6s var(--ease), filter .6s; }
 .p2-gone { opacity: 0 !important; transform: scale(0.96) !important; transition: opacity .45s var(--ease), transform .45s var(--ease); }
 
 /* Card (CP, regulator, database …) */

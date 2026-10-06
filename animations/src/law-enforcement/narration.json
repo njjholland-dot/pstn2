@@ -1,0 +1,228 @@
+{
+  "deck": "law-enforcement",
+  "title": "Law Enforcement Access",
+  "titleHtml": "Law enforcement <span>access</span>",
+  "kicker": "Use case",
+  "subtitle": "How authorised investigators find the provider behind any phone number, and request subscriber data lawfully, without a central database.",
+  "endNote": "Read the specification and download the code at pstn2.org.",
+  "scenes": [
+    {
+      "id": "insight",
+      "title": "The core insight",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Many believe the answer to phone fraud is a central database, holding one national copy of every number."
+        },
+        {
+          "id": "b",
+          "text": "But here is the breakthrough insight. All of that numbering information already exists, in each provider’s own databases."
+        },
+        {
+          "id": "c",
+          "text": "We don’t need to centralise it."
+        },
+        {
+          "id": "d",
+          "text": "We just need to ask the provider that holds it."
+        }
+      ]
+    },
+    {
+      "id": "how",
+      "title": "How it works",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Here is how a provider obtains all the available information about a phone number."
+        },
+        {
+          "id": "b",
+          "text": "First, it checks its local cache, to see if it already has the answer."
+        },
+        {
+          "id": "c",
+          "text": "Every PSTN2 response can carry an instruction to invalidate the cache, so cached values stay up to date."
+        },
+        {
+          "id": "d",
+          "text": "If the cache has no entry, or the entry has been invalidated, the provider uses Ofcom’s S1 to S9 lists to find the Range Holder for the number block."
+        },
+        {
+          "id": "e",
+          "text": "It then sends a request to that Range Holder."
+        },
+        {
+          "id": "f",
+          "text": "The Range Holder may answer directly."
+        },
+        {
+          "id": "g",
+          "text": "Or, if the number has been ported, it replies with a redirect, and the provider tries the new provider instead."
+        },
+        {
+          "id": "h",
+          "text": "The provider updates its cache, and goes direct next time."
+        },
+        {
+          "id": "i",
+          "text": "So there is no need for a central database."
+        }
+      ]
+    },
+    {
+      "id": "authorised",
+      "title": "Authorised parties use the same steps",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Any authorised party can find out about a phone number, using the same mechanism as a provider."
+        },
+        {
+          "id": "b",
+          "text": "There is no need for cache logic, and existing manual processes can simply be followed."
+        },
+        {
+          "id": "c",
+          "text": "Start with Ofcom’s S1 to S9 lists, to find the Range Holder for the number."
+        },
+        {
+          "id": "d",
+          "text": "The Range Holder may answer directly, or send a redirect if the number has been ported."
+        }
+      ]
+    },
+    {
+      "id": "lookup",
+      "title": "A lookup page for investigators",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Take a law enforcement officer who needs subscriber information for an investigation."
+        },
+        {
+          "id": "b",
+          "text": "They open a simple JavaScript web page, either from the PSTN2 website, or as a local copy on their own machine."
+        },
+        {
+          "id": "c",
+          "text": "The page queries the PSTN2 network directly: first the Range Holder, then the provider that now holds the number."
+        },
+        {
+          "id": "d",
+          "text": "No central database to contact, and no single point of failure. Just direct queries to the providers."
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "title": "The data already held",
+      "segments": [
+        {
+          "id": "a",
+          "text": "The provider that holds the number already has the information an investigation may need."
+        },
+        {
+          "id": "b",
+          "text": "Customer data: name, address, identity verification and account status."
+        },
+        {
+          "id": "c",
+          "text": "Billing records and payment documents."
+        },
+        {
+          "id": "d",
+          "text": "And calling history, including call detail records and message logs."
+        },
+        {
+          "id": "e",
+          "text": "None of it travels through number discovery. It is released only in answer to a validated, lawful request."
+        }
+      ]
+    },
+    {
+      "id": "validate",
+      "title": "Validating lawful requests",
+      "segments": [
+        {
+          "id": "a",
+          "text": "A critical question: how does a provider know that a request is lawfully authorised?"
+        },
+        {
+          "id": "b",
+          "text": "Several options exist. Digital certificates, and requests routed through a Single Point of Contact."
+        },
+        {
+          "id": "c",
+          "text": "Or time-limited access tokens, issued by a trusted identity provider."
+        },
+        {
+          "id": "d",
+          "text": "A hybrid is recommended: digital certificates give cryptographic proof of identity, and OAuth tokens give fine-grained, time-limited access.",
+          "say": "A hybrid is recommended: digital certificates give cryptographic proof of identity, and oh-auth tokens give fine-grained, time-limited access."
+        },
+        {
+          "id": "e",
+          "text": "The authorities that will issue certificates and authorise requests still need to be identified."
+        }
+      ]
+    },
+    {
+      "id": "regulator",
+      "title": "One new field on Ofcom’s lists",
+      "segments": [
+        {
+          "id": "a",
+          "text": "The root of all numbering information is each country’s regulator. This presentation focuses on the UK, and Ofcom."
+        },
+        {
+          "id": "b",
+          "text": "The PSTN2 programme will also share how numbering data can be obtained in other countries, for global expansion."
+        },
+        {
+          "id": "c",
+          "text": "For PSTN2 to work, the regulator adds one field to its numbering lists: the URL of the Range Holder for each number block."
+        },
+        {
+          "id": "d",
+          "text": "Providers download and cache the lists, rather than querying them for every call. And other bodies can host copies, for resilience."
+        },
+        {
+          "id": "e",
+          "text": "But the regulator may decline to host this field. Then another body would have to step in as the single source of truth."
+        },
+        {
+          "id": "f",
+          "text": "That would create a new target for attack, and it would need strict governance."
+        },
+        {
+          "id": "g",
+          "text": "So an early priority for PSTN2 is to persuade the regulator to host this one extra field on its numbering files."
+        },
+        {
+          "id": "h",
+          "text": "And if a provider does not take part, and no Range Holder, wholesaler or MAP offers PSTN2 on its behalf, numbers in its ranges cannot be queried."
+        }
+      ]
+    },
+    {
+      "id": "learn",
+      "title": "Learn more",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Visit pstn2.org to download working code, read the complete specification, and watch the other presentations in this series.",
+          "say": "Visit P S T N two dot org to download working code, read the complete specification, and watch the other presentations in this series."
+        },
+        {
+          "id": "b",
+          "text": "They cover caller ID authentication, identification, encryption and direct routing, and electronic messaging to improve processes such as porting and 999."
+        },
+        {
+          "id": "c",
+          "text": "All without a central database, or the costs that come with one. Just direct, verified queries to the providers, from any web browser."
+        }
+      ]
+    }
+  ]
+}

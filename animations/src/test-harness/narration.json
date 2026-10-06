@@ -11,82 +11,184 @@
       "id": "intro",
       "title": "Meet the test network",
       "segments": [
-        { "id": "a", "text": "This is the PSTN2 test harness. Everything on screen is running live in your browser, using the same discovery engine our software development kits are tested against." },
-        { "id": "b", "text": "At the top is Ofcom. Its numbering list shows each block of numbers, the provider it is allocated to, and the new PSTN2 field: the Range Holder’s web address." },
-        { "id": "c", "text": "Below are three providers: Alpha Telecom, Bravo Networks and Charlie Comms. Each one is the Range Holder for one block." },
-        { "id": "d", "text": "Each provider keeps its own number database: the range Ofcom allocated to it, the numbers it has in service, the numbers ported in, and, as Range Holder, where its ported-out numbers went." },
-        { "id": "e", "text": "Notice the ported numbers. 0113 496 0456 started with Charlie, and now lives with Bravo. And 020 7946 0321 moved from Alpha to Charlie." },
-        { "id": "f", "text": "There is no central database anywhere on this screen." }
+        {
+          "id": "a",
+          "text": "This is the PSTN2 test harness. Everything on screen is running live in your browser, using the same discovery engine our software development kits are tested against."
+        },
+        {
+          "id": "b",
+          "text": "At the top is Ofcom. Its numbering list shows each block of numbers, the provider it is allocated to, and the new PSTN2 field: the Range Holder’s web address."
+        },
+        {
+          "id": "c",
+          "text": "Below are three providers: Alpha Telecom, Bravo Networks and Charlie Comms. Each one is the Range Holder for one block."
+        },
+        {
+          "id": "d",
+          "text": "Each provider keeps its own number database: the range Ofcom allocated to it, the numbers it has in service, the numbers ported in, and, as Range Holder, where its ported-out numbers went."
+        },
+        {
+          "id": "e",
+          "text": "Notice the ported numbers. 0113 496 0456 started with Charlie, and now lives with Bravo. And 020 7946 0321 moved from Alpha to Charlie."
+        },
+        {
+          "id": "f",
+          "text": "There is no central database anywhere on this screen."
+        }
       ]
     },
     {
       "id": "download",
       "title": "Every provider keeps a copy of Ofcom’s list",
       "segments": [
-        { "id": "a", "text": "Before any calls, each provider downloads Ofcom’s numbering list and keeps a local copy. That happens about once a day, never once per call." },
-        { "id": "b", "text": "Each provider also has a cache, empty for now, where it will remember the answers it receives." }
+        {
+          "id": "a",
+          "text": "Before any calls, each provider downloads Ofcom’s numbering list and keeps a local copy. That happens about once a day, never once per call."
+        },
+        {
+          "id": "b",
+          "text": "Each provider also has a cache, empty for now, where it will remember the answers it receives."
+        }
       ]
     },
     {
       "id": "unported",
       "title": "Scenario A · An unported number",
       "segments": [
-        { "id": "a", "text": "First call. An Alpha Telecom customer dials 0161 496 0123." },
-        { "id": "b", "text": "Alpha checks its cache. Nothing there yet." },
-        { "id": "c", "text": "So it searches its copy of the numbering list. The block 0161 496 0 belongs to Bravo Networks, and the list gives Bravo’s address.", "say": "So it searches its copy of the numbering list. The block oh one six one, four nine six, oh, belongs to Bravo Networks, and the list gives Bravo’s address." },
-        { "id": "d", "text": "Alpha asks Bravo: who has 0161 496 0123? Bravo checks its own database. The number is in service, and it has never moved." },
-        { "id": "e", "text": "Bravo answers: held. Alpha caches the answer. One query, and the call can be routed." }
+        {
+          "id": "a",
+          "text": "First call. An Alpha Telecom customer dials 0161 496 0123."
+        },
+        {
+          "id": "b",
+          "text": "Alpha checks its cache. Nothing there yet."
+        },
+        {
+          "id": "c",
+          "text": "So it searches its copy of the numbering list. The block 0161 496 0 belongs to Bravo Networks, and the list gives Bravo’s address.",
+          "say": "So it searches its copy of the numbering list. The block oh one six one, four nine six, oh, belongs to Bravo Networks, and the list gives Bravo’s address."
+        },
+        {
+          "id": "d",
+          "text": "Alpha asks Bravo: who has 0161 496 0123? Bravo checks its own database. The number is in service, and it has never moved."
+        },
+        {
+          "id": "e",
+          "text": "Bravo answers: held. Alpha caches the answer. One query, and the call can be routed."
+        }
       ]
     },
     {
       "id": "ported",
       "title": "Scenario B · A ported number",
       "segments": [
-        { "id": "a", "text": "Second call. The same customer dials 0113 496 0456." },
-        { "id": "b", "text": "Another cache miss. The numbering list says this block belongs to Charlie Comms, so Alpha asks Charlie." },
-        { "id": "c", "text": "Charlie is the Range Holder, and its database shows the number was ported out to Bravo. So Charlie answers with a redirect, including Bravo’s address." },
-        { "id": "d", "text": "Alpha follows the redirect and asks Bravo. Bravo’s database shows the number as ported in from Charlie, so Bravo answers: held." },
-        { "id": "e", "text": "Alpha caches the answer against that one number. Two queries, and the answer is authoritative." }
+        {
+          "id": "a",
+          "text": "Second call. The same customer dials 0113 496 0456."
+        },
+        {
+          "id": "b",
+          "text": "Another cache miss. The numbering list says this block belongs to Charlie Comms, so Alpha asks Charlie."
+        },
+        {
+          "id": "c",
+          "text": "Charlie is the Range Holder, and its database shows the number was ported out to Bravo. So Charlie answers with a redirect, including Bravo’s address."
+        },
+        {
+          "id": "d",
+          "text": "Alpha follows the redirect and asks Bravo. Bravo’s database shows the number as ported in from Charlie, so Bravo answers: held."
+        },
+        {
+          "id": "e",
+          "text": "Alpha caches the answer against that one number. Two queries, and the answer is authoritative."
+        }
       ]
     },
     {
       "id": "cached",
       "title": "Scenario C · The next call goes direct",
       "segments": [
-        { "id": "a", "text": "A few minutes later, someone else at Alpha calls 0113 496 0456." },
-        { "id": "b", "text": "This time the cache has the answer. Alpha skips the numbering list and the Range Holder, and asks Bravo directly." },
-        { "id": "c", "text": "Bravo confirms: held. One query. This is what most calls look like once a network has warmed up." }
+        {
+          "id": "a",
+          "text": "A few minutes later, someone else at Alpha calls 0113 496 0456."
+        },
+        {
+          "id": "b",
+          "text": "This time the cache has the answer. Alpha skips the numbering list and the Range Holder, and asks Bravo directly."
+        },
+        {
+          "id": "c",
+          "text": "Bravo confirms: held. One query. This is what most calls look like once a network has warmed up."
+        }
       ]
     },
     {
       "id": "invalidate",
       "title": "Scenario D · The number moves again",
       "segments": [
-        { "id": "a", "text": "Now the customer ports again, from Bravo back to Charlie. Watch the databases." },
-        { "id": "b", "text": "Bravo removes its ported-in record, and Charlie, the Range Holder, marks the number as back in service. Nobody tells Alpha, and nobody needs to." },
-        { "id": "c", "text": "Alpha’s next call relies on its cache, so it asks Bravo. Bravo no longer holds the number, and answers: not held. Invalidate your cache." },
-        { "id": "d", "text": "Alpha deletes the cached entry and starts again from the numbering list. The Range Holder is Charlie, and Charlie now answers: held." },
-        { "id": "e", "text": "The stale entry cost one extra query, not a failed call. The cache has corrected itself." }
+        {
+          "id": "a",
+          "text": "Now the customer ports again, from Bravo back to Charlie. Watch the databases."
+        },
+        {
+          "id": "b",
+          "text": "Bravo removes its ported-in record, and Charlie, the Range Holder, marks the number as back in service. Nobody tells Alpha, and nobody needs to."
+        },
+        {
+          "id": "c",
+          "text": "Alpha’s next call relies on its cache, so it asks Bravo. Bravo no longer holds the number, and answers: not held. Invalidate your cache."
+        },
+        {
+          "id": "d",
+          "text": "Alpha deletes the cached entry and starts again from the numbering list. The Range Holder is Charlie, and Charlie now answers: held."
+        },
+        {
+          "id": "e",
+          "text": "The stale entry cost one extra query, not a failed call. The cache has corrected itself."
+        }
       ]
     },
     {
       "id": "edges",
       "title": "When there is no PSTN2 answer",
       "segments": [
-        { "id": "a", "text": "Two more cases complete the picture." },
-        { "id": "b", "text": "Alpha dials 0161 496 0999. Bravo is the Range Holder, but the number is not in service, so Bravo replies: not found. The call is handled exactly as it is today." },
-        { "id": "c", "text": "Then 0117 496 0555. The numbering list shows Delta Voice, which has not published a PSTN2 address." },
-        { "id": "d", "text": "Delta has not joined yet, so the call simply uses today’s network. Participation is optional." }
+        {
+          "id": "a",
+          "text": "Two more cases complete the picture."
+        },
+        {
+          "id": "b",
+          "text": "Alpha dials 0161 496 0999. Bravo is the Range Holder, but the number is not in service, so Bravo replies: not found. The call is handled exactly as it is today."
+        },
+        {
+          "id": "c",
+          "text": "Then 0117 496 0555. The numbering list shows Delta Voice, which has not published a PSTN2 address."
+        },
+        {
+          "id": "d",
+          "text": "Delta has not joined yet, so the call simply uses today’s network. Participation is optional."
+        }
       ]
     },
     {
       "id": "try",
       "title": "Your turn",
       "segments": [
-        { "id": "a", "text": "Now it is your turn. Choose the calling provider, pick or type a number, and press Discover." },
-        { "id": "b", "text": "You can also port a number to a different provider, and watch the caches correct themselves on the next call. Press Reset to start again." },
-        { "id": "c", "text": "Every message is real. These are the same requests and answers our software development kits exchange with the live test provider at pstn2.org.", "say": "Every message is real. These are the same requests and answers our software development kits exchange with the live test provider at P S T N two dot org." }
+        {
+          "id": "a",
+          "text": "Now it is your turn. Choose the calling provider, pick or type a number, and press Discover."
+        },
+        {
+          "id": "b",
+          "text": "You can also port a number to a different provider, and watch the caches correct themselves on the next call. Press Reset to start again."
+        },
+        {
+          "id": "c",
+          "text": "Every message is real. These are the same requests and answers our software development kits exchange with the live test provider at pstn2.org.",
+          "say": "Every message is real. These are the same requests and answers our software development kits exchange with the live test provider at P S T N two dot org."
+        }
       ]
     }
-  ]
+  ],
+  "phrases": true
 }

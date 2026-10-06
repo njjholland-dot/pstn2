@@ -61,6 +61,7 @@ export async function createDeck({ scenes: sceneDefs, narrationUrl = 'narration.
     }
     const phraseText = {};
     try {
+        if (!narration.phrases && !manifest?.phrases) throw new Error('no phrases');
         const pr = await fetch('phrases.json');
         if (pr.ok) for (const ph of (await pr.json()).phrases) phraseText[ph.id] = ph.text;
     } catch { /* no phrases */ }

@@ -1,0 +1,16 @@
+/* Styles for the core scenes shared with the Law Enforcement deck (core-scenes.js) */
+.so-label { font-size: 16px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-4); margin-top: 2px; }
+.so-dial { font-family: var(--mono); font-weight: 700; color: #fff; font-size: 21px; }
+.so-steps .p2-step { padding: 10px 16px; font-size: 21px; }
+.so-steps .p2-step b { font-size: 15px; margin-bottom: 2px; }
+.so-url { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 8px 12px; border-radius: 10px; font-family: var(--mono); font-size: 20px; color: var(--green-2); background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); opacity: 0; transform: translateY(8px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.so-url.so-on { opacity: 1; transform: none; }
+.so-cross { display: grid; place-items: center; color: var(--red); pointer-events: none; z-index: 5; filter: drop-shadow(0 6px 20px rgba(0,0,0,.5)); }
+.so-newcol { opacity: 0; transition: opacity .8s var(--ease), background .8s var(--ease); }
+.so-newcol.so-on { opacity: 1; background: rgba(16, 185, 129, 0.16); color: #fff !important; }
+th.so-newcol.so-on { color: var(--green-2) !important; background: transparent; }
+td.so-newcol.so-none.so-on { color: var(--ink-3) !important; background: transparent; font-style: italic; }
+.so-mono { font-family: var(--mono); font-size: 19px !important; }
+.so-tags { display: flex; gap: 14px; margin-top: 6px; }
+.so-tags .p2-tag { font-size: 18px; }
+.p2-table tr.p2-hl td.so-newcol.so-none.so-on { background: color-mix(in srgb, var(--hl) 22%, transparent); color: var(--red-2) !important; }

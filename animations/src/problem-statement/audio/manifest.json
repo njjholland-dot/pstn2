@@ -1,0 +1,249 @@
+{
+ "deck": "problem-statement",
+ "voice": "Daniel (English (UK))",
+ "rate": 172,
+ "generated": "2026-10-06T11:57:27.320Z",
+ "loudness": "-16 LUFS / -1.5 dBTP",
+ "scenes": {
+  "vulnerable": {
+   "file": "vulnerable.mp3",
+   "duration": 25.631,
+   "voice": "Daniel (English (UK))",
+   "sig": "5094892bb4f805c5",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 3.742
+    },
+    {
+     "id": "b",
+     "start": 4.192,
+     "end": 10.462
+    },
+    {
+     "id": "c",
+     "start": 10.912,
+     "end": 14.479
+    },
+    {
+     "id": "d",
+     "start": 14.929,
+     "end": 20.99
+    },
+    {
+     "id": "e",
+     "start": 21.44,
+     "end": 24.731
+    }
+   ]
+  },
+  "fraud": {
+   "file": "fraud.mp3",
+   "duration": 23.595,
+   "voice": "Daniel (English (UK))",
+   "sig": "04b5f7302f2f812c",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.775
+    },
+    {
+     "id": "b",
+     "start": 5.225,
+     "end": 11.602
+    },
+    {
+     "id": "c",
+     "start": 12.052,
+     "end": 16.382
+    },
+    {
+     "id": "d",
+     "start": 16.832,
+     "end": 22.695
+    }
+   ]
+  },
+  "innovation": {
+   "file": "innovation.mp3",
+   "duration": 33.056,
+   "voice": "Daniel (English (UK))",
+   "sig": "1718b70a5144aff5",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 8.28
+    },
+    {
+     "id": "b",
+     "start": 8.73,
+     "end": 13.261
+    },
+    {
+     "id": "c",
+     "start": 13.711,
+     "end": 19.945
+    },
+    {
+     "id": "d",
+     "start": 20.395,
+     "end": 26.697
+    },
+    {
+     "id": "e",
+     "start": 27.147,
+     "end": 32.156
+    }
+   ]
+  },
+  "regulation": {
+   "file": "regulation.mp3",
+   "duration": 29.705,
+   "voice": "Daniel (English (UK))",
+   "sig": "d7da2af5b30db6b1",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 6.912
+    },
+    {
+     "id": "b",
+     "start": 7.362,
+     "end": 14.234
+    },
+    {
+     "id": "c",
+     "start": 14.684,
+     "end": 23.448
+    },
+    {
+     "id": "d",
+     "start": 23.898,
+     "end": 28.805
+    }
+   ]
+  },
+  "cdb": {
+   "file": "cdb.mp3",
+   "duration": 34.872,
+   "voice": "Daniel (English (UK))",
+   "sig": "3c452299eca775c8",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 7.584
+    },
+    {
+     "id": "b",
+     "start": 8.034,
+     "end": 17.115
+    },
+    {
+     "id": "c",
+     "start": 17.565,
+     "end": 23.865
+    },
+    {
+     "id": "d",
+     "start": 24.315,
+     "end": 30.186
+    },
+    {
+     "id": "e",
+     "start": 30.636,
+     "end": 33.972
+    }
+   ]
+  },
+  "gaps": {
+   "file": "gaps.mp3",
+   "duration": 34.615,
+   "voice": "Daniel (English (UK))",
+   "sig": "f1664dbb29040095",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 8.117
+    },
+    {
+     "id": "b",
+     "start": 8.567,
+     "end": 15.992
+    },
+    {
+     "id": "c",
+     "start": 16.442,
+     "end": 25.288
+    },
+    {
+     "id": "d",
+     "start": 25.738,
+     "end": 33.715
+    }
+   ]
+  },
+  "strategy": {
+   "file": "strategy.mp3",
+   "duration": 20.859,
+   "voice": "Daniel (English (UK))",
+   "sig": "d85b10ef2bd73519",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 2.298
+    },
+    {
+     "id": "b",
+     "start": 2.748,
+     "end": 6.957
+    },
+    {
+     "id": "c",
+     "start": 7.407,
+     "end": 11.959
+    },
+    {
+     "id": "d",
+     "start": 12.409,
+     "end": 19.959
+    }
+   ]
+  },
+  "introducing": {
+   "file": "introducing.mp3",
+   "duration": 23.803,
+   "voice": "Daniel (English (UK))",
+   "sig": "a4674958c44c0a23",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 2.695
+    },
+    {
+     "id": "b",
+     "start": 3.145,
+     "end": 7.775
+    },
+    {
+     "id": "c",
+     "start": 8.225,
+     "end": 14.722
+    },
+    {
+     "id": "d",
+     "start": 15.172,
+     "end": 22.903
+    }
+   ]
+  }
+ },
+ "phrases": {}
+}
