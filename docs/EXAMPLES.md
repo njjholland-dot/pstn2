@@ -52,8 +52,8 @@ code/
         └── 06-number-discovery/main.go
 ```
 
-Source: [TypeScript](../code/typescript/examples/) ·
-[Python](../code/python/examples/) · [Go](../code/go/examples/) ·
+Source: [TypeScript](https://github.com/njjholland-dot/pstn2/tree/main/code/typescript/examples) ·
+[Python](https://github.com/njjholland-dot/pstn2/tree/main/code/python/examples) · [Go](https://github.com/njjholland-dot/pstn2/tree/main/code/go/examples) ·
 [GitHub](https://github.com/njjholland-dot/pstn2/tree/main/code)
 
 ## Prerequisites

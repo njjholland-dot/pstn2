@@ -1,304 +1,189 @@
-# PSTN2 Animated Presentations
+# PSTN2 presentations
 
-Professional animated presentations explaining the PSTN2 system architecture, features, and benefits.
+Eleven narrated presentations explaining PSTN2. They are built for television and for large conference screens, and they run on a shared broadcast player (`shared/`).
 
-## 🎬 Available Animations
+| # | Presentation | Series | Scenes | Running time |
+|---|---|---|---|---|
+| 1 | [The Problem](https://pstn2.org/src/problem-statement/) | Core presentation | 8 | 3.8 min |
+| 2 | [Solution Overview](https://pstn2.org/src/solution-overview/) | Core presentation | 10 | 5.4 min |
+| 3 | [Authentication: Direct Query](https://pstn2.org/src/authentication-option1/) | Technical deep dive | 10 | 4.5 min |
+| 4 | [Authentication: Token Pool](https://pstn2.org/src/authentication-option2/) | Technical deep dive | 11 | 4.1 min |
+| 5 | [Direct Routing](https://pstn2.org/src/direct-routing/) | Technical deep dive | 12 | 4.5 min |
+| 6 | [Emergency Services](https://pstn2.org/src/emergency-services/) | Use case | 9 | 3.6 min |
+| 7 | [Who Has This Number?](https://pstn2.org/src/distributed-database/) | Distributed Database | 12 | 6.6 min |
+| 8 | [Test Harness: Who Has This Number?](https://pstn2.org/src/test-harness/) | Live demo | 8 | 4.7 min |
+| 9 | [MAP Architecture](https://pstn2.org/src/map-architecture/) | Deployment model | 11 | 4.0 min |
+| 10 | [End-to-End Scenario](https://pstn2.org/src/end-to-end-scenario/) | Use case | 15 | 6.0 min |
+| 11 | [Law Enforcement Access](https://pstn2.org/src/law-enforcement/) | Use case | 8 | 4.6 min |
 
-### Core Presentations
+**Total: 114 scenes, about 52 minutes.**
 
-1. **Problem Statement** (8 scenes, ~8 min)
-   - Current PSTN limitations
-   - Caller ID spoofing problem
-   - Annual fraud losses
-   - Path: `src/problem-statement/`
+## Watching and presenting
 
-2. **Solution Overview** (12 scenes, ~12 min)
-   - PSTN2 architecture introduction
-   - Distributed messaging system
-   - Key benefits and features
-   - Path: `src/solution-overview/`
+- Open any presentation, then press **Play**. The narration plays and the scene advances by itself.
+- **Keys:** `Space` play/pause · `←` `→` scenes · `1`–`9` jump · `F` full screen · `C` captions · `M` mute.
+- **URL options:**
+  - `#4` starts at scene 4;
+  - `?autoplay=1` plays straight away (after a click, because of browser autoplay rules);
+  - `?kiosk=1` loops forever with the controls hidden, for exhibition stands.
+- The 1920×1080 stage scales to any screen, letterboxed, so slides look the same on a laptop, a projector or a TV.
+- Fonts, D3 and icons are self-hosted, so once a page has loaded it needs no internet connection.
 
-### Technical Deep Dives
+## Narration
 
-3. **Authentication Option 1** (10 scenes, ~10 min)
-   - Direct query verification
-   - Fraud prevention mechanisms
-   - Performance analysis
-   - Path: `src/authentication-option1/`
+Narration is pre-rendered UK English speech, normalised to −16 LUFS. The audio for each deck is in `src/<deck>/audio/`. If the audio cannot play, the player falls back to the browser's own UK voice, then to timed captions.
 
-4. **Authentication Option 2** (11 scenes, ~11 min)
-   - Token pool alternative
-   - Query reduction strategy
-   - Privacy considerations
-   - Path: `src/authentication-option2/`
-
-5. **Direct Routing** (12 scenes, ~12 min)
-   - Eliminating transit providers
-   - Cost savings analysis
-   - Latency improvements
-   - Path: `src/direct-routing/`
-
-6. **Emergency Services** (9 scenes, ~9 min)
-   - Enhanced location data
-   - Life-saving capabilities
-   - System requirements
-   - Path: `src/emergency-services/`
-
-7. **Distributed Database** (12 scenes, ~12 min)
-   - Eventual consistency model
-   - Scalability architecture
-   - No single point of failure
-   - Path: `src/distributed-database/`
-
-8. **MAP Architecture** (11 scenes, ~11 min)
-   - Small CP participation
-   - Low barrier to entry
-   - Interoperability standards
-   - Path: `src/map-architecture/`
-
-### Complete Walkthrough
-
-9. **End-to-End Scenario** (15 scenes, ~15 min)
-   - Complete call flow example
-   - All PSTN2 features demonstrated
-   - Real-world scenario
-   - Path: `src/end-to-end-scenario/`
-
-## 🚀 Quick Start
-
-### Method 1: Using the Launcher Script
+To change a line, edit `src/<deck>/narration.json`, then run:
 
 ```bash
-# List all animations
-./open_animation.sh
-
-# Open specific animation (e.g., Problem Statement)
-./open_animation.sh 1
-
-# Open Solution Overview
-./open_animation.sh 2
+node tools/narrate/build-narration.mjs <deck>                 # only changed lines are re-rendered
+PSTN2_VOICE="Jamie (Premium)" node tools/narrate/build-narration.mjs --force   # re-voice everything
 ```
 
-### Method 2: Direct Browser Open
+The best installed en-GB voice is chosen automatically (Premium, then Enhanced, then Daniel). To add Premium voices, go to System Settings › Accessibility › Spoken Content › System voice › Manage Voices.
 
-```bash
-# Open any animation directly
-open src/problem-statement/index.html
-open src/solution-overview/index.html
-open src/authentication-option1/index.html
-# etc.
-```
+## Authoring
 
-### Method 3: Navigate Manually
+See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animations/shared/README.md) for:
+- the deck format;
+- the scene API;
+- broadcast standards (the fictional cast, Ofcom drama-range numbers, and protocol accuracy);
+- the capture-mode QA procedure.
 
-1. Go to `src/<animation-name>/`
-2. Double-click `index.html`
-3. Animation opens in default browser
+## Scenes
 
-## 🎮 Controls
+### 1. The Problem
+1. A network people no longer trust
+2. The fraud problem
+3. The innovation problem
+4. The regulatory gap
+5. The central database dilemma
+6. Missing capabilities and policies
+7. A new strategy
+8. Introducing PSTN2
 
-### Mouse Controls
-- **Play/Pause Button**: Start/stop auto-play
-- **Previous Button**: Go to previous scene
-- **Next Button**: Go to next scene
-- **Audio Button**: Toggle narration on/off
-- **Scene Indicator**: Click to toggle audio
+### 2. Solution Overview
+1. The core insight
+2. A distributed architecture
+3. Six capabilities, one network
+4. Optional participation
+5. No central database required
+6. How it works
+7. One new field on Ofcom’s lists
+8. Security by design
+9. Managed Access Providers
+10. Join the movement
 
-### Keyboard Shortcuts
-- `Space`: Play/Pause toggle
-- `→` or `↓`: Next scene
-- `←` or `↑`: Previous scene
-- `Home`: Jump to first scene
-- `End`: Jump to last scene
+### 3. Authentication: Direct Query
+1. Caller ID can be faked
+2. Just ask the caller’s provider
+3. The query, step by step
+4. When the caller ID has been ported
+5. Faster than the first ring
+6. Spoofed calls are caught
+7. A definitive answer, not a confidence level
+8. Secured at every layer
+9. One endpoint to build
+10. Restoring trust in the phone
 
-## 🔊 Audio Features
+### 4. Authentication: Token Pool
+1. A second way to verify
+2. Creating a token
+3. Checking the token
+4. Governing a shared pool
+5. Built for volume
+6. No single pool to fail
+7. Security model
+8. Simpler for small providers
+9. Both options, side by side
+10. The trade-offs
+11. Open to every provider
 
-### Narration
-- Each scene has professional narration
-- Uses Web Speech API (Chrome, Edge, Safari)
-- Falls back to timer-based mode in Firefox
+### 5. Direct Routing
+1. The transit problem
+2. Connect directly
+3. Finding the other provider
+4. Lower cost
+5. Lower latency
+6. Exchanging encryption keys
+7. A secure media path
+8. Quality of service
+9. Network effects
+10. Fallback to today’s network
+11. Peering made simple
+12. Geographic optimisation
 
-### Speech-Driven Timing
-- Slides automatically advance when narration completes
-- No cutting off mid-sentence
-- Smooth transitions between scenes
+### 6. Emergency Services
+1. Every second counts
+2. Today: a daily batch file
+3. Too vague to act on
+4. PSTN2: location in real time
+5. Inside the location query
+6. Mobile: every location source
+7. Fixed lines: better records
+8. Minutes saved, lives saved
+9. Where regulation is heading
 
-### Audio Toggle
-- Click "🔊 Audio" button to disable narration
-- In audio-off mode, slides use predetermined timing
-- Preference persists during session
+### 7. Who Has This Number?
+1. One question behind every call
+2. The central database answer
+3. The data already exists
+4. One new field on Ofcom’s lists
+5. Step 1 · Check the cache
+6. Step 2 · Find the Range Holder
+7. Step 3 · Ask the Range Holder
+8. Step 4 · Follow the redirect
+9. Step 5 · Cache the answer, go direct
+10. When the answer changes
+11. Resilient and secure by design
+12. Who has this number? Ask.
 
-## 📐 Technical Details
+### 8. Test Harness: Who Has This Number?
+1. Meet the test network
+2. Every provider keeps a copy of Ofcom’s list
+3. Scenario A · An unported number
+4. Scenario B · A ported number
+5. Scenario C · The next call goes direct
+6. Scenario D · The number moves again
+7. When there is no PSTN2 answer
+8. Your turn
 
-### Technologies Used
-- **HTML5**: Semantic markup
-- **CSS3**: Modern animations and flexbox layouts
-- **JavaScript (ES6+)**: Interactive controls
-- **D3.js v7**: Data visualizations (Problem Statement, Solution Overview)
-- **Web Speech API**: Text-to-speech narration
+### 9. MAP Architecture
+1. The small provider challenge
+2. Managed Access Providers
+3. What a MAP provides
+4. Ways to connect
+5. A competitive market
+6. What it costs
+7. The provider stays in control
+8. Regulatory oversight
+9. Network effects
+10. A rural provider
+11. PSTN2 for everyone
 
-### Browser Compatibility
-- **Chrome 33+**: Full support (recommended)
-- **Edge 14+**: Full support
-- **Safari 7+**: Full support
-- **Firefox**: Works but no speech synthesis (uses timer fallback)
+### 10. End-to-End Scenario
+1. Meet Alice and Bob
+2. Alice dials
+3. Who has Bob’s number?
+4. Is it really Alice?
+5. Agreeing encryption
+6. A direct media path
+7. Who’s calling, verified
+8. Bob answers
+9. HD voice
+10. If Alice dials 999
+11. Next time: straight to Bravo
+12. Today’s PSTN and PSTN2
+13. The cost of a call
+14. It just works
+15. Everything, working together
 
-### Quality Standards
-✅ No overlapping graphics
-✅ Speech-driven scene advancement
-✅ Consistent styling across all animations
-✅ Responsive layouts
-✅ Keyboard accessibility
-✅ Professional animations
-
-## 📁 File Structure
-
-Each animation directory contains:
-
-```
-animation-name/
-├── index.html       # Main HTML structure
-├── animation.js     # Interactive logic and scene control
-├── styles.css       # Complete styling (base + custom)
-└── README.md        # Animation-specific documentation
-```
-
-## 🛠️ Development
-
-### Generation System
-
-Seven animations (3-9) were generated using the automated system:
-
-```bash
-# Regenerate all animations
-python3 complete_all_animations.py
-
-# Enhance CSS for generated animations
-./complete_generation.sh
-```
-
-See `ANIMATION_GENERATION_GUIDE.md` for patterns and templates.
-
-### Customization
-
-To customize an animation:
-
-1. Open `animation.js` in the animation directory
-2. Modify the `setupSceneN()` functions
-3. Add D3.js visualizations as needed
-4. Update narration text in HTML `data-speech` attributes
-5. Adjust timing in `sceneDurations` object
-
-### Adding Visualizations
-
-Example D3.js visualization:
-
-```javascript
-function setupScene3() {
-    const svg = d3.select('#my-diagram');
-
-    // Add circles
-    svg.selectAll('circle')
-        .data([1, 2, 3])
-        .join('circle')
-        .attr('cx', (d, i) => 100 + i * 150)
-        .attr('cy', 200)
-        .attr('r', 40)
-        .attr('fill', '#3b82f6')
-        .style('opacity', 0)
-        .transition()
-        .duration(800)
-        .delay((d, i) => i * 200)
-        .style('opacity', 1);
-}
-```
-
-## 📊 Statistics
-
-| Metric | Value |
-|--------|-------|
-| Total Animations | 9 |
-| Total Scenes | 100 |
-| Total Duration | ~100 minutes |
-| Lines of Code | 12,050+ |
-| HTML Files | 9 |
-| JavaScript Files | 9 |
-| CSS Files | 9 |
-
-## 🎯 Use Cases
-
-### Presentations
-- Conference talks
-- Client demonstrations
-- Team training
-- Investor pitches
-
-### Documentation
-- Technical documentation
-- System architecture explanations
-- Feature walkthroughs
-- Onboarding materials
-
-### Marketing
-- Product demonstrations
-- Benefit explanations
-- Competitive comparisons
-- Case studies
-
-## 🐛 Troubleshooting
-
-### Audio Not Playing
-- **Chrome/Edge/Safari**: Should work automatically
-- **Firefox**: Use timer-based mode (audio button off)
-- **Permissions**: Some browsers require user interaction before playing audio
-
-### Animations Not Smooth
-- Close other browser tabs to free resources
-- Disable browser extensions
-- Try a different browser
-
-### Layout Issues
-- Ensure browser window is at least 1000px wide
-- Try full-screen mode (F11)
-- Check browser zoom is at 100%
-
-### Console Errors
-- Open browser DevTools (F12)
-- Check Console tab for errors
-- Ensure all CDN resources loaded (D3.js, GSAP)
-
-## 📝 Documentation
-
-- `DELIVERY_COMPLETE.md` - Complete delivery report
-- `ANIMATION_GENERATION_GUIDE.md` - Development patterns
-- `ANIMATIONS_FINAL_STATUS.md` - Status tracking
-- Each animation has its own `README.md`
-
-## 🎓 Learning Path
-
-Recommended viewing order for new users:
-
-1. **Problem Statement** - Understand the problem
-2. **Solution Overview** - See the high-level solution
-3. **Authentication Option 1** - Learn core authentication
-4. **Direct Routing** - Understand cost savings
-5. **End-to-End Scenario** - See everything working together
-6. Other deep dives as needed
-
-## 📞 Support
-
-For issues or questions:
-1. Check animation-specific README
-2. Review troubleshooting section
-3. Check browser console for errors
-4. Verify all files are present
-
-## 📜 License
-
-Part of the PSTN2 project.
-
----
-
-**Total Content**: 9 animations, 100 scenes, ~100 minutes
-**Status**: ✅ Complete and ready for use
-**Last Updated**: 2025-11-28
+### 11. Law Enforcement Access
+1. The core insight
+2. How it works
+3. Authorised parties use the same steps
+4. A lookup page for investigators
+5. The data already held
+6. Validating lawful requests
+7. One new field on Ofcom’s lists
+8. Learn more

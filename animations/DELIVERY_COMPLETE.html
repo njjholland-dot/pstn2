@@ -3,320 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSTN2 Animation Delivery - Complete | PSTN2</title>
+    <title>PSTN2 presentations: delivery report (v1.1, 6 October 2026) | PSTN2</title>
     <link rel="stylesheet" href="../docs/documentation.css">
 </head>
 <body>
     <header class="doc-header">
         <a href="../index.html" class="back-link">← Back to Home</a>
-        <h1>PSTN2 Animation Delivery - Complete</h1>
+        <h1>PSTN2 presentations: delivery report (v1.1, 6 October 2026)</h1>
     </header>
 
         <nav class="doc-nav">
             <div class="doc-nav-links">
-                <a href="#summary">Summary</a>
-                <a href="#deliverables">Deliverables</a>
-                <a href="#technical-quality-standards-met">Technical Quality Standards Met</a>
-                <a href="#file-statistics">File Statistics</a>
-                <a href="#testing-checklist">Testing Checklist</a>
-                <a href="#browser-compatibility">Browser Compatibility</a>
-                <a href="#usage-instructions">Usage Instructions</a>
-                <a href="#generation-system">Generation System</a>
-                <a href="#next-steps">Next Steps</a>
-                <a href="#files-included">Files Included</a>
-                <a href="#total-delivery">Total Delivery</a>
+                <a href="#delivered">Delivered</a>
+                <a href="#per-presentation">Per presentation</a>
+                <a href="#quality-checks-performed">Quality checks performed</a>
+                <a href="#known-limitation">Known limitation</a>
                 <a href="DELIVERY_COMPLETE.md">View Markdown</a>
             </div>
         </nav>
     <main class="doc-container">
-        <h1 id="pstn2-animation-delivery-complete">PSTN2 Animation Delivery - Complete</h1>
-
-<h2 id="summary">Summary</h2>
-
-<p>All 9 animations have been successfully created and are ready for use.</p>
-
-<h2 id="deliverables">Deliverables</h2>
-
-<h3 id="1-problem-statement-8-scenes">1. Problem Statement (8 scenes)</h3>
+<h1 id="pstn2-presentations-delivery-report-v11-6-october-2026">PSTN2
+presentations: delivery report (v1.1, 6 October 2026)</h1>
+<h2 id="delivered">Delivered</h2>
 <ul>
-<li><strong>Location</strong>: <code>src/problem-statement/</code></li>
-<li><strong>Duration</strong>: ~8 minutes</li>
-<li><strong>Status</strong>: ✅ Complete with audio sync fixes and layout corrections</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - Fixed overlapping graphics (fraud box repositioned)</p>
-<p>  - Speech-driven timing (slides wait for narration to complete)</p>
-<p>  - Network diagram with animated fraud statistics</p>
-
-<h3 id="2-solution-overview-12-scenes">2. Solution Overview (12 scenes)</h3>
+<li><strong>Presentations:</strong> 11 narrated presentations, 114
+scenes, about 52 minutes, on one shared broadcast player. They include
+the rebuilt <strong>Who Has This Number? (Distributed Database)</strong>
+and the new <strong>Test Harness: Live Demo</strong>.</li>
+<li><strong>Narration:</strong> pre-rendered UK English,
+loudness-normalised (−16 LUFS), with captions and a live-speech
+fallback.</li>
+<li><strong>Visual standard:</strong>
 <ul>
-<li><strong>Location</strong>: <code>src/solution-overview/</code></li>
-<li><strong>Duration</strong>: ~12 minutes</li>
-<li><strong>Status</strong>: ✅ Complete with full D3.js visualizations</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - UK map with distributed CP architecture</p>
-<p>  - VS comparison (PSTN vs PSTN2)</p>
-<p>  - Benefits grid with animations</p>
-<p>  - Timeline visualization</p>
-<p>  - Call-to-action scene</p>
-
-<h3 id="3-authentication-option-1-10-scenes">3. Authentication Option 1 (10 scenes)</h3>
+<li>a 1920×1080 stage;</li>
+<li>self-hosted Inter typeface;</li>
+<li>Lucide icons and no emoji;</li>
+<li>one consistent fictional cast and Ofcom drama-range numbers.</li>
+</ul></li>
+<li><strong>Protocol accuracy:</strong> every deck uses the v1.1 Number
+Discovery mechanism (SPECIFICATION.md §9). The central-database
+comparison is ~£2m to build and ~£600k a year to run.</li>
+<li><strong>Test harness:</strong>
 <ul>
-<li><strong>Location</strong>: <code>src/authentication-option1/</code></li>
-<li><strong>Duration</strong>: ~10 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
+<li>Ofcom's numbering list and three CPs (Range Holders with ported
+numbers), each with a number database and a cache;</li>
+<li>narrated scenarios for unported, ported, cached, invalidated,
+not-in-service and non-participating numbers;</li>
+<li>an interactive mode running the reference discovery engine.</li>
+</ul></li>
 </ul>
-<p>  - Direct query verification explained</p>
-<p>  - Fraud prevention mechanisms</p>
-<p>  - Performance metrics</p>
-<p>  - Privacy considerations</p>
-
-<h3 id="4-authentication-option-2-11-scenes">4. Authentication Option 2 (11 scenes)</h3>
+<h2 id="per-presentation">Per presentation</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Presentation</th>
+<th>Scenes</th>
+<th>Running time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>The Problem</td>
+<td>8</td>
+<td>3.8 min</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Solution Overview</td>
+<td>10</td>
+<td>5.4 min</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Authentication: Direct Query</td>
+<td>10</td>
+<td>4.5 min</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Authentication: Token Pool</td>
+<td>11</td>
+<td>4.1 min</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Direct Routing</td>
+<td>12</td>
+<td>4.5 min</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Emergency Services</td>
+<td>9</td>
+<td>3.6 min</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Who Has This Number?</td>
+<td>12</td>
+<td>6.6 min</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Test Harness: Who Has This Number?</td>
+<td>8</td>
+<td>4.7 min</td>
+</tr>
+<tr>
+<td>9</td>
+<td>MAP Architecture</td>
+<td>11</td>
+<td>4.0 min</td>
+</tr>
+<tr>
+<td>10</td>
+<td>End-to-End Scenario</td>
+<td>15</td>
+<td>6.0 min</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Law Enforcement Access</td>
+<td>8</td>
+<td>4.6 min</td>
+</tr>
+</tbody>
+</table>
+<h2 id="quality-checks-performed">Quality checks performed</h2>
 <ul>
-<li><strong>Location</strong>: <code>src/authentication-option2/</code></li>
-<li><strong>Duration</strong>: ~11 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
+<li>Capture-mode screenshots of every scene at 1920×1080, each reviewed
+by eye.</li>
+<li>An automated check that elements stay inside the content box.</li>
+<li>Zero console errors.</li>
+<li>Normal playback verified for caption and cue sync.</li>
+<li>Loudness measured on rendered audio.</li>
 </ul>
-<p>  - Token pool alternative explained</p>
-<p>  - Query reduction benefits</p>
-<p>  - Privacy trade-offs</p>
-<p>  - Scalability analysis</p>
-
-<h3 id="5-direct-routing-12-scenes">5. Direct Routing (12 scenes)</h3>
-<ul>
-<li><strong>Location</strong>: <code>src/direct-routing/</code></li>
-<li><strong>Duration</strong>: ~12 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - Transit provider elimination</p>
-<p>  - Cost savings analysis</p>
-<p>  - Latency improvements</p>
-<p>  - Security benefits</p>
-
-<h3 id="6-emergency-services-9-scenes">6. Emergency Services (9 scenes)</h3>
-<ul>
-<li><strong>Location</strong>: <code>src/emergency-services/</code></li>
-<li><strong>Duration</strong>: ~9 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - Location data accuracy</p>
-<p>  - Life-saving capabilities</p>
-<p>  - Current system limitations</p>
-<p>  - PSTN2 improvements</p>
-
-<h3 id="7-distributed-database-12-scenes">7. Distributed Database (12 scenes)</h3>
-<ul>
-<li><strong>Location</strong>: <code>src/distributed-database/</code></li>
-<li><strong>Duration</strong>: ~12 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - Eventual consistency explained</p>
-<p>  - No single point of failure</p>
-<p>  - Scalability architecture</p>
-<p>  - Conflict resolution</p>
-
-<h3 id="8-map-architecture-11-scenes">8. MAP Architecture (11 scenes)</h3>
-<ul>
-<li><strong>Location</strong>: <code>src/map-architecture/</code></li>
-<li><strong>Duration</strong>: ~11 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - Small CP participation</p>
-<p>  - Low barrier to entry</p>
-<p>  - Lightweight requirements</p>
-<p>  - Interoperability</p>
-
-<h3 id="9-end-to-end-scenario-15-scenes">9. End-to-End Scenario (15 scenes)</h3>
-<ul>
-<li><strong>Location</strong>: <code>src/end-to-end-scenario/</code></li>
-<li><strong>Duration</strong>: ~15 minutes</li>
-<li><strong>Status</strong>: ✅ Generated with complete narration</li>
-<li><strong>Key Features</strong>:</li>
-</ul>
-<p>  - Complete call flow (Alice calling Bob)</p>
-<p>  - Step-by-step walkthrough</p>
-<p>  - All PSTN2 features demonstrated</p>
-<p>  - Real-time scenario</p>
-
-<h2 id="technical-quality-standards-met">Technical Quality Standards Met</h2>
-
-<h3 id="audio-synchronization">✅ Audio Synchronization</h3>
-<ul>
-<li>All animations use speech-driven timing</li>
-<li>Web Speech API with <code>onend</code> callbacks</li>
-<li>Slides advance only after narration completes</li>
-<li>Fallback timer mode for audio-disabled</li>
-</ul>
-
-<h3 id="layout-no-overlaps">✅ Layout - No Overlaps</h3>
-<ul>
-<li>Container height: 800px (sufficient for all content)</li>
-<li>Narration positioned at bottom: 160px clearance</li>
-<li>Controls positioned at bottom: 40px clearance</li>
-<li>Progress bar at absolute bottom: 0px</li>
-<li>Flexbox layouts with explicit gaps (40px)</li>
-<li>Semi-transparent narration backgrounds</li>
-<li>Responsive design with media queries</li>
-</ul>
-
-<h3 id="consistent-styling">✅ Consistent Styling</h3>
-<ul>
-<li>Base CSS: 623 lines (shared across all)</li>
-<li>Animation-specific styles: 30 lines</li>
-<li>Color scheme: Blue gradient (#3b82f6 → #10b981)</li>
-<li>Typography: -apple-system, BlinkMacSystemFont, 'Segoe UI'</li>
-<li>Animations: fadeIn, fadeInDown, fadeInUp, scaleIn, etc.</li>
-</ul>
-
-<h3 id="interactivity">✅ Interactivity</h3>
-<ul>
-<li>Keyboard navigation (Arrow keys, Space, Home, End)</li>
-<li>Play/Pause controls</li>
-<li>Audio toggle</li>
-<li>Scene indicator</li>
-<li>Progress bar</li>
-<li>Auto-play with audio completion detection</li>
-</ul>
-
-<h2 id="file-statistics">File Statistics</h2>
-
-<p>| Animation | Scenes | HTML Lines | JS Lines | CSS Lines | Total |</p>
-<p>|-----------|--------|------------|----------|-----------|-------|</p>
-<p>| Problem Statement | 8 | 265 | 534 | 653 | 1,452 |</p>
-<p>| Solution Overview | 12 | 317 | 619 | 1,125 | 2,061 |</p>
-<p>| Authentication Option 1 | 10 | 203 | 325 | 653 | 1,181 |</p>
-<p>| Authentication Option 2 | 11 | 216 | 339 | 653 | 1,208 |</p>
-<p>| Direct Routing | 12 | 229 | 353 | 653 | 1,235 |</p>
-<p>| Emergency Services | 9 | 190 | 311 | 653 | 1,154 |</p>
-<p>| Distributed Database | 12 | 229 | 353 | 653 | 1,235 |</p>
-<p>| MAP Architecture | 11 | 216 | 339 | 653 | 1,208 |</p>
-<p>| End-to-End Scenario | 15 | 268 | 395 | 653 | 1,316 |</p>
-<p>| <strong>TOTAL</strong> | <strong>100</strong> | <strong>2,133</strong> | <strong>3,568</strong> | <strong>6,401</strong> | <strong>12,050</strong> |</p>
-
-<h2 id="testing-checklist">Testing Checklist</h2>
-
-<p>For each animation, verify:</p>
-
-<ul>
-<li>[ ] Opens in browser without errors</li>
-<li>[ ] All scenes render correctly</li>
-<li>[ ] No overlapping graphics</li>
-<li>[ ] Audio plays correctly (if enabled)</li>
-<li>[ ] Slides advance after narration completes</li>
-<li>[ ] Manual navigation works (arrows, space)</li>
-<li>[ ] Play/Pause button works</li>
-<li>[ ] Audio toggle works</li>
-<li>[ ] Progress bar updates</li>
-<li>[ ] Scene indicator shows correct scene</li>
-<li>[ ] Previous button disabled on scene 1</li>
-<li>[ ] Next button disabled on last scene</li>
-<li>[ ] Keyboard shortcuts work</li>
-<li>[ ] Responsive layout works at different sizes</li>
-<li>[ ] No console errors</li>
-</ul>
-
-<h2 id="browser-compatibility">Browser Compatibility</h2>
-
-<p>Tested features require:</p>
-<ul>
-<li><strong>Web Speech API</strong>: Chrome 33+, Edge 14+, Safari 7+</li>
-<li><strong>D3.js v7</strong>: All modern browsers</li>
-<li><strong>CSS Flexbox</strong>: All modern browsers</li>
-<li><strong>CSS Animations</strong>: All modern browsers</li>
-</ul>
-
-<p><strong>Note</strong>: Firefox doesn't support Web Speech API, so audio will fall back to timer-based mode.</p>
-
-<h2 id="usage-instructions">Usage Instructions</h2>
-
-<h3 id="opening-an-animation">Opening an Animation</h3>
-<ul>
-<li>Navigate to the animation directory (e.g., <code>src/problem-statement/</code>)</li>
-<li>Open <code>index.html</code> in a web browser</li>
-<li>Click "Play" to start the presentation</li>
-</ul>
-
-<h3 id="controls">Controls</h3>
-<ul>
-<li><strong>Play/Pause</strong>: Start/stop auto-play</li>
-<li><strong>Previous/Next</strong>: Navigate between scenes</li>
-<li><strong>Audio</strong>: Toggle narration on/off</li>
-<li><strong>Keyboard</strong>:</li>
-</ul>
-<p>  - <code>Space</code>: Play/Pause</p>
-<p>  - <code>→</code> or <code>↓</code>: Next scene</p>
-<p>  - <code>←</code> or <code>↑</code>: Previous scene</p>
-<p>  - <code>Home</code>: First scene</p>
-<p>  - <code>End</code>: Last scene</p>
-
-<h3 id="audio-mode">Audio Mode</h3>
-<ul>
-<li><strong>With Audio (default)</strong>: Slides advance when narration completes</li>
-<li><strong>Without Audio</strong>: Slides advance after predetermined duration</li>
-<li>Toggle audio with button or by clicking scene indicator</li>
-</ul>
-
-<h2 id="generation-system">Generation System</h2>
-
-<p>All 7 generated animations were created using:</p>
-<ul>
-<li><strong>Script</strong>: <code>complete<em>all</em>animations.py</code></li>
-<li><strong>Template</strong>: Reusable HTML/JS/CSS patterns</li>
-<li><strong>Specifications</strong>: 80 scenes with complete narration</li>
-<li><strong>Time saved</strong>: ~30 hours (manual) → 2 hours (automated)</li>
-</ul>
-
-<h2 id="next-steps">Next Steps</h2>
-
-<ul>
-<li><strong>Test in Browser</strong>: Open each animation and verify functionality</li>
-<li><strong>Review Content</strong>: Check narration text and timing</li>
-<li><strong>Customize Visuals</strong>: Add D3.js visualizations to generated animations (optional)</li>
-<li><strong>Deploy</strong>: Host on web server or use locally</li>
-<li><strong>Integration</strong>: Link animations together or embed in presentation</li>
-</ul>
-
-<h2 id="files-included">Files Included</h2>
-
-<p>Each animation directory contains:</p>
-<ul>
-<li><code>index.html</code> - Main HTML structure</li>
-<li><code>animation.js</code> - JavaScript logic and scene setup</li>
-<li><code>styles.css</code> - Complete styling</li>
-<li><code>README.md</code> - Animation-specific documentation</li>
-</ul>
-
-<p>Supporting files:</p>
-<ul>
-<li><code>ANIMATION<em>GENERATION</em>GUIDE.md</code> - Patterns and templates</li>
-<li><code>ANIMATIONS<em>FINAL</em>STATUS.md</code> - Status report</li>
-<li><code>complete<em>all</em>animations.py</code> - Generation script</li>
-<li><code>complete_generation.sh</code> - CSS enhancement script</li>
-</ul>
-
-<h2 id="total-delivery">Total Delivery</h2>
-
-<ul>
-<li><strong>9 complete animations</strong></li>
-<li><strong>100 scenes total</strong></li>
-<li><strong>~100 minutes of content</strong></li>
-<li><strong>12,050+ lines of code</strong></li>
-<li><strong>All quality standards met</strong></li>
-<li><strong>Ready for immediate use</strong></li>
-</ul>
-
-<p>---</p>
-
-<p><strong>Delivery Date</strong>: 2025-11-28</p>
-<p><strong>Status</strong>: ✅ COMPLETE</p>
-
+<h2 id="known-limitation">Known limitation</h2>
+<p>The narration was rendered with the standard macOS voice "Daniel
+(English (UK))" because no Premium or Enhanced en-GB voice was installed
+when it was built. Install one, then re-render with
+<code>--force</code>. The scripts and cue timings don't change; the
+timings regenerate automatically.</p>
     </main>
 
     <footer class="doc-footer">

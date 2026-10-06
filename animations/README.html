@@ -3,386 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSTN2 Animated Presentations | PSTN2</title>
+    <title>PSTN2 presentations | PSTN2</title>
     <link rel="stylesheet" href="../docs/documentation.css">
 </head>
 <body>
     <header class="doc-header">
         <a href="../index.html" class="back-link">← Back to Home</a>
-        <h1>PSTN2 Animated Presentations</h1>
+        <h1>PSTN2 presentations</h1>
     </header>
 
         <nav class="doc-nav">
             <div class="doc-nav-links">
-                <a href="#-available-animations">🎬 Available Animations</a>
-                <a href="#-quick-start">🚀 Quick Start</a>
-                <a href="#-controls">🎮 Controls</a>
-                <a href="#-audio-features">🔊 Audio Features</a>
-                <a href="#-technical-details">📐 Technical Details</a>
-                <a href="#-file-structure">📁 File Structure</a>
-                <a href="#-development">🛠️ Development</a>
-                <a href="#-statistics">📊 Statistics</a>
-                <a href="#-use-cases">🎯 Use Cases</a>
-                <a href="#-troubleshooting">🐛 Troubleshooting</a>
-                <a href="#-documentation">📝 Documentation</a>
-                <a href="#-learning-path">🎓 Learning Path</a>
-                <a href="#-support">📞 Support</a>
-                <a href="#-license">📜 License</a>
+                <a href="#watching-and-presenting">Watching and presenting</a>
+                <a href="#narration">Narration</a>
+                <a href="#authoring">Authoring</a>
+                <a href="#scenes">Scenes</a>
                 <a href="README.md">View Markdown</a>
             </div>
         </nav>
     <main class="doc-container">
-        <h1 id="pstn2-animated-presentations">PSTN2 Animated Presentations</h1>
-
-<p>Professional animated presentations explaining the PSTN2 system architecture, features, and benefits.</p>
-
-<h2 id="available-animations">🎬 Available Animations</h2>
-
-<h3 id="core-presentations">Core Presentations</h3>
-
+<h1 id="pstn2-presentations">PSTN2 presentations</h1>
+<p>Eleven narrated presentations explaining PSTN2. They are built for
+television and for large conference screens, and they run on a shared
+broadcast player (<code>shared/</code>).</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Presentation</th>
+<th>Series</th>
+<th>Scenes</th>
+<th>Running time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><a href="https://pstn2.org/src/problem-statement/">The
+Problem</a></td>
+<td>Core presentation</td>
+<td>8</td>
+<td>3.8 min</td>
+</tr>
+<tr>
+<td>2</td>
+<td><a href="https://pstn2.org/src/solution-overview/">Solution
+Overview</a></td>
+<td>Core presentation</td>
+<td>10</td>
+<td>5.4 min</td>
+</tr>
+<tr>
+<td>3</td>
+<td><a
+href="https://pstn2.org/src/authentication-option1/">Authentication:
+Direct Query</a></td>
+<td>Technical deep dive</td>
+<td>10</td>
+<td>4.5 min</td>
+</tr>
+<tr>
+<td>4</td>
+<td><a
+href="https://pstn2.org/src/authentication-option2/">Authentication:
+Token Pool</a></td>
+<td>Technical deep dive</td>
+<td>11</td>
+<td>4.1 min</td>
+</tr>
+<tr>
+<td>5</td>
+<td><a href="https://pstn2.org/src/direct-routing/">Direct
+Routing</a></td>
+<td>Technical deep dive</td>
+<td>12</td>
+<td>4.5 min</td>
+</tr>
+<tr>
+<td>6</td>
+<td><a href="https://pstn2.org/src/emergency-services/">Emergency
+Services</a></td>
+<td>Use case</td>
+<td>9</td>
+<td>3.6 min</td>
+</tr>
+<tr>
+<td>7</td>
+<td><a href="https://pstn2.org/src/distributed-database/">Who Has This
+Number?</a></td>
+<td>Distributed Database</td>
+<td>12</td>
+<td>6.6 min</td>
+</tr>
+<tr>
+<td>8</td>
+<td><a href="https://pstn2.org/src/test-harness/">Test Harness: Who Has
+This Number?</a></td>
+<td>Live demo</td>
+<td>8</td>
+<td>4.7 min</td>
+</tr>
+<tr>
+<td>9</td>
+<td><a href="https://pstn2.org/src/map-architecture/">MAP
+Architecture</a></td>
+<td>Deployment model</td>
+<td>11</td>
+<td>4.0 min</td>
+</tr>
+<tr>
+<td>10</td>
+<td><a href="https://pstn2.org/src/end-to-end-scenario/">End-to-End
+Scenario</a></td>
+<td>Use case</td>
+<td>15</td>
+<td>6.0 min</td>
+</tr>
+<tr>
+<td>11</td>
+<td><a href="https://pstn2.org/src/law-enforcement/">Law Enforcement
+Access</a></td>
+<td>Use case</td>
+<td>8</td>
+<td>4.6 min</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total: 114 scenes, about 52 minutes.</strong></p>
+<h2 id="watching-and-presenting">Watching and presenting</h2>
 <ul>
-<li><strong>Problem Statement</strong> (8 scenes, ~8 min)</li>
-</ul>
-<p>   - Current PSTN limitations</p>
-<p>   - Caller ID spoofing problem</p>
-<p>   - Annual fraud losses</p>
-<p>   - Path: <code>src/problem-statement/</code></p>
-
+<li>Open any presentation, then press <strong>Play</strong>. The
+narration plays and the scene advances by itself.</li>
+<li><strong>Keys:</strong> <code>Space</code> play/pause ·
+<code>←</code> <code>→</code> scenes · <code>1</code>–<code>9</code>
+jump · <code>F</code> full screen · <code>C</code> captions ·
+<code>M</code> mute.</li>
+<li><strong>URL options:</strong>
 <ul>
-<li><strong>Solution Overview</strong> (12 scenes, ~12 min)</li>
+<li><code>#4</code> starts at scene 4;</li>
+<li><code>?autoplay=1</code> plays straight away (after a click, because
+of browser autoplay rules);</li>
+<li><code>?kiosk=1</code> loops forever with the controls hidden, for
+exhibition stands.</li>
+</ul></li>
+<li>The 1920×1080 stage scales to any screen, letterboxed, so slides
+look the same on a laptop, a projector or a TV.</li>
+<li>Fonts, D3 and icons are self-hosted, so once a page has loaded it
+needs no internet connection.</li>
 </ul>
-<p>   - PSTN2 architecture introduction</p>
-<p>   - Distributed messaging system</p>
-<p>   - Key benefits and features</p>
-<p>   - Path: <code>src/solution-overview/</code></p>
-
-<h3 id="technical-deep-dives">Technical Deep Dives</h3>
-
+<h2 id="narration">Narration</h2>
+<p>Narration is pre-rendered UK English speech, normalised to −16 LUFS.
+The audio for each deck is in <code>src/&lt;deck&gt;/audio/</code>. If
+the audio cannot play, the player falls back to the browser's own UK
+voice, then to timed captions.</p>
+<p>To change a line, edit <code>src/&lt;deck&gt;/narration.json</code>,
+then run:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/narrate/build-narration.mjs <span class="op">&lt;</span>deck<span class="op">&gt;</span>                 <span class="co"># only changed lines are re-rendered</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_VOICE</span><span class="op">=</span><span class="st">&quot;Jamie (Premium)&quot;</span> <span class="ex">node</span> tools/narrate/build-narration.mjs <span class="at">--force</span>   <span class="co"># re-voice everything</span></span></code></pre></div>
+<p>The best installed en-GB voice is chosen automatically (Premium, then
+Enhanced, then Daniel). To add Premium voices, go to System Settings ›
+Accessibility › Spoken Content › System voice › Manage Voices.</p>
+<h2 id="authoring">Authoring</h2>
+<p>See <a
+href="https://github.com/njjholland-dot/pstn2/blob/main/animations/shared/README.md">shared/README.md</a>
+for:</p>
 <ul>
-<li><strong>Authentication Option 1</strong> (10 scenes, ~10 min)</li>
+<li>the deck format;</li>
+<li>the scene API;</li>
+<li>broadcast standards (the fictional cast, Ofcom drama-range numbers,
+and protocol accuracy);</li>
+<li>the capture-mode QA procedure.</li>
 </ul>
-<p>   - Direct query verification</p>
-<p>   - Fraud prevention mechanisms</p>
-<p>   - Performance analysis</p>
-<p>   - Path: <code>src/authentication-option1/</code></p>
-
-<ul>
-<li><strong>Authentication Option 2</strong> (11 scenes, ~11 min)</li>
-</ul>
-<p>   - Token pool alternative</p>
-<p>   - Query reduction strategy</p>
-<p>   - Privacy considerations</p>
-<p>   - Path: <code>src/authentication-option2/</code></p>
-
-<ul>
-<li><strong>Direct Routing</strong> (12 scenes, ~12 min)</li>
-</ul>
-<p>   - Eliminating transit providers</p>
-<p>   - Cost savings analysis</p>
-<p>   - Latency improvements</p>
-<p>   - Path: <code>src/direct-routing/</code></p>
-
-<ul>
-<li><strong>Emergency Services</strong> (9 scenes, ~9 min)</li>
-</ul>
-<p>   - Enhanced location data</p>
-<p>   - Life-saving capabilities</p>
-<p>   - System requirements</p>
-<p>   - Path: <code>src/emergency-services/</code></p>
-
-<ul>
-<li><strong>Distributed Database</strong> (12 scenes, ~12 min)</li>
-</ul>
-<p>   - Eventual consistency model</p>
-<p>   - Scalability architecture</p>
-<p>   - No single point of failure</p>
-<p>   - Path: <code>src/distributed-database/</code></p>
-
-<ul>
-<li><strong>MAP Architecture</strong> (11 scenes, ~11 min)</li>
-</ul>
-<p>   - Small CP participation</p>
-<p>   - Low barrier to entry</p>
-<p>   - Interoperability standards</p>
-<p>   - Path: <code>src/map-architecture/</code></p>
-
-<h3 id="complete-walkthrough">Complete Walkthrough</h3>
-
-<ul>
-<li><strong>End-to-End Scenario</strong> (15 scenes, ~15 min)</li>
-</ul>
-<p>   - Complete call flow example</p>
-<p>   - All PSTN2 features demonstrated</p>
-<p>   - Real-world scenario</p>
-<p>   - Path: <code>src/end-to-end-scenario/</code></p>
-
-<h2 id="quick-start">🚀 Quick Start</h2>
-
-<h3 id="method-1-using-the-launcher-script">Method 1: Using the Launcher Script</h3>
-
-<pre><code class="language-bash">&lt;h1 id=&quot;list-all-animations&quot;&gt;List all animations&lt;/h1&gt;
-<p>./open_animation.sh</p>
-
-<p>&lt;h1 id=&quot;open-specific-animation-e-g-problem-statement&quot;&gt;Open specific animation (e.g., Problem Statement)&lt;/h1&gt;</p>
-<p>./open_animation.sh 1</p>
-
-<p>&lt;h1 id=&quot;open-solution-overview&quot;&gt;Open Solution Overview&lt;/h1&gt;</p>
-<p>./open_animation.sh 2</code></pre></p>
-
-<h3 id="method-2-direct-browser-open">Method 2: Direct Browser Open</h3>
-
-<pre><code class="language-bash">&lt;h1 id=&quot;open-any-animation-directly&quot;&gt;Open any animation directly&lt;/h1&gt;
-<p>open src/problem-statement/index.html</p>
-<p>open src/solution-overview/index.html</p>
-<p>open src/authentication-option1/index.html</p>
-<p>&lt;h1 id=&quot;etc&quot;&gt;etc.&lt;/h1&gt;</code></pre></p>
-
-<h3 id="method-3-navigate-manually">Method 3: Navigate Manually</h3>
-
-<ul>
-<li>Go to <code>src/<animation-name>/</code></li>
-<li>Double-click <code>index.html</code></li>
-<li>Animation opens in default browser</li>
-</ul>
-
-<h2 id="controls">🎮 Controls</h2>
-
-<h3 id="mouse-controls">Mouse Controls</h3>
-<ul>
-<li><strong>Play/Pause Button</strong>: Start/stop auto-play</li>
-<li><strong>Previous Button</strong>: Go to previous scene</li>
-<li><strong>Next Button</strong>: Go to next scene</li>
-<li><strong>Audio Button</strong>: Toggle narration on/off</li>
-<li><strong>Scene Indicator</strong>: Click to toggle audio</li>
-</ul>
-
-<h3 id="keyboard-shortcuts">Keyboard Shortcuts</h3>
-<ul>
-<li><code>Space</code>: Play/Pause toggle</li>
-<li><code>→</code> or <code>↓</code>: Next scene</li>
-<li><code>←</code> or <code>↑</code>: Previous scene</li>
-<li><code>Home</code>: Jump to first scene</li>
-<li><code>End</code>: Jump to last scene</li>
-</ul>
-
-<h2 id="audio-features">🔊 Audio Features</h2>
-
-<h3 id="narration">Narration</h3>
-<ul>
-<li>Each scene has professional narration</li>
-<li>Uses Web Speech API (Chrome, Edge, Safari)</li>
-<li>Falls back to timer-based mode in Firefox</li>
-</ul>
-
-<h3 id="speech-driven-timing">Speech-Driven Timing</h3>
-<ul>
-<li>Slides automatically advance when narration completes</li>
-<li>No cutting off mid-sentence</li>
-<li>Smooth transitions between scenes</li>
-</ul>
-
-<h3 id="audio-toggle">Audio Toggle</h3>
-<ul>
-<li>Click "🔊 Audio" button to disable narration</li>
-<li>In audio-off mode, slides use predetermined timing</li>
-<li>Preference persists during session</li>
-</ul>
-
-<h2 id="technical-details">📐 Technical Details</h2>
-
-<h3 id="technologies-used">Technologies Used</h3>
-<ul>
-<li><strong>HTML5</strong>: Semantic markup</li>
-<li><strong>CSS3</strong>: Modern animations and flexbox layouts</li>
-<li><strong>JavaScript (ES6+)</strong>: Interactive controls</li>
-<li><strong>D3.js v7</strong>: Data visualizations (Problem Statement, Solution Overview)</li>
-<li><strong>Web Speech API</strong>: Text-to-speech narration</li>
-</ul>
-
-<h3 id="browser-compatibility">Browser Compatibility</h3>
-<ul>
-<li><strong>Chrome 33+</strong>: Full support (recommended)</li>
-<li><strong>Edge 14+</strong>: Full support</li>
-<li><strong>Safari 7+</strong>: Full support</li>
-<li><strong>Firefox</strong>: Works but no speech synthesis (uses timer fallback)</li>
-</ul>
-
-<h3 id="quality-standards">Quality Standards</h3>
-<p>✅ No overlapping graphics</p>
-<p>✅ Speech-driven scene advancement</p>
-<p>✅ Consistent styling across all animations</p>
-<p>✅ Responsive layouts</p>
-<p>✅ Keyboard accessibility</p>
-<p>✅ Professional animations</p>
-
-<h2 id="file-structure">📁 File Structure</h2>
-
-<p>Each animation directory contains:</p>
-
-<pre><code class="language-">animation-name/
-<p>├── index.html       # Main HTML structure</p>
-<p>├── animation.js     # Interactive logic and scene control</p>
-<p>├── styles.css       # Complete styling (base + custom)</p>
-<p>└── README.md        # Animation-specific documentation</code></pre></p>
-
-<h2 id="development">🛠️ Development</h2>
-
-<h3 id="generation-system">Generation System</h3>
-
-<p>Seven animations (3-9) were generated using the automated system:</p>
-
-<pre><code class="language-bash">&lt;h1 id=&quot;regenerate-all-animations&quot;&gt;Regenerate all animations&lt;/h1&gt;
-<p>python3 complete<em>all</em>animations.py</p>
-
-<p>&lt;h1 id=&quot;enhance-css-for-generated-animations&quot;&gt;Enhance CSS for generated animations&lt;/h1&gt;</p>
-<p>./complete_generation.sh</code></pre></p>
-
-<p>See <code>ANIMATION<em>GENERATION</em>GUIDE.md</code> for patterns and templates.</p>
-
-<h3 id="customization">Customization</h3>
-
-<p>To customize an animation:</p>
-
-<ul>
-<li>Open <code>animation.js</code> in the animation directory</li>
-<li>Modify the <code>setupSceneN()</code> functions</li>
-<li>Add D3.js visualizations as needed</li>
-<li>Update narration text in HTML <code>data-speech</code> attributes</li>
-<li>Adjust timing in <code>sceneDurations</code> object</li>
-</ul>
-
-<h3 id="adding-visualizations">Adding Visualizations</h3>
-
-<p>Example D3.js visualization:</p>
-
-<pre><code class="language-javascript">function setupScene3() {
-<p>    const svg = d3.select(&#039;#my-diagram&#039;);</p>
-
-<p>    // Add circles</p>
-<p>    svg.selectAll(&#039;circle&#039;)</p>
-<p>        .data([1, 2, 3])</p>
-<p>        .join(&#039;circle&#039;)</p>
-<p>        .attr(&#039;cx&#039;, (d, i) =&gt; 100 + i * 150)</p>
-<p>        .attr(&#039;cy&#039;, 200)</p>
-<p>        .attr(&#039;r&#039;, 40)</p>
-<p>        .attr(&#039;fill&#039;, &#039;#3b82f6&#039;)</p>
-<p>        .style(&#039;opacity&#039;, 0)</p>
-<p>        .transition()</p>
-<p>        .duration(800)</p>
-<p>        .delay((d, i) =&gt; i * 200)</p>
-<p>        .style(&#039;opacity&#039;, 1);</p>
-<p>}</code></pre></p>
-
-<h2 id="statistics">📊 Statistics</h2>
-
-<p>| Metric | Value |</p>
-<p>|--------|-------|</p>
-<p>| Total Animations | 9 |</p>
-<p>| Total Scenes | 100 |</p>
-<p>| Total Duration | ~100 minutes |</p>
-<p>| Lines of Code | 12,050+ |</p>
-<p>| HTML Files | 9 |</p>
-<p>| JavaScript Files | 9 |</p>
-<p>| CSS Files | 9 |</p>
-
-<h2 id="use-cases">🎯 Use Cases</h2>
-
-<h3 id="presentations">Presentations</h3>
-<ul>
-<li>Conference talks</li>
-<li>Client demonstrations</li>
-<li>Team training</li>
-<li>Investor pitches</li>
-</ul>
-
-<h3 id="documentation">Documentation</h3>
-<ul>
-<li>Technical documentation</li>
-<li>System architecture explanations</li>
-<li>Feature walkthroughs</li>
-<li>Onboarding materials</li>
-</ul>
-
-<h3 id="marketing">Marketing</h3>
-<ul>
-<li>Product demonstrations</li>
-<li>Benefit explanations</li>
-<li>Competitive comparisons</li>
-<li>Case studies</li>
-</ul>
-
-<h2 id="troubleshooting">🐛 Troubleshooting</h2>
-
-<h3 id="audio-not-playing">Audio Not Playing</h3>
-<ul>
-<li><strong>Chrome/Edge/Safari</strong>: Should work automatically</li>
-<li><strong>Firefox</strong>: Use timer-based mode (audio button off)</li>
-<li><strong>Permissions</strong>: Some browsers require user interaction before playing audio</li>
-</ul>
-
-<h3 id="animations-not-smooth">Animations Not Smooth</h3>
-<ul>
-<li>Close other browser tabs to free resources</li>
-<li>Disable browser extensions</li>
-<li>Try a different browser</li>
-</ul>
-
-<h3 id="layout-issues">Layout Issues</h3>
-<ul>
-<li>Ensure browser window is at least 1000px wide</li>
-<li>Try full-screen mode (F11)</li>
-<li>Check browser zoom is at 100%</li>
-</ul>
-
-<h3 id="console-errors">Console Errors</h3>
-<ul>
-<li>Open browser DevTools (F12)</li>
-<li>Check Console tab for errors</li>
-<li>Ensure all CDN resources loaded (D3.js, GSAP)</li>
-</ul>
-
-<h2 id="documentation">📝 Documentation</h2>
-
-<ul>
-<li><code>DELIVERY_COMPLETE.md</code> - Complete delivery report</li>
-<li><code>ANIMATION<em>GENERATION</em>GUIDE.md</code> - Development patterns</li>
-<li><code>ANIMATIONS<em>FINAL</em>STATUS.md</code> - Status tracking</li>
-<li>Each animation has its own <code>README.md</code></li>
-</ul>
-
-<h2 id="learning-path">🎓 Learning Path</h2>
-
-<p>Recommended viewing order for new users:</p>
-
-<ul>
-<li><strong>Problem Statement</strong> - Understand the problem</li>
-<li><strong>Solution Overview</strong> - See the high-level solution</li>
-<li><strong>Authentication Option 1</strong> - Learn core authentication</li>
-<li><strong>Direct Routing</strong> - Understand cost savings</li>
-<li><strong>End-to-End Scenario</strong> - See everything working together</li>
-<li>Other deep dives as needed</li>
-</ul>
-
-<h2 id="support">📞 Support</h2>
-
-<p>For issues or questions:</p>
-<ul>
-<li>Check animation-specific README</li>
-<li>Review troubleshooting section</li>
-<li>Check browser console for errors</li>
-<li>Verify all files are present</li>
-</ul>
-
-<h2 id="license">📜 License</h2>
-
-<p>Part of the PSTN2 project.</p>
-
-<p>---</p>
-
-<p><strong>Total Content</strong>: 9 animations, 100 scenes, ~100 minutes</p>
-<p><strong>Status</strong>: ✅ Complete and ready for use</p>
-<p><strong>Last Updated</strong>: 2025-11-28</p>
-
+<h2 id="scenes">Scenes</h2>
+<h3 id="1-the-problem">1. The Problem</h3>
+<ol type="1">
+<li>A network people no longer trust</li>
+<li>The fraud problem</li>
+<li>The innovation problem</li>
+<li>The regulatory gap</li>
+<li>The central database dilemma</li>
+<li>Missing capabilities and policies</li>
+<li>A new strategy</li>
+<li>Introducing PSTN2</li>
+</ol>
+<h3 id="2-solution-overview">2. Solution Overview</h3>
+<ol type="1">
+<li>The core insight</li>
+<li>A distributed architecture</li>
+<li>Six capabilities, one network</li>
+<li>Optional participation</li>
+<li>No central database required</li>
+<li>How it works</li>
+<li>One new field on Ofcom’s lists</li>
+<li>Security by design</li>
+<li>Managed Access Providers</li>
+<li>Join the movement</li>
+</ol>
+<h3 id="3-authentication-direct-query">3. Authentication: Direct
+Query</h3>
+<ol type="1">
+<li>Caller ID can be faked</li>
+<li>Just ask the caller’s provider</li>
+<li>The query, step by step</li>
+<li>When the caller ID has been ported</li>
+<li>Faster than the first ring</li>
+<li>Spoofed calls are caught</li>
+<li>A definitive answer, not a confidence level</li>
+<li>Secured at every layer</li>
+<li>One endpoint to build</li>
+<li>Restoring trust in the phone</li>
+</ol>
+<h3 id="4-authentication-token-pool">4. Authentication: Token Pool</h3>
+<ol type="1">
+<li>A second way to verify</li>
+<li>Creating a token</li>
+<li>Checking the token</li>
+<li>Governing a shared pool</li>
+<li>Built for volume</li>
+<li>No single pool to fail</li>
+<li>Security model</li>
+<li>Simpler for small providers</li>
+<li>Both options, side by side</li>
+<li>The trade-offs</li>
+<li>Open to every provider</li>
+</ol>
+<h3 id="5-direct-routing">5. Direct Routing</h3>
+<ol type="1">
+<li>The transit problem</li>
+<li>Connect directly</li>
+<li>Finding the other provider</li>
+<li>Lower cost</li>
+<li>Lower latency</li>
+<li>Exchanging encryption keys</li>
+<li>A secure media path</li>
+<li>Quality of service</li>
+<li>Network effects</li>
+<li>Fallback to today’s network</li>
+<li>Peering made simple</li>
+<li>Geographic optimisation</li>
+</ol>
+<h3 id="6-emergency-services">6. Emergency Services</h3>
+<ol type="1">
+<li>Every second counts</li>
+<li>Today: a daily batch file</li>
+<li>Too vague to act on</li>
+<li>PSTN2: location in real time</li>
+<li>Inside the location query</li>
+<li>Mobile: every location source</li>
+<li>Fixed lines: better records</li>
+<li>Minutes saved, lives saved</li>
+<li>Where regulation is heading</li>
+</ol>
+<h3 id="7-who-has-this-number">7. Who Has This Number?</h3>
+<ol type="1">
+<li>One question behind every call</li>
+<li>The central database answer</li>
+<li>The data already exists</li>
+<li>One new field on Ofcom’s lists</li>
+<li>Step 1 · Check the cache</li>
+<li>Step 2 · Find the Range Holder</li>
+<li>Step 3 · Ask the Range Holder</li>
+<li>Step 4 · Follow the redirect</li>
+<li>Step 5 · Cache the answer, go direct</li>
+<li>When the answer changes</li>
+<li>Resilient and secure by design</li>
+<li>Who has this number? Ask.</li>
+</ol>
+<h3 id="8-test-harness-who-has-this-number">8. Test Harness: Who Has
+This Number?</h3>
+<ol type="1">
+<li>Meet the test network</li>
+<li>Every provider keeps a copy of Ofcom’s list</li>
+<li>Scenario A · An unported number</li>
+<li>Scenario B · A ported number</li>
+<li>Scenario C · The next call goes direct</li>
+<li>Scenario D · The number moves again</li>
+<li>When there is no PSTN2 answer</li>
+<li>Your turn</li>
+</ol>
+<h3 id="9-map-architecture">9. MAP Architecture</h3>
+<ol type="1">
+<li>The small provider challenge</li>
+<li>Managed Access Providers</li>
+<li>What a MAP provides</li>
+<li>Ways to connect</li>
+<li>A competitive market</li>
+<li>What it costs</li>
+<li>The provider stays in control</li>
+<li>Regulatory oversight</li>
+<li>Network effects</li>
+<li>A rural provider</li>
+<li>PSTN2 for everyone</li>
+</ol>
+<h3 id="10-end-to-end-scenario">10. End-to-End Scenario</h3>
+<ol type="1">
+<li>Meet Alice and Bob</li>
+<li>Alice dials</li>
+<li>Who has Bob’s number?</li>
+<li>Is it really Alice?</li>
+<li>Agreeing encryption</li>
+<li>A direct media path</li>
+<li>Who’s calling, verified</li>
+<li>Bob answers</li>
+<li>HD voice</li>
+<li>If Alice dials 999</li>
+<li>Next time: straight to Bravo</li>
+<li>Today’s PSTN and PSTN2</li>
+<li>The cost of a call</li>
+<li>It just works</li>
+<li>Everything, working together</li>
+</ol>
+<h3 id="11-law-enforcement-access">11. Law Enforcement Access</h3>
+<ol type="1">
+<li>The core insight</li>
+<li>How it works</li>
+<li>Authorised parties use the same steps</li>
+<li>A lookup page for investigators</li>
+<li>The data already held</li>
+<li>Validating lawful requests</li>
+<li>One new field on Ofcom’s lists</li>
+<li>Learn more</li>
+</ol>
     </main>
 
     <footer class="doc-footer">

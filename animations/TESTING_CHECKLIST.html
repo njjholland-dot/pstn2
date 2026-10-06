@@ -3,356 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animation Testing Checklist | PSTN2</title>
+    <title>PSTN2 presentations: QA checklist | PSTN2</title>
     <link rel="stylesheet" href="../docs/documentation.css">
 </head>
 <body>
     <header class="doc-header">
         <a href="../index.html" class="back-link">← Back to Home</a>
-        <h1>Animation Testing Checklist</h1>
+        <h1>PSTN2 presentations: QA checklist</h1>
     </header>
 
         <nav class="doc-nav">
             <div class="doc-nav-links">
-                <a href="#quick-test-5-minutes-">Quick Test (5 minutes)</a>
-                <a href="#full-test-20-minutes-">Full Test (20 minutes)</a>
-                <a href="#browser-compatibility-test">Browser Compatibility Test</a>
-                <a href="#common-issues">Common Issues</a>
-                <a href="#quick-console-check">Quick Console Check</a>
-                <a href="#performance-benchmarks">Performance Benchmarks</a>
-                <a href="#file-integrity-check">File Integrity Check</a>
-                <a href="#launcher-script-test">Launcher Script Test</a>
-                <a href="#documentation-test">Documentation Test</a>
-                <a href="#final-verification">Final Verification</a>
-                <a href="#sign-off">Sign-Off</a>
+                <a href="#automated">Automated</a>
+                <a href="#capture-mode-every-scene">Capture mode (every scene)</a>
+                <a href="#normal-playback-at-least-one-scene-per-deck">Normal playback (at
+least one scene per deck)</a>
+                <a href="#content-accuracy">Content accuracy</a>
+                <a href="#screens">Screens</a>
                 <a href="TESTING_CHECKLIST.md">View Markdown</a>
             </div>
         </nav>
     <main class="doc-container">
-        <h1 id="animation-testing-checklist">Animation Testing Checklist</h1>
-
-<p>Quick checklist to verify all animations are working correctly.</p>
-
-<h2 id="quick-test-5-minutes">Quick Test (5 minutes)</h2>
-
-<h3 id="1-open-central-hub">1. Open Central Hub</h3>
-<pre><code class="language-bash">cd /Users/nholland/Projects/Claude/PSTN2/animations
-<p>open index.html</code></pre></p>
-
-<strong>Verify:</strong>
-<ul>
-<li>[ ] Page loads without errors</li>
-<li>[ ] All 9 animation cards are visible</li>
-<li>[ ] Stat boxes show: 9 animations, 100 scenes, ~100 minutes</li>
-<li>[ ] Links are clickable</li>
+<h1 id="pstn2-presentations-qa-checklist">PSTN2 presentations: QA
+checklist</h1>
+<p>Run this before publishing any change to a presentation.</p>
+<h2 id="automated">Automated</h2>
+<ul class="task-list">
+<li><label><input
+type="checkbox" /><code>node tools/narrate/build-narration.mjs &lt;deck&gt;</code>
+succeeds. Every scene has audio, and <code>audio/manifest.json</code> is
+current.</label></li>
+<li><label><input
+type="checkbox" /><code>node --test test-environment/conformance/engine.test.mjs</code>
+passes. This includes a check that the harness fixtures have not
+drifted.</label></li>
+<li><label><input type="checkbox" />Loudness:
+<code>ffmpeg -i src/&lt;deck&gt;/audio/&lt;scene&gt;.mp3 -af ebur128 -f null -</code>
+measures within ±1 LU of −16 LUFS.</label></li>
 </ul>
-
-<h3 id="2-test-one-animation-problem-statement">2. Test One Animation (Problem Statement)</h3>
-<p>Click on "Problem Statement" card</p>
-
-<strong>Verify:</strong>
-<ul>
-<li>[ ] Opens in new window/tab</li>
-<li>[ ] Scene 1 displays correctly</li>
-<li>[ ] Title: "The Current Phone System"</li>
-<li>[ ] Network diagram visible (or placeholder)</li>
-<li>[ ] Narration text visible at bottom</li>
-<li>[ ] Controls at bottom: Previous, Play, Next, Audio, Scene indicator</li>
-<li>[ ] Progress bar at very bottom</li>
+<h2 id="capture-mode-every-scene">Capture mode (every scene)</h2>
+<p>Open <code>src/&lt;deck&gt;/index.html?capture=1</code> at 1920×1080.
+For each scene <code>i</code>, run
+<code>await window.__p2.show(i)</code> and take a screenshot.</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Nothing overlaps; nothing is
+clipped; everything stays inside the content area and clear of the
+caption bar.</label></li>
+<li><label><input type="checkbox" />Text: at least 24px for body text
+and 16px for labels; nothing truncated mid-word.</label></li>
+<li><label><input type="checkbox" />Connectors start and end on the
+right elements, and arrowheads are visible.</label></li>
+<li><label><input type="checkbox" />No emoji. Icons come from the Lucide
+set.</label></li>
+<li><label><input type="checkbox" />Only fictional providers (Alpha,
+Bravo and Charlie Comms, Delta Voice) and Ofcom drama-range
+numbers.</label></li>
+<li><label><input type="checkbox" />The browser console shows zero
+errors.</label></li>
 </ul>
-
-<h3 id="3-test-audio">3. Test Audio</h3>
-<p>Click "Play" button</p>
-
-<strong>Verify:</strong>
-<ul>
-<li>[ ] Audio starts speaking (or timer if Firefox)</li>
-<li>[ ] Play button changes to "Pause"</li>
-<li>[ ] Scene advances automatically after narration completes</li>
-<li>[ ] No cutting off mid-sentence</li>
+<h2 id="normal-playback-at-least-one-scene-per-deck">Normal playback (at
+least one scene per deck)</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" />Play starts the narration. Captions
+follow the voice, and each visual change appears as it is
+mentioned.</label></li>
+<li><label><input type="checkbox" />Pause and resume, Next and Previous,
+chapter jumps, captions toggle, mute and full screen all
+work.</label></li>
+<li><label><input type="checkbox" />The deck advances by itself and ends
+on the end card, with "Up next" pointing to the right
+presentation.</label></li>
 </ul>
-
-<h3 id="4-test-navigation">4. Test Navigation</h3>
-<p>Use keyboard controls</p>
-
-<strong>Verify:</strong>
-<ul>
-<li>[ ] <code>→</code> advances to next scene</li>
-<li>[ ] <code>←</code> goes to previous scene</li>
-<li>[ ] <code>Space</code> toggles play/pause</li>
-<li>[ ] <code>Home</code> jumps to scene 1</li>
-<li>[ ] <code>End</code> jumps to last scene</li>
+<h2 id="content-accuracy">Content accuracy</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" />Number discovery is always: cache →
+Ofcom S1–S9 list + Range Holder URL → Range Holder → redirect if ported
+→ cache, with <code>cache.invalidate</code>.</label></li>
+<li><label><input type="checkbox" />Never mention a directory service,
+replication or eventual consistency.</label></li>
+<li><label><input type="checkbox" />Central database comparison: ~£2m to
+build and ~£600k a year to run.</label></li>
 </ul>
-
-<h3 id="5-test-audio-toggle">5. Test Audio Toggle</h3>
-<p>Click "🔊 Audio" button</p>
-
-<strong>Verify:</strong>
-<ul>
-<li>[ ] Button changes to "🔇 Audio"</li>
-<li>[ ] Next scene uses timer instead of speech</li>
-<li>[ ] Clicking again re-enables audio</li>
+<h2 id="screens">Screens</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" />Desktop 1920×1080 and 1280×720
+(letterboxed, sharp).</label></li>
+<li><label><input type="checkbox" />Phone, 390px wide: the stage scales
+and the controls stay usable.</label></li>
 </ul>
-
-<h2 id="full-test-20-minutes">Full Test (20 minutes)</h2>
-
-<p>Test each animation briefly:</p>
-
-<h3 id="animation-1-problem-statement">Animation 1: Problem Statement</h3>
-<pre><code class="language-bash">open src/problem-statement/index.html</code></pre>
-<ul>
-<li>[ ] 8 scenes total</li>
-<li>[ ] Scene 1: Network diagram + fraud statistics</li>
-<li>[ ] No overlapping graphics</li>
-<li>[ ] Audio completes before advancing</li>
-</ul>
-
-<h3 id="animation-2-solution-overview">Animation 2: Solution Overview</h3>
-<pre><code class="language-bash">open src/solution-overview/index.html</code></pre>
-<ul>
-<li>[ ] 12 scenes total</li>
-<li>[ ] Scene 2: UK map with CPs</li>
-<li>[ ] Scene 6: VS comparison grid</li>
-<li>[ ] D3.js visualizations work</li>
-</ul>
-
-<h3 id="animation-3-authentication-option-1">Animation 3: Authentication Option 1</h3>
-<pre><code class="language-bash">open src/authentication-option1/index.html</code></pre>
-<ul>
-<li>[ ] 10 scenes total</li>
-<li>[ ] All scenes have narration</li>
-<li>[ ] Placeholder graphics visible</li>
-<li>[ ] Audio sync works</li>
-</ul>
-
-<h3 id="animation-4-authentication-option-2">Animation 4: Authentication Option 2</h3>
-<pre><code class="language-bash">open src/authentication-option2/index.html</code></pre>
-<ul>
-<li>[ ] 11 scenes total</li>
-<li>[ ] Scene transitions smooth</li>
-<li>[ ] Controls work properly</li>
-</ul>
-
-<h3 id="animation-5-direct-routing">Animation 5: Direct Routing</h3>
-<pre><code class="language-bash">open src/direct-routing/index.html</code></pre>
-<ul>
-<li>[ ] 12 scenes total</li>
-<li>[ ] Narration appropriate length</li>
-<li>[ ] No overlaps</li>
-</ul>
-
-<h3 id="animation-6-emergency-services">Animation 6: Emergency Services</h3>
-<pre><code class="language-bash">open src/emergency-services/index.html</code></pre>
-<ul>
-<li>[ ] 9 scenes total</li>
-<li>[ ] Life-saving theme clear</li>
-<li>[ ] Scene flow logical</li>
-</ul>
-
-<h3 id="animation-7-distributed-database">Animation 7: Distributed Database</h3>
-<pre><code class="language-bash">open src/distributed-database/index.html</code></pre>
-<ul>
-<li>[ ] 12 scenes total</li>
-<li>[ ] Technical concepts clear</li>
-<li>[ ] Animations smooth</li>
-</ul>
-
-<h3 id="animation-8-map-architecture">Animation 8: MAP Architecture</h3>
-<pre><code class="language-bash">open src/map-architecture/index.html</code></pre>
-<ul>
-<li>[ ] 11 scenes total</li>
-<li>[ ] Small CP focus clear</li>
-<li>[ ] Professional appearance</li>
-</ul>
-
-<h3 id="animation-9-end-to-end-scenario">Animation 9: End-to-End Scenario</h3>
-<pre><code class="language-bash">open src/end-to-end-scenario/index.html</code></pre>
-<ul>
-<li>[ ] 15 scenes total (longest)</li>
-<li>[ ] Alice & Bob story clear</li>
-<li>[ ] Complete walkthrough</li>
-</ul>
-
-<h2 id="browser-compatibility-test">Browser Compatibility Test</h2>
-
-<h3 id="chrome-edge-recommended">Chrome/Edge (Recommended)</h3>
-<ul>
-<li>[ ] Audio works with Web Speech API</li>
-<li>[ ] All CSS animations smooth</li>
-<li>[ ] D3.js visualizations render</li>
-<li>[ ] No console errors</li>
-</ul>
-
-<h3 id="safari">Safari</h3>
-<ul>
-<li>[ ] Audio works with Web Speech API</li>
-<li>[ ] All features functional</li>
-<li>[ ] Performance acceptable</li>
-</ul>
-
-<h3 id="firefox">Firefox</h3>
-<ul>
-<li>[ ] Falls back to timer mode (no audio)</li>
-<li>[ ] Visual elements work correctly</li>
-<li>[ ] Controls functional</li>
-</ul>
-
-<h2 id="common-issues">Common Issues</h2>
-
-<h3 id="audio-not-playing">Audio Not Playing</h3>
-<p><strong>Symptom</strong>: No narration, but timer advances scenes</p>
-<p><strong>Cause</strong>: Browser doesn't support Web Speech API (Firefox) or permissions</p>
-<p><strong>Solution</strong>: Normal behavior for Firefox, use timer mode</p>
-
-<h3 id="overlapping-elements">Overlapping Elements</h3>
-<p><strong>Symptom</strong>: Graphics cover narration text or controls</p>
-<p><strong>Cause</strong>: Browser window too small or zoom level incorrect</p>
-<p><strong>Solution</strong>:</p>
-<ul>
-<li>Ensure window is at least 1000px wide</li>
-<li>Reset zoom to 100% (Cmd/Ctrl + 0)</li>
-<li>Try full screen (F11)</li>
-</ul>
-
-<h3 id="animations-not-smooth">Animations Not Smooth</h3>
-<p><strong>Symptom</strong>: Choppy or slow animations</p>
-<p><strong>Cause</strong>: Browser resources limited</p>
-<p><strong>Solution</strong>:</p>
-<ul>
-<li>Close other tabs</li>
-<li>Disable browser extensions</li>
-<li>Try different browser</li>
-</ul>
-
-<h3 id="layout-issues">Layout Issues</h3>
-<p><strong>Symptom</strong>: Elements misaligned</p>
-<p><strong>Cause</strong>: Old browser or non-standard rendering</p>
-<p><strong>Solution</strong>: Use modern browser (Chrome 90+, Safari 14+, Edge 90+)</p>
-
-<h2 id="quick-console-check">Quick Console Check</h2>
-
-<p>Open DevTools (F12) and check Console:</p>
-
-<h3 id="expected-no-errors">Expected (No Errors)</h3>
-<pre><code class="language-">✓ No error messages
-<p>✓ May see info about speech synthesis</p>
-<p>✓ May see D3.js loading messages</code></pre></p>
-
-<h3 id="unexpected-fix-required">Unexpected (Fix Required)</h3>
-<pre><code class="language-">✗ Red error messages
-<p>✗ Failed to load resources</p>
-<p>✗ JavaScript errors</code></pre></p>
-
-<h2 id="performance-benchmarks">Performance Benchmarks</h2>
-
-<p>Expected performance on modern hardware:</p>
-
-<p>| Metric | Expected | Issue If |</p>
-<p>|--------|----------|----------|</p>
-<p>| Page load | < 1 second | > 3 seconds |</p>
-<p>| Scene transition | Instant | > 500ms delay |</p>
-<p>| Audio latency | < 100ms | > 500ms |</p>
-<p>| Animation FPS | 60 fps | < 30 fps |</p>
-
-<h2 id="file-integrity-check">File Integrity Check</h2>
-
-<p>Verify all required files exist:</p>
-
-<pre><code class="language-bash">cd /Users/nholland/Projects/Claude/PSTN2/animations
-
-<p>&lt;h1 id=&quot;should-return-9&quot;&gt;Should return 9&lt;/h1&gt;</p>
-<p>find src -name &quot;index.html&quot; | wc -l</p>
-
-<p>&lt;h1 id=&quot;should-return-9&quot;&gt;Should return 9&lt;/h1&gt;</p>
-<p>find src -name &quot;animation.js&quot; | wc -l</p>
-
-<p>&lt;h1 id=&quot;should-return-9&quot;&gt;Should return 9&lt;/h1&gt;</p>
-<p>find src -name &quot;styles.css&quot; | wc -l</p>
-
-<p>&lt;h1 id=&quot;should-return-9&quot;&gt;Should return 9&lt;/h1&gt;</p>
-<p>find src -name &quot;README.md&quot; | wc -l</code></pre></p>
-
-<p>Expected output: <code>9</code> for each command</p>
-
-<h2 id="launcher-script-test">Launcher Script Test</h2>
-
-<pre><code class="language-bash">cd /Users/nholland/Projects/Claude/PSTN2/animations
-
-<p>&lt;h1 id=&quot;list-animations&quot;&gt;List animations&lt;/h1&gt;</p>
-<p>./open_animation.sh</p>
-
-<p>&lt;h1 id=&quot;expected-output&quot;&gt;Expected output:&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;pstn2-animation-launcher&quot;&gt;PSTN2 Animation Launcher&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;&quot;&gt;========================&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;available-animations&quot;&gt;# Available animations:&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;1-problem-statement-8-scenes&quot;&gt;1. Problem Statement (8 scenes)&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;2-solution-overview-12-scenes&quot;&gt;2. Solution Overview (12 scenes)&lt;/h1&gt;</p>
-<p>&lt;h1 id=&quot;&quot;&gt;...&lt;/h1&gt;</code></pre></p>
-
-<p>Test opening an animation:</p>
-<pre><code class="language-bash">./open_animation.sh 1
-<p>&lt;h1 id=&quot;should-open-problem-statement-in-browser&quot;&gt;Should open Problem Statement in browser&lt;/h1&gt;</code></pre></p>
-
-<h2 id="documentation-test">Documentation Test</h2>
-
-<p>Verify documentation files exist and are readable:</p>
-
-<ul>
-<li>[ ] README.md - Main documentation</li>
-<li>[ ] DELIVERY_COMPLETE.md - Delivery report</li>
-<li>[ ] COMPLETION_SUMMARY.md - This summary</li>
-<li>[ ] ANIMATION<em>GENERATION</em>GUIDE.md - Dev guide</li>
-<li>[ ] ANIMATIONS<em>FINAL</em>STATUS.md - Status tracking</li>
-<li>[ ] TESTING_CHECKLIST.md - This file</li>
-</ul>
-
-<h2 id="final-verification">Final Verification</h2>
-
-<h3 id="all-animations-load">All Animations Load</h3>
-<pre><code class="language-bash">&lt;h1 id=&quot;run-this-to-verify-all-html-files-are-valid&quot;&gt;Run this to verify all HTML files are valid&lt;/h1&gt;
-<p>for dir in problem-statement solution-overview authentication-option1 authentication-option2 direct-routing emergency-services distributed-database map-architecture end-to-end-scenario; do</p>
-<p>    echo -n &quot;Checking $dir... &quot;</p>
-<p>    if [ -f &quot;src/$dir/index.html&quot; ] &amp;&amp; [ -f &quot;src/$dir/animation.js&quot; ] &amp;&amp; [ -f &quot;src/$dir/styles.css&quot; ]; then</p>
-<p>        echo &quot;✓&quot;</p>
-<p>    else</p>
-<p>        echo &quot;✗ MISSING FILES&quot;</p>
-<p>    fi</p>
-<p>done</code></pre></p>
-
-<p>Expected: All lines show <code>✓</code></p>
-
-<h3 id="line-count-verification">Line Count Verification</h3>
-<pre><code class="language-bash">&lt;h1 id=&quot;total-lines-of-code&quot;&gt;Total lines of code&lt;/h1&gt;
-<p>find src -name &quot;<em>.html&quot; -o -name &quot;</em>.js&quot; -o -name &quot;*.css&quot; | xargs wc -l | tail -1</code></pre></p>
-
-<p>Expected: ~12,000+ lines</p>
-
-<h2 id="sign-off">Sign-Off</h2>
-
-<p>Once all checks pass, the animations are ready for:</p>
-
-<ul>
-<li>✅ Production use</li>
-<li>✅ Client demonstrations</li>
-<li>✅ Team presentations</li>
-<li>✅ Conference talks</li>
-<li>✅ Documentation embedding</li>
-<li>✅ Marketing materials</li>
-</ul>
-
-<p>---</p>
-
-<strong>Test Date</strong>: <strong><em></strong><strong></em></strong><strong>_</strong>
-<strong>Tested By</strong>: <strong><em></strong><strong></em></strong><strong>_</strong>
-<strong>Browser</strong>: <strong><em></strong><strong></em></strong><strong>_</strong>
-<strong>OS</strong>: <strong><em></strong><strong></em></strong><strong>_</strong>
-<p><strong>Result</strong>: ❏ PASS  ❏ FAIL</p>
-
-<p><strong>Notes</strong>:</p>
-<strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong>_</strong>
-<strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong>_</strong>
-<strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong><em></strong><strong></em></strong><strong>_</strong>
-
     </main>
 
     <footer class="doc-footer">
