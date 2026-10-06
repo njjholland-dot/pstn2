@@ -1,0 +1,124 @@
+{
+  "deck": "direct-routing",
+  "title": "Direct Routing",
+  "titleHtml": "Direct <span>routing</span>",
+  "kicker": "Technical deep dive",
+  "subtitle": "How PSTN2 connects providers peer to peer: lower cost, lower latency, better quality and encryption by default.",
+  "endNote": "Next: how PSTN2 gives emergency services a caller’s location in real time.",
+  "scenes": [
+    {
+      "id": "transit",
+      "title": "The transit problem",
+      "segments": [
+        { "id": "a", "text": "Today, a call between two providers often crosses several transit networks on the way." },
+        { "id": "b", "text": "Every hop adds cost, adds delay, and adds another point of failure." },
+        { "id": "c", "text": "Transit providers charge for carrying the traffic. So calls end up slower, and more expensive, than they need to be." }
+      ]
+    },
+    {
+      "id": "direct",
+      "title": "Connect directly",
+      "segments": [
+        { "id": "a", "text": "PSTN2 lets providers connect directly, cutting out the middlemen." },
+        { "id": "b", "text": "When an Alpha Telecom customer calls a Bravo Networks customer, the two providers set up a direct media connection." },
+        { "id": "c", "text": "No transit providers. No extra hops. Just source to destination." }
+      ]
+    },
+    {
+      "id": "discovery",
+      "title": "Finding the other provider",
+      "segments": [
+        { "id": "a", "text": "So how does Alpha find Bravo? With PSTN2 number discovery. The customer has dialled 0113 496 0456." },
+        { "id": "b", "text": "Alpha checks its cache. There is no entry, so it looks the number up in its own copy of Ofcom’s S1 to S9 numbering lists." },
+        { "id": "c", "text": "The list names Charlie Comms as the Range Holder, with its PSTN2 address. Charlie replies: this number has been ported to Bravo." },
+        { "id": "d", "text": "Alpha follows the redirect, and Bravo answers: held. Alpha caches the answer, so next time it goes straight to Bravo." },
+        { "id": "e", "text": "Now Alpha sends Bravo a routing request. Bravo replies with the address and port for a direct SIP invite." }
+      ]
+    },
+    {
+      "id": "cost",
+      "title": "Lower cost",
+      "segments": [
+        { "id": "a", "text": "Direct routing removes transit fees." },
+        { "id": "b", "text": "That could cut per-minute costs by as much as seventy-five percent." },
+        { "id": "c", "text": "For high-volume carriers, that means millions saved every year. For consumers, it means lower prices." },
+        { "id": "d", "text": "And the savings begin with the very first direct call." }
+      ]
+    },
+    {
+      "id": "latency",
+      "title": "Lower latency",
+      "segments": [
+        { "id": "a", "text": "Removing transit hops cuts latency by seventy-five percent or more." },
+        { "id": "b", "text": "A traditional call might cross five to seven hops. A direct call uses one." },
+        { "id": "c", "text": "Lower latency means better call quality, especially for live conversation and video calls." }
+      ]
+    },
+    {
+      "id": "keys",
+      "title": "Exchanging encryption keys",
+      "segments": [
+        { "id": "a", "text": "During call setup, the two providers exchange identity keys, inside the signed routing request and response." },
+        { "id": "b", "text": "Then a DTLS handshake between the media endpoints creates fresh SRTP keys, unique to this call." },
+        { "id": "c", "text": "The identity keys prove that each side of the handshake is genuine. The media keys themselves never cross the network." },
+        { "id": "d", "text": "From then on, all voice and video is encrypted end to end between the providers." }
+      ]
+    },
+    {
+      "id": "media",
+      "title": "A secure media path",
+      "segments": [
+        { "id": "a", "text": "With direct routing and encryption, media never crosses an untrusted network unprotected." },
+        { "id": "b", "text": "There is no transit provider in the path, so nobody in the middle can listen in." },
+        { "id": "c", "text": "Lawful interception remains possible, but only with the providers’ cooperation, under proper legal authority." },
+        { "id": "d", "text": "Customers get privacy by default, not as an optional extra." }
+      ]
+    },
+    {
+      "id": "quality",
+      "title": "Quality of service",
+      "segments": [
+        { "id": "a", "text": "Direct connections give providers better control over call quality." },
+        { "id": "b", "text": "They negotiate codecs, bandwidth and quality directly, in the routing request." },
+        { "id": "c", "text": "No transit network imposes the lowest common denominator, so HD voice and video can become standard." }
+      ]
+    },
+    {
+      "id": "network",
+      "title": "Network effects",
+      "segments": [
+        { "id": "a", "text": "As more providers adopt PSTN2, the benefits multiply." },
+        { "id": "b", "text": "Ten providers can use ninety direct routes, counting each direction between every pair." },
+        { "id": "c", "text": "A hundred providers can use nearly ten thousand." },
+        { "id": "d", "text": "Every new participant makes the whole network more valuable." }
+      ]
+    },
+    {
+      "id": "fallback",
+      "title": "Fallback to today’s network",
+      "segments": [
+        { "id": "a", "text": "If a provider does not support PSTN2, the call falls back to traditional routing, automatically." },
+        { "id": "b", "text": "There is no failure mode, and callers notice nothing." },
+        { "id": "c", "text": "But when both sides support PSTN2, they get every benefit: lower cost, lower latency, better quality and end-to-end encryption." }
+      ]
+    },
+    {
+      "id": "peering",
+      "title": "Peering made simple",
+      "segments": [
+        { "id": "a", "text": "Providers can agree formal peering for direct routing, much like peering on the internet." },
+        { "id": "b", "text": "An agreement can set the technical details, service levels, and any settlement rates." },
+        { "id": "c", "text": "But unlike traditional telecom interconnects, PSTN2 makes peering easy to set up, and automated to run." }
+      ]
+    },
+    {
+      "id": "geography",
+      "title": "Geographic optimisation",
+      "segments": [
+        { "id": "a", "text": "Direct routing also allows geographic optimisation." },
+        { "id": "b", "text": "If Alpha and Bravo both have equipment in London, their London calls can be connected in London, even if their headquarters are elsewhere." },
+        { "id": "c", "text": "That cuts long-distance and international transit costs, and improves call quality." }
+      ]
+    }
+  ]
+}

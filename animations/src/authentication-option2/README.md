@@ -1,44 +1,29 @@
-# PSTN2 Authentication Option 2: Token Pool Animation
+# Authentication: Token Pool
 
-**Status**: Complete ✅
-**Duration**: ~2 minutes (11 scenes)
-**Format**: Interactive web-based animation
+How providers verify calls with 30-second tokens: the originating provider creates a token (`POST /pstn2/v1/auth/tokens`), its ID travels in the SIP INVITE, and the receiving provider checks it with one `GET` (SPECIFICATION.md §5.2).
 
-## Overview
+Runs on the shared PSTN2 broadcast player (`../../shared/`, see its README).
+11 scenes, about 4.1 minutes of pre-rendered UK narration.
 
-Authentication Option 2: Token Pool - Part of the PSTN2 animation suite.
+## Files
 
-## How to View
-
-```bash
-cd /Users/nholland/Projects/Claude/PSTN2/animations/src/authentication-option2
-open index.html
-```
-
-## Features
-
-- 11 fully animated scenes
-- Text-to-speech narration with speech-driven timing
-- Interactive controls (prev/next/play/audio toggle)
-- Keyboard navigation
-- Progress tracking
-- Responsive design
+- `narration.json` — the script (captions and voice)
+- `scenes.js` — the animated diagrams, cued to the narration
+- `deck.css` — deck-specific styles
+- `audio/` — generated: `node tools/narrate/build-narration.mjs authentication-option2`
 
 ## Scenes
 
-1. Alternative Approach (13s)
-2. How Token Pools Work (13s)
-3. Token Verification (12s)
-4. Governance Model (12s)
-5. Scalability Benefits (13s)
-6. Redundancy and Reliability (11s)
-7. Security Model (12s)
-8. Small CP Benefits (13s)
-9. Hybrid Deployment (13s)
-10. Trade-offs (12s)
-11. Implementation Path (13s)
+1. A second way to verify (22 s)
+2. Creating a token (29 s)
+3. Checking the token (29 s)
+4. Governing a shared pool (22 s)
+5. Built for volume (25 s)
+6. No single pool to fail (18 s)
+7. Security model (21 s)
+8. Simpler for small providers (19 s)
+9. Both options, side by side (24 s)
+10. The trade-offs (18 s)
+11. Open to every provider (19 s)
 
----
-
-**Created**: 2025-11-28
-**Based on**: PSTN2 storyboards
+View: `index.html` (add `?capture=1` for QA, `#3` to start at scene 3).

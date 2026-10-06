@@ -1,0 +1,316 @@
+{
+ "deck": "direct-routing",
+ "voice": "Daniel (English (UK))",
+ "rate": 172,
+ "generated": "2026-10-06T12:03:29.693Z",
+ "loudness": "-16 LUFS / -1.5 dBTP",
+ "scenes": {
+  "transit": {
+   "file": "transit.mp3",
+   "duration": 19.38,
+   "voice": "Daniel (English (UK))",
+   "sig": "7b0a7be782a284cc",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.926
+    },
+    {
+     "id": "b",
+     "start": 6.376,
+     "end": 10.66
+    },
+    {
+     "id": "c",
+     "start": 11.11,
+     "end": 18.48
+    }
+   ]
+  },
+  "direct": {
+   "file": "direct.mp3",
+   "duration": 18.976,
+   "voice": "Daniel (English (UK))",
+   "sig": "2256aa9a6d4c918f",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.333
+    },
+    {
+     "id": "b",
+     "start": 5.783,
+     "end": 12.716
+    },
+    {
+     "id": "c",
+     "start": 13.166,
+     "end": 18.076
+    }
+   ]
+  },
+  "discovery": {
+   "file": "discovery.mp3",
+   "duration": 44.978,
+   "voice": "Daniel (English (UK))",
+   "sig": "6b28a332d5fd1cd4",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 10.837
+    },
+    {
+     "id": "b",
+     "start": 11.287,
+     "end": 19.213
+    },
+    {
+     "id": "c",
+     "start": 19.663,
+     "end": 28.294
+    },
+    {
+     "id": "d",
+     "start": 28.744,
+     "end": 37.081
+    },
+    {
+     "id": "e",
+     "start": 37.531,
+     "end": 44.078
+    }
+   ]
+  },
+  "cost": {
+   "file": "cost.mp3",
+   "duration": 18.713,
+   "voice": "Daniel (English (UK))",
+   "sig": "00a58719e2189e70",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 3.017
+    },
+    {
+     "id": "b",
+     "start": 3.467,
+     "end": 7.31
+    },
+    {
+     "id": "c",
+     "start": 7.76,
+     "end": 14.343
+    },
+    {
+     "id": "d",
+     "start": 14.793,
+     "end": 17.813
+    }
+   ]
+  },
+  "latency": {
+   "file": "latency.mp3",
+   "duration": 17.416,
+   "voice": "Daniel (English (UK))",
+   "sig": "6a9a0f1027ef7bc9",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.973
+    },
+    {
+     "id": "b",
+     "start": 5.423,
+     "end": 10.352
+    },
+    {
+     "id": "c",
+     "start": 10.802,
+     "end": 16.516
+    }
+   ]
+  },
+  "keys": {
+   "file": "keys.mp3",
+   "duration": 27.967,
+   "voice": "Daniel (English (UK))",
+   "sig": "f0fc18883ebdf132",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 7.659
+    },
+    {
+     "id": "b",
+     "start": 8.109,
+     "end": 14.845
+    },
+    {
+     "id": "c",
+     "start": 15.295,
+     "end": 22.02
+    },
+    {
+     "id": "d",
+     "start": 22.47,
+     "end": 27.067
+    }
+   ]
+  },
+  "media": {
+   "file": "media.mp3",
+   "duration": 23.398,
+   "voice": "Daniel (English (UK))",
+   "sig": "72fc6a3e902ad2dc",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.995
+    },
+    {
+     "id": "b",
+     "start": 6.445,
+     "end": 11.16
+    },
+    {
+     "id": "c",
+     "start": 11.61,
+     "end": 18.108
+    },
+    {
+     "id": "d",
+     "start": 18.558,
+     "end": 22.498
+    }
+   ]
+  },
+  "quality": {
+   "file": "quality.mp3",
+   "duration": 18.1,
+   "voice": "Daniel (English (UK))",
+   "sig": "b7dceda46bb7b4ef",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.509
+    },
+    {
+     "id": "b",
+     "start": 4.959,
+     "end": 10.19
+    },
+    {
+     "id": "c",
+     "start": 10.64,
+     "end": 17.2
+    }
+   ]
+  },
+  "network": {
+   "file": "network.mp3",
+   "duration": 18.741,
+   "voice": "Daniel (English (UK))",
+   "sig": "9a3f5045c3e763ba",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.932
+    },
+    {
+     "id": "b",
+     "start": 5.382,
+     "end": 10.785
+    },
+    {
+     "id": "c",
+     "start": 11.235,
+     "end": 14.051
+    },
+    {
+     "id": "d",
+     "start": 14.501,
+     "end": 17.841
+    }
+   ]
+  },
+  "fallback": {
+   "file": "fallback.mp3",
+   "duration": 21.189,
+   "voice": "Daniel (English (UK))",
+   "sig": "b81616bb1254077b",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 7.319
+    },
+    {
+     "id": "b",
+     "start": 7.769,
+     "end": 10.873
+    },
+    {
+     "id": "c",
+     "start": 11.323,
+     "end": 20.289
+    }
+   ]
+  },
+  "peering": {
+   "file": "peering.mp3",
+   "duration": 20.207,
+   "voice": "Daniel (English (UK))",
+   "sig": "d913b92b4354198c",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.654
+    },
+    {
+     "id": "b",
+     "start": 6.104,
+     "end": 11.792
+    },
+    {
+     "id": "c",
+     "start": 12.242,
+     "end": 19.307
+    }
+   ]
+  },
+  "geography": {
+   "file": "geography.mp3",
+   "duration": 18.835,
+   "voice": "Daniel (English (UK))",
+   "sig": "f6652f236a22d5c1",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.029
+    },
+    {
+     "id": "b",
+     "start": 4.479,
+     "end": 12.285
+    },
+    {
+     "id": "c",
+     "start": 12.735,
+     "end": 17.935
+    }
+   ]
+  }
+ },
+ "phrases": {}
+}

@@ -3,141 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSTN2 - Authentication Option 1: Direct Query</title>
-    <meta name="description" content="Animated walkthrough of PSTN2 authentication option 1: real-time direct query between communication providers to verify that a call genuinely originated where it claims.">
+    <title>Authentication: Direct Query | PSTN2</title>
+    <meta name="description" content="How PSTN2 verifies a caller ID in real time by asking the caller’s own provider, found through Ofcom’s numbering lists, with signed answers in under 100 ms.">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/pstn2-player.css">
+    <link rel="stylesheet" href="deck.css">
+    <script src="../../shared/vendor/d3.v7.9.0.min.js"></script>
+    <script type="module" src="scenes.js"></script>
 </head>
 <body>
-    <div class="animation-container">
-        <!-- Scene 1: The Problem -->
-        <div class="scene" id="scene-1">
-            <h1 class="scene-title">The Problem</h1>
-            <div class="visual-content">
-                <svg id="scene-1-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Today's PSTN has no reliable way to verify who's really calling. Caller ID can be trivially spoofed. Anyone can claim to be anyone. This enables fraud on a massive scale.">
-                Today's PSTN has no reliable way to verify who's really calling. Caller ID can be trivially spoofed. Anyone can claim to be anyone. This enables fraud on a massive scale.
-            </div>
-        </div>
-
-        <!-- Scene 2: PSTN2 Authentication -->
-        <div class="scene" id="scene-2" style="display: none;">
-            <h1 class="scene-title">PSTN2 Authentication</h1>
-            <div class="visual-content">
-                <svg id="scene-2-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="PSTN2 provides real-time authentication through direct queries. When CP1 receives a call claiming to be from a number at CP2, CP1 can ask CP2 directly: did you originate this call? CP2 responds definitively within 100 milliseconds.">
-                PSTN2 provides real-time authentication through direct queries. When CP1 receives a call claiming to be from a number at CP2, CP1 can ask CP2 directly: did you originate this call? CP2 responds definitively within 100 milliseconds.
-            </div>
-        </div>
-
-        <!-- Scene 3: The Query Flow -->
-        <div class="scene" id="scene-3" style="display: none;">
-            <h1 class="scene-title">The Query Flow</h1>
-            <div class="visual-content">
-                <svg id="scene-3-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Here's how it works: CP1 sends a query message to CP2 with call details. CP2 checks its recent call records. If the call originated from CP2, they respond with verification. If not, they respond negative. CP1 now knows with certainty.">
-                Here's how it works: CP1 sends a query message to CP2 with call details. CP2 checks its recent call records. If the call originated from CP2, they respond with verification. If not, they respond negative. CP1 now knows with certainty.
-            </div>
-        </div>
-
-        <!-- Scene 4: Porting Chain Resolution -->
-        <div class="scene" id="scene-4" style="display: none;">
-            <h1 class="scene-title">Porting Chain Resolution</h1>
-            <div class="visual-content">
-                <svg id="scene-4-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Number porting is handled automatically. If a number has been ported from CP2 to CP3, the query follows the chain. CP2 responds ported to CP3. CP1 queries CP3. CP3 confirms or denies origination. The chain is followed transparently.">
-                Number porting is handled automatically. If a number has been ported from CP2 to CP3, the query follows the chain. CP2 responds ported to CP3. CP1 queries CP3. CP3 confirms or denies origination. The chain is followed transparently.
-            </div>
-        </div>
-
-        <!-- Scene 5: Response Time -->
-        <div class="scene" id="scene-5" style="display: none;">
-            <h1 class="scene-title">Response Time</h1>
-            <div class="visual-content">
-                <svg id="scene-5-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Authentication happens in real-time, typically under 100 milliseconds. This is fast enough to happen during call setup without any noticeable delay. The user experience is seamless.">
-                Authentication happens in real-time, typically under 100 milliseconds. This is fast enough to happen during call setup without any noticeable delay. The user experience is seamless.
-            </div>
-        </div>
-
-        <!-- Scene 6: Fraud Prevention -->
-        <div class="scene" id="scene-6" style="display: none;">
-            <h1 class="scene-title">Fraud Prevention</h1>
-            <div class="visual-content">
-                <svg id="scene-6-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="With direct query authentication, spoofing becomes impossible. If a fraudster tries to fake caller ID, the originating CP will respond negative verification. The call can be rejected or marked as suspicious before the victim even hears it ring.">
-                With direct query authentication, spoofing becomes impossible. If a fraudster tries to fake caller ID, the originating CP will respond negative verification. The call can be rejected or marked as suspicious before the victim even hears it ring.
-            </div>
-        </div>
-
-        <!-- Scene 7: STIR SHAKEN Comparison -->
-        <div class="scene" id="scene-7" style="display: none;">
-            <h1 class="scene-title">STIR SHAKEN Comparison</h1>
-            <div class="visual-content">
-                <svg id="scene-7-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Unlike STIR SHAKEN which only provides attestation levels, PSTN2 provides definitive answers. STIR SHAKEN says how confident the carrier is. PSTN2 says yes or no. STIR SHAKEN requires certificates and complex infrastructure. PSTN2 uses direct messaging.">
-                Unlike STIR SHAKEN which only provides attestation levels, PSTN2 provides definitive answers. STIR SHAKEN says how confident the carrier is. PSTN2 says yes or no. STIR SHAKEN requires certificates and complex infrastructure. PSTN2 uses direct messaging.
-            </div>
-        </div>
-
-        <!-- Scene 8: Security Considerations -->
-        <div class="scene" id="scene-8" style="display: none;">
-            <h1 class="scene-title">Security Considerations</h1>
-            <div class="visual-content">
-                <svg id="scene-8-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="All authentication queries use TLS encryption. Messages are signed to prevent tampering. Rate limiting prevents abuse. Failed authentication attempts are logged. The system is designed to be resilient against attacks.">
-                All authentication queries use TLS encryption. Messages are signed to prevent tampering. Rate limiting prevents abuse. Failed authentication attempts are logged. The system is designed to be resilient against attacks.
-            </div>
-        </div>
-
-        <!-- Scene 9: Implementation -->
-        <div class="scene" id="scene-9" style="display: none;">
-            <h1 class="scene-title">Implementation</h1>
-            <div class="visual-content">
-                <svg id="scene-9-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="CPs implement a simple API endpoint for authentication queries. The endpoint checks recent originations and responds. No central database needed. No complex certificate management. Just direct queries between CPs who already know each other.">
-                CPs implement a simple API endpoint for authentication queries. The endpoint checks recent originations and responds. No central database needed. No complex certificate management. Just direct queries between CPs who already know each other.
-            </div>
-        </div>
-
-        <!-- Scene 10: Impact -->
-        <div class="scene" id="scene-10" style="display: none;">
-            <h1 class="scene-title">Impact</h1>
-            <div class="visual-content">
-                <svg id="scene-10-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="With PSTN2 authentication deployed across major carriers, fraud rates could drop by 80% or more. Victims would be protected. Fraudsters would be stopped. Trust in phone calls would be restored. All with technology available today.">
-                With PSTN2 authentication deployed across major carriers, fraud rates could drop by 80% or more. Victims would be protected. Fraudsters would be stopped. Trust in phone calls would be restored. All with technology available today.
-            </div>
-        </div>
-
-        <!-- Navigation Controls -->
-        <div class="controls">
-            <button id="prev-btn" class="control-btn">← Previous</button>
-            <div class="scene-indicator">
-                <span id="current-scene">1</span> / <span id="total-scenes">10</span>
-            </div>
-            <button id="next-btn" class="control-btn">Next →</button>
-            <button id="play-btn" class="control-btn primary">▶ Play</button>
-            <button id="audio-btn" class="control-btn">🔊 Audio On</button>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill"></div>
-        </div>
-    </div>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="animation.js"></script>
+    <noscript>This presentation needs JavaScript. The script is in <a href="narration.json">narration.json</a>.</noscript>
 </body>
 </html>

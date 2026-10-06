@@ -1,0 +1,118 @@
+{
+  "deck": "authentication-option2",
+  "title": "Authentication: Token Pool",
+  "titleHtml": "Authentication: <span>token pool</span>",
+  "kicker": "Technical deep dive",
+  "subtitle": "How providers verify calls with short-lived tokens, and when a token pool is the better choice.",
+  "endNote": "Next: direct routing, connecting providers peer to peer.",
+  "scenes": [
+    {
+      "id": "alternative",
+      "title": "A second way to verify",
+      "segments": [
+        { "id": "a", "text": "Option one, direct query, asks the caller’s provider about every single call." },
+        { "id": "b", "text": "Option two, the token pool, is the alternative." },
+        { "id": "c", "text": "Before placing a call, the originating provider puts a short-lived token into a pool." },
+        { "id": "d", "text": "The receiving provider checks the pool to verify the call, instead of querying the originator directly." }
+      ]
+    },
+    {
+      "id": "create",
+      "title": "Creating a token",
+      "segments": [
+        { "id": "a", "text": "A customer of Alpha Telecom calls 0161 496 0123. Before it sends the call, Alpha creates a token." },
+        { "id": "b", "text": "The token is unique, and it is valid for just thirty seconds." },
+        { "id": "c", "text": "Alpha records the call details against it: the caller, the number called and a call reference. The request is signed." },
+        { "id": "d", "text": "The token goes into the pool, and its ID travels with the call itself, inside the SIP invite." }
+      ]
+    },
+    {
+      "id": "verify",
+      "title": "Checking the token",
+      "segments": [
+        { "id": "a", "text": "Bravo Networks receives the call, with the token ID in the invite." },
+        { "id": "b", "text": "It looks the token up in the pool, with one simple GET request." },
+        { "id": "c", "text": "The details match the call in front of it: the same caller, the same number, and still in date. Verified." },
+        { "id": "d", "text": "If there is no matching token, or it has expired, the call fails verification." },
+        { "id": "e", "text": "Thirty seconds after it was created, the token expires, so a captured token is soon worthless." }
+      ]
+    },
+    {
+      "id": "governance",
+      "title": "Governing a shared pool",
+      "segments": [
+        { "id": "a", "text": "A pool shared between providers needs governance." },
+        { "id": "b", "text": "A trusted body, such as a consortium of providers, runs the pool infrastructure." },
+        { "id": "c", "text": "It sets the rules: the token format, how long tokens last, and who may read and write them." },
+        { "id": "d", "text": "That creates accountability, while the data itself stays short-lived and spread across pools." }
+      ]
+    },
+    {
+      "id": "scale",
+      "title": "Built for volume",
+      "segments": [
+        { "id": "a", "text": "Token pools can scale better than direct queries, especially for small providers with high call volumes." },
+        { "id": "b", "text": "With direct query, a provider must run an authentication API that answers every incoming question." },
+        { "id": "c", "text": "With a token pool, a small provider simply writes to the pool, and reads from it." },
+        { "id": "d", "text": "The infrastructure is shared, so each provider carries less of the burden." }
+      ]
+    },
+    {
+      "id": "redundancy",
+      "title": "No single pool to fail",
+      "segments": [
+        { "id": "a", "text": "Several pool servers provide redundancy." },
+        { "id": "b", "text": "A provider can write each token to more than one pool at the same time." },
+        { "id": "c", "text": "So if one pool becomes unavailable, the others carry on, and the token can still be checked." },
+        { "id": "d", "text": "Verification stays available, even during a failure." }
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Security model",
+      "segments": [
+        { "id": "a", "text": "Token requests are signed with Ed25519 and carried over TLS 1.3, so tokens cannot be forged." },
+        { "id": "b", "text": "Only authenticated providers can reach a pool. Everyone else is shut out." },
+        { "id": "c", "text": "Rate limits stop anyone flooding the pool." },
+        { "id": "d", "text": "And every access is logged, giving a full audit trail." }
+      ]
+    },
+    {
+      "id": "small",
+      "title": "Simpler for small providers",
+      "segments": [
+        { "id": "a", "text": "Small providers benefit the most from token pools." },
+        { "id": "b", "text": "They need no authentication infrastructure of their own, and no service to answer incoming queries." },
+        { "id": "c", "text": "They just integrate with the pool API: one call to create a token, and one to check it. That is simpler, and cheaper, to build." }
+      ]
+    },
+    {
+      "id": "hybrid",
+      "title": "Both options, side by side",
+      "segments": [
+        { "id": "a", "text": "The two options can coexist." },
+        { "id": "b", "text": "Large providers may prefer direct query, for full control. Small providers may prefer the token pool, for simplicity." },
+        { "id": "c", "text": "The receiving provider can check both: the token pool first, then a direct query if there is no token." },
+        { "id": "d", "text": "And if neither is available, the call simply carries on over today’s network." }
+      ]
+    },
+    {
+      "id": "tradeoffs",
+      "title": "The trade-offs",
+      "segments": [
+        { "id": "a", "text": "A shared pool adds governance, and a shared component, which direct query avoids." },
+        { "id": "b", "text": "In return, it can scale better for high-volume traffic." },
+        { "id": "c", "text": "The right choice depends on a provider’s size, its call volume, and whether it values control or simplicity." }
+      ]
+    },
+    {
+      "id": "path",
+      "title": "Open to every provider",
+      "segments": [
+        { "id": "a", "text": "Token pools could be run by industry groups, by regulators, or by commercial operators." },
+        { "id": "b", "text": "What matters is neutrality, and open access." },
+        { "id": "c", "text": "Any qualified provider should be able to take part, putting strong caller authentication within reach of every provider, large or small." }
+      ]
+    }
+  ]
+}
