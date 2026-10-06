@@ -1,0 +1,18 @@
+{
+  "description": "Short voice lines for the harness's interactive mode. Rendered to audio/phrases/<id>.mp3 by tools/narrate/build-narration.mjs.",
+  "phrases": [
+    { "id": "cache-miss", "text": "Not in the cache." },
+    { "id": "cache-hit", "text": "Found in the cache. Going direct." },
+    { "id": "list", "text": "Checking the numbering list." },
+    { "id": "query", "text": "Asking the provider." },
+    { "id": "redirect", "text": "Redirect. The number has been ported." },
+    { "id": "held", "text": "Held. Answer cached." },
+    { "id": "not-held", "text": "Not held. Invalidating the cache." },
+    { "id": "unknown", "text": "Number not in service." },
+    { "id": "not-participating", "text": "This range has no PSTN2 address, so the call uses today’s network." },
+    { "id": "unallocated", "text": "Ofcom has not allocated this number." },
+    { "id": "ported", "text": "Number ported. The databases are updated." },
+    { "id": "reset", "text": "Network reset." },
+    { "id": "error", "text": "Discovery failed, so the call falls back to today’s network." }
+  ]
+}

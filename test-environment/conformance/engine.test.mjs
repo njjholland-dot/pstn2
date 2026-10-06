@@ -129,3 +129,11 @@ test('dummy test CP network resolves every published test number as documented',
     assert.equal(r4.invalidated, true);
     assert.equal(r4.holder.cpId, 'CP1-UK-9001');
 });
+
+test('test harness page uses the canonical fixtures (no drift)', () => {
+    for (const f of ['harness-network.json', 'scenarios.json']) {
+        const page = readFileSync(join(here, '..', '..', 'animations', 'src', 'test-harness', f), 'utf8');
+        const canon = readFileSync(join(here, '..', 'fixtures', f), 'utf8');
+        assert.equal(page, canon, `animations/src/test-harness/${f} differs from test-environment/fixtures/${f} — copy it across`);
+    }
+});

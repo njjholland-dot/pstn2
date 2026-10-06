@@ -1,0 +1,23 @@
+/* Who Has This Number? — deck-specific styles */
+.dd-dial { display: flex; align-items: center; gap: 16px; font-size: 22px; color: var(--ink-3); margin: 2px 0 6px; }
+.dd-dial .pi { color: var(--blue-2); flex: none; }
+.dd-num { font-family: var(--mono); font-size: 38px; font-weight: 700; color: #fff; letter-spacing: 0.02em; min-height: 46px; }
+.dd-section { font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-4); margin-top: 14px; }
+.dd-empty td { color: var(--ink-4) !important; font-style: italic; }
+.dd-big-q { font-size: 112px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.0; }
+.dd-phone { text-align: left; }
+.dd-phone .dd-num { font-size: 60px; min-height: 72px; }
+.dd-newcol { opacity: 0; transition: opacity .8s var(--ease), background .8s var(--ease); }
+.dd-newcol.dd-on { opacity: 1; background: rgba(16, 185, 129, 0.16); color: #fff !important; }
+th.dd-newcol.dd-on { color: var(--green-2) !important; }
+.dd-mono { font-family: var(--mono); }
+.dd-chiprow { display: flex; gap: 18px; }
+.dd-cta { display: flex; align-items: center; gap: 24px; text-decoration: none; color: #fff; }
+.dd-cta small { display: block; font-size: 22px; color: var(--ink-3); margin-top: 6px; font-family: var(--mono); }
+.dd-strike { position: relative; color: var(--ink-4) !important; }
+.dd-strike::after { content: ''; position: absolute; left: -4%; right: -4%; top: 52%; height: 8px; border-radius: 4px; background: var(--red); transform: scaleX(0); transform-origin: left; transition: transform .7s var(--ease); }
+.dd-strike.dd-on::after { transform: scaleX(1); }
+.dd-mover { position: absolute; z-index: 8; transition: left 1.6s var(--ease-in-out), top 1.6s var(--ease-in-out), opacity .4s; }
+.dd-cpnode { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; text-align: center; font-size: 22px; font-weight: 700; background: var(--panel); border: 2px solid var(--c); box-shadow: 0 16px 40px rgba(0,0,0,.35); transition: all .6s var(--ease); }
+.dd-cpnode .pi { color: var(--c); }
+.dd-cpnode.dd-down { border-color: var(--red); opacity: .45; filter: grayscale(1); }

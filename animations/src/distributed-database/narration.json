@@ -1,0 +1,304 @@
+{
+  "deck": "distributed-database",
+  "title": "Who Has This Number?",
+  "titleHtml": "Who has <span>this number?</span>",
+  "kicker": "Distributed Database",
+  "subtitle": "How PSTN2 finds the provider behind any phone number in milliseconds, without a central database.",
+  "endNote": "Watch three providers and Ofcom do this live in the PSTN2 test harness.",
+  "scenes": [
+    {
+      "id": "question",
+      "title": "One question behind every call",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Every phone call starts with a question that most people never think about."
+        },
+        {
+          "id": "b",
+          "text": "Who has this number?"
+        },
+        {
+          "id": "c",
+          "text": "When a customer dials, their provider has to know which provider serves that number today. Only then can it check the caller, route the call directly, and protect it with encryption."
+        },
+        {
+          "id": "d",
+          "text": "Numbers move between providers every day, so the answer keeps changing."
+        },
+        {
+          "id": "e",
+          "text": "This presentation shows how PSTN2 answers that question for every call, in milliseconds, without building a central database."
+        }
+      ]
+    },
+    {
+      "id": "central",
+      "title": "The central database answer",
+      "segments": [
+        {
+          "id": "a",
+          "text": "The traditional answer is a central numbering database: one national system that records where every number lives."
+        },
+        {
+          "id": "b",
+          "text": "Building one is estimated at around two million pounds."
+        },
+        {
+          "id": "c",
+          "text": "That is only the start. Running it, securing it and keeping it in step with every port is estimated at thirty percent of that each year, around six hundred thousand pounds, every year."
+        },
+        {
+          "id": "d",
+          "text": "It also becomes a single point of failure, and a single target. One system holding the map of every number in the country is exactly what an attacker wants."
+        },
+        {
+          "id": "e",
+          "text": "And someone has to own it, fund it and decide who may use it. That needs a new governance body."
+        },
+        {
+          "id": "f",
+          "text": "PSTN2 takes a different approach. The data already exists. It is simply spread across the industry."
+        }
+      ]
+    },
+    {
+      "id": "exists",
+      "title": "The data already exists",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Look at who already knows what."
+        },
+        {
+          "id": "b",
+          "text": "Ofcom allocates blocks of numbers to providers. Its published numbering lists, known as S1 to S9, name the Range Holder for every block."
+        },
+        {
+          "id": "c",
+          "text": "The Range Holder knows which of its numbers have been ported away, and to which provider. It has to, because it still handles calls to its whole block today."
+        },
+        {
+          "id": "d",
+          "text": "And every provider knows the numbers it serves, including the ones ported in from elsewhere."
+        },
+        {
+          "id": "e",
+          "text": "Together, that is the complete answer. Nobody needs to copy it into a central store. We only need a way to ask."
+        }
+      ]
+    },
+    {
+      "id": "field",
+      "title": "One new field on Ofcom’s lists",
+      "segments": [
+        {
+          "id": "a",
+          "text": "To make that data reachable, PSTN2 asks for one small change."
+        },
+        {
+          "id": "b",
+          "text": "Each block in Ofcom’s numbering lists gains one extra field: the Range Holder’s PSTN2 web address."
+        },
+        {
+          "id": "c",
+          "text": "Providers download the lists periodically and keep their own copy, so nobody contacts the regulator during a call."
+        },
+        {
+          "id": "d",
+          "text": "Other bodies can mirror the lists for resilience, while Ofcom remains the single source of truth."
+        },
+        {
+          "id": "e",
+          "text": "That one field is the only shared data the whole system needs."
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "title": "Step 1 · Check the cache",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Let’s follow a call. A customer of Alpha Telecom dials 0161 496 0123."
+        },
+        {
+          "id": "b",
+          "text": "First, Alpha checks its own cache. Has it looked this number up recently?"
+        },
+        {
+          "id": "c",
+          "text": "Every PSTN2 answer can carry an instruction to invalidate the cache. So a cached entry is always a hint that can be corrected, never a cause of misrouted calls."
+        },
+        {
+          "id": "d",
+          "text": "This time the cache has no entry. So Alpha moves on to step two."
+        }
+      ]
+    },
+    {
+      "id": "list",
+      "title": "Step 2 · Find the Range Holder",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Alpha searches its own copy of Ofcom’s numbering list."
+        },
+        {
+          "id": "b",
+          "text": "The longest matching block is 0161 496 0. Ofcom allocated that block to Bravo Networks.",
+          "say": "The longest matching block is oh one six one, four nine six, oh. Ofcom allocated that block to Bravo Networks."
+        },
+        {
+          "id": "c",
+          "text": "And thanks to the new field, the same row gives Alpha Bravo’s PSTN2 address."
+        },
+        {
+          "id": "d",
+          "text": "No central lookup. Just a local search of a public list."
+        }
+      ]
+    },
+    {
+      "id": "unported",
+      "title": "Step 3 · Ask the Range Holder",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Alpha sends Bravo one small request: who has 0161 496 0123?"
+        },
+        {
+          "id": "b",
+          "text": "Bravo checks its own number database. The number is in service with Bravo, and it has never been ported."
+        },
+        {
+          "id": "c",
+          "text": "So Bravo answers: held. The answer is signed with Bravo’s key, so Alpha knows it is genuine."
+        },
+        {
+          "id": "d",
+          "text": "One local search and one query. Alpha now knows exactly where to send the call, typically in well under fifty milliseconds."
+        }
+      ]
+    },
+    {
+      "id": "ported",
+      "title": "Step 4 · Follow the redirect",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Now a harder case. Alpha’s customer dials 0113 496 0456."
+        },
+        {
+          "id": "b",
+          "text": "The numbering list says the Range Holder is Charlie Comms, so Alpha asks Charlie."
+        },
+        {
+          "id": "c",
+          "text": "But this customer moved to Bravo Networks. Charlie knows, because it records every number it ports out."
+        },
+        {
+          "id": "d",
+          "text": "So Charlie replies with a redirect: this number is now with Bravo, and here is Bravo’s address."
+        },
+        {
+          "id": "e",
+          "text": "Alpha asks Bravo, and Bravo answers: held. Two queries, and the answer comes from the provider that actually serves the number."
+        }
+      ]
+    },
+    {
+      "id": "direct",
+      "title": "Step 5 · Cache the answer, go direct",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Alpha stores the answer in its cache, against that single number."
+        },
+        {
+          "id": "b",
+          "text": "Never against the whole block, because numbers are ported one at a time."
+        },
+        {
+          "id": "c",
+          "text": "The next time anyone at Alpha calls 0113 496 0456, Alpha skips the list and the Range Holder, and goes straight to Bravo. One query."
+        },
+        {
+          "id": "d",
+          "text": "The numbers people call most end up answered almost entirely from cache."
+        }
+      ]
+    },
+    {
+      "id": "invalidate",
+      "title": "When the answer changes",
+      "segments": [
+        {
+          "id": "a",
+          "text": "What if the number moves again? Suppose the customer ports from Bravo back to Charlie."
+        },
+        {
+          "id": "b",
+          "text": "Nobody broadcasts the change, and nobody needs to."
+        },
+        {
+          "id": "c",
+          "text": "The next time Alpha relies on its cached entry and asks Bravo, Bravo answers: not held. Invalidate your cache."
+        },
+        {
+          "id": "d",
+          "text": "Alpha deletes the entry and starts again from the numbering list. Charlie, the Range Holder, now answers: held."
+        },
+        {
+          "id": "e",
+          "text": "The stale entry cost one extra query, not a failed call. And every PSTN2 response, whether for discovery, verification or routing, can carry this instruction."
+        }
+      ]
+    },
+    {
+      "id": "secure",
+      "title": "Resilient and secure by design",
+      "segments": [
+        {
+          "id": "a",
+          "text": "This design has no single point of failure. Each provider answers only for its own numbers. If one is unavailable, only its numbers fall back to today’s network."
+        },
+        {
+          "id": "b",
+          "text": "The numbering lists are cached by every provider and can be mirrored, so a regulator outage stops nothing."
+        },
+        {
+          "id": "c",
+          "text": "Every answer is signed with the provider’s key and carried over encrypted connections."
+        },
+        {
+          "id": "d",
+          "text": "A provider only ever reveals where its own ported numbers went, never customer data. Nobody holds, or can rebuild, the national map."
+        },
+        {
+          "id": "e",
+          "text": "And participation is optional. A block with no PSTN2 address simply carries on using today’s network."
+        }
+      ]
+    },
+    {
+      "id": "summary",
+      "title": "Who has this number? Ask.",
+      "segments": [
+        {
+          "id": "a",
+          "text": "To summarise. Check the cache. Use Ofcom’s lists to find the Range Holder. Ask it. Follow the redirect if the number has been ported. Then cache the answer, and go direct next time."
+        },
+        {
+          "id": "b",
+          "text": "No central database. No two million pound build, and no six hundred thousand pound annual bill."
+        },
+        {
+          "id": "c",
+          "text": "You can watch three providers and Ofcom do exactly this in the PSTN2 test harness, and test your own code against our live test provider at pstn2.org.",
+          "say": "You can watch three providers and Ofcom do exactly this in the P S T N two test harness, and test your own code against our live test provider at P S T N two dot org."
+        }
+      ]
+    }
+  ]
+}

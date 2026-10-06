@@ -1,0 +1,45 @@
+{
+  "description": "Discovery scenarios run by the harness tour, the harness engine tests and the SDK conformance suite. Steps run in order against harness-network.json; caches persist between steps.",
+  "scenarios": [
+    {
+      "id": "A", "title": "Unported number",
+      "callerCp": "CP1-UK-0101", "number": "+441614960123",
+      "expect": { "result": "held", "holderCpId": "CP1-UK-0102", "ported": false, "fromCache": false,
+                  "hops": ["CP1-UK-0102"] }
+    },
+    {
+      "id": "B", "title": "Ported number (Range Holder redirects)",
+      "callerCp": "CP1-UK-0101", "number": "+441134960456",
+      "expect": { "result": "held", "holderCpId": "CP1-UK-0102", "ported": true, "fromCache": false,
+                  "hops": ["CP1-UK-0103", "CP1-UK-0102"] }
+    },
+    {
+      "id": "C", "title": "Repeat call goes direct from cache",
+      "callerCp": "CP1-UK-0101", "number": "+441134960456",
+      "expect": { "result": "held", "holderCpId": "CP1-UK-0102", "ported": true, "fromCache": true,
+                  "hops": ["CP1-UK-0102"] }
+    },
+    {
+      "id": "D", "title": "Number ports back: stale cache is invalidated",
+      "before": { "port": { "number": "+441134960456", "fromCpId": "CP1-UK-0102", "toCpId": "CP1-UK-0103" } },
+      "callerCp": "CP1-UK-0101", "number": "+441134960456",
+      "expect": { "result": "held", "holderCpId": "CP1-UK-0103", "ported": false, "fromCache": false, "invalidated": true,
+                  "hops": ["CP1-UK-0102", "CP1-UK-0103"] }
+    },
+    {
+      "id": "E", "title": "Number not in service",
+      "callerCp": "CP1-UK-0101", "number": "+441614960999",
+      "expect": { "result": "unknown", "hops": ["CP1-UK-0102"] }
+    },
+    {
+      "id": "F", "title": "Range Holder not participating",
+      "callerCp": "CP1-UK-0101", "number": "+441174960555",
+      "expect": { "result": "not_participating", "hops": [] }
+    },
+    {
+      "id": "G", "title": "Number not allocated by Ofcom",
+      "callerCp": "CP1-UK-0101", "number": "+441154960555",
+      "expect": { "result": "unallocated", "hops": [] }
+    }
+  ]
+}

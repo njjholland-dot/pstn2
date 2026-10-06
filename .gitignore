@@ -37,3 +37,9 @@ venv/
 
 # PSTN2 dummy test CP signing keys (kept in the local credentials vault)
 tools/testcp/.keys.json
+
+# Narration render cache
+tools/narrate/.cache/
+
+# Playwright MCP session files
+.playwright-mcp/
