@@ -1,0 +1,38 @@
+{
+  "description": "PSTN2 test-harness network: a simulated Ofcom numbering list and three participating CPs. All numbers are from Ofcom's reserved TV/drama ranges and do not belong to real subscribers. All CPs are fictional.",
+  "numberingList": {
+    "listVersion": "2026-10-06T06:00:00Z",
+    "publisher": "Ofcom (simulated)",
+    "source": "S1-S9 numbering lists with Range Holder URL",
+    "blocks": [
+      { "prefix": "442079460", "display": "020 7946 0xxx", "numberLength": 12, "status": "Allocated", "cpId": "CP1-UK-0101", "cpName": "Alpha Telecom",  "rangeHolderUrl": "https://pstn2.alpha-telecom.example" },
+      { "prefix": "441614960", "display": "0161 496 0xxx", "numberLength": 12, "status": "Allocated", "cpId": "CP1-UK-0102", "cpName": "Bravo Networks", "rangeHolderUrl": "https://pstn2.bravo-networks.example" },
+      { "prefix": "441134960", "display": "0113 496 0xxx", "numberLength": 12, "status": "Allocated", "cpId": "CP1-UK-0103", "cpName": "Charlie Comms",  "rangeHolderUrl": "https://pstn2.charlie-comms.example" },
+      { "prefix": "441174960", "display": "0117 496 0xxx", "numberLength": 12, "status": "Allocated", "cpId": "CP1-UK-0104", "cpName": "Delta Voice",    "rangeHolderUrl": "" }
+    ]
+  },
+  "cps": [
+    {
+      "cpId": "CP1-UK-0101", "key": "alpha", "cpName": "Alpha Telecom", "url": "https://pstn2.alpha-telecom.example", "colour": "#3b82f6",
+      "ranges": ["442079460"],
+      "inService": ["+442079460100", "+442079460101", "+442079460222"],
+      "portedIn": [],
+      "portedOut": [ { "number": "+442079460321", "toCpId": "CP1-UK-0103" } ]
+    },
+    {
+      "cpId": "CP1-UK-0102", "key": "bravo", "cpName": "Bravo Networks", "url": "https://pstn2.bravo-networks.example", "colour": "#10b981",
+      "ranges": ["441614960"],
+      "inService": ["+441614960123", "+441614960500"],
+      "portedIn": [ { "number": "+441134960456", "fromCpId": "CP1-UK-0103" } ],
+      "portedOut": []
+    },
+    {
+      "cpId": "CP1-UK-0103", "key": "charlie", "cpName": "Charlie Comms", "url": "https://pstn2.charlie-comms.example", "colour": "#f59e0b",
+      "ranges": ["441134960"],
+      "inService": ["+441134960789", "+441134960900"],
+      "portedIn": [ { "number": "+442079460321", "fromCpId": "CP1-UK-0101" } ],
+      "portedOut": [ { "number": "+441134960456", "toCpId": "CP1-UK-0102" } ]
+    }
+  ],
+  "defaults": { "ttl": 86400, "hopLimit": 5 }
+}

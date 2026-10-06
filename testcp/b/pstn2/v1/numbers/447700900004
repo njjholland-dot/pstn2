@@ -1,0 +1,12 @@
+{
+  "version": "1.1",
+  "number": "+447700900004",
+  "result": "not_held",
+  "cache": {
+    "invalidate": true,
+    "scope": "number"
+  },
+  "issued": "2026-10-06T06:00:00Z",
+  "kid": "b-test-2026-10",
+  "signature": "27AfAGjLpNpeMLLZVBEK+jUGR2tqXYvq4V06l9eP8UfZxsBRv6rxCKkDkM362mc3BUoGeSrQku9GsVPWxl6nCQ=="
+}

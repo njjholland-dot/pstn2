@@ -1,0 +1,17 @@
+{
+  "version": "1.1",
+  "number": "+447700900101",
+  "result": "held",
+  "holder": {
+    "cpId": "CP1-UK-9002",
+    "cpName": "PSTN2 Test CP B",
+    "url": "https://pstn2.org/testcp/b"
+  },
+  "ported": false,
+  "cache": {
+    "ttl": 86400
+  },
+  "issued": "2026-10-06T06:00:00Z",
+  "kid": "b-test-2026-10",
+  "signature": "T5tx5X52sQQcvtD1RMTM5u+cFO1AwNKWHespueFeZX81rvGP8f+368/XeZSXFdVBd39ZBnAX6z8hZ0ZoUhBaAQ=="
+}

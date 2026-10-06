@@ -1,0 +1,17 @@
+{
+  "version": "1.1",
+  "number": "+447700900002",
+  "result": "held",
+  "holder": {
+    "cpId": "CP1-UK-9001",
+    "cpName": "PSTN2 Test CP A",
+    "url": "https://pstn2.org/testcp/a"
+  },
+  "ported": false,
+  "cache": {
+    "ttl": 86400
+  },
+  "issued": "2026-10-06T06:00:00Z",
+  "kid": "a-test-2026-10",
+  "signature": "UEdp0vfir8yXn40FLCMdv/MufNOi/zXgJa8+Zz/pelZZs1g12f9Q0xPiJvQsONmWSCVEqSI0Wl0UELI1thwTBg=="
+}

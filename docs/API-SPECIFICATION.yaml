@@ -10,14 +10,14 @@ info:
     - Direct peer-to-peer routing
     - End-to-end encryption
     - Emergency location services
-    - Distributed directory
+    - Number Discovery (regulator numbering list + Range Holder query, no central database)
 
     **Base URL:** `https://api.{your-cp}.com/pstn2/v1`
 
     **Request signing:** Signatures are carried in the JSON request body
     (`signature` field, Ed25519 over the message body plus timestamp, per
     SPECIFICATION.md §4.1). There is no signature HTTP header.
-  version: 1.0.0
+  version: 1.1.0
   contact:
     name: PSTN2 Support
     url: https://pstn2.org
@@ -32,6 +32,11 @@ servers:
   - url: https://api.cp2.example.com/pstn2/v1
     description: Example CP2 Server
 
+# Requests are authenticated by body-level Ed25519 signatures (and mutual TLS
+# for PSAPs), not by an OpenAPI security scheme. Token-pool operations may
+# additionally carry a bearer JWT.
+security: []
+
 tags:
   - name: Authentication
     description: Caller ID verification endpoints
@@ -39,8 +44,10 @@ tags:
     description: Direct routing discovery
   - name: Emergency
     description: Emergency services location
-  - name: Directory
-    description: Distributed directory service
+  - name: Number Discovery
+    description: Who holds this number? Range Holder query with redirect for ported numbers (SPECIFICATION.md §9)
+  - name: Numbering List
+    description: Regulator numbering list (Ofcom S1-S9 + Range Holder URL), downloaded and cached by every CP
 
 paths:
   /auth/verify:
@@ -66,15 +73,16 @@ paths:
       responses:
         '200':
           description: |
-            Verification result. If the number has been ported, the body is a
-            PortingResponse (`ported: true`); the client should re-query the
-            directory and retry against the new range holder (`newRcpid`).
+            Verification result. If this CP no longer holds the caller ID, the
+            body is a NotHeldResponse (`result: not_held`, `cache.invalidate`);
+            the client purges its cache, rediscovers the holder from the Range
+            Holder (SPECIFICATION.md §9.3) and retries there.
           content:
             application/json:
               schema:
                 oneOf:
                   - $ref: '#/components/schemas/CallVerificationResponse'
-                  - $ref: '#/components/schemas/PortingResponse'
+                  - $ref: '#/components/schemas/NotHeldResponse'
               examples:
                 verified:
                   $ref: '#/components/examples/VerificationResponseVerified'
@@ -111,6 +119,9 @@ paths:
 
         **TTL:** 30-60 seconds typical
       operationId: createToken
+      security:
+        - {}
+        - tokenPoolJWT: []
       requestBody:
         required: true
         content:
@@ -144,6 +155,9 @@ paths:
         Retrieve and verify a token from the shared pool.
         Used by recipient CP on inbound call.
       operationId: verifyToken
+      security:
+        - {}
+        - tokenPoolJWT: []
       parameters:
         - name: tokenId
           in: path
@@ -215,7 +229,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Destination number not found
+          description: Destination number not held by this CP (prefer a 200 NotHeldResponse with cache.invalidate)
           content:
             application/json:
               schema:
@@ -233,8 +247,6 @@ paths:
         **Rate Limit:** 10 req/sec per PSAP
         **Retention:** Location data retained no longer than 24 hours after call end (see MAP data-retention policy)
       operationId: getEmergencyLocation
-      security:
-        - psapCertificate: []
       requestBody:
         required: true
         content:
@@ -272,108 +284,96 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /directory/all:
+  /numbers/{e164digits}:
     get:
       tags:
-        - Directory
-      summary: Pull entire directory
+        - Number Discovery
+      summary: Who holds this number?
       description: |
-        Retrieve all CP directory entries for caching.
+        Ask a CP about one number. Query the Range Holder first (found in the
+        numbering list), or the cached holder. The Range Holder answers `held`,
+        or `redirect` to the CP the number was ported to. A CP that is not the
+        Range Holder and no longer serves the number answers `not_held` with a
+        cache invalidation. A plain GET with no body, so responses are
+        cacheable and static-hostable.
 
-        **Update Frequency:** Every 1 hour
-        **Compression:** GZIP required
-        **Size:** ~1-10MB typical
-      operationId: pullDirectory
+        **Performance Target:** < 50ms per hop
+      operationId: discoverNumber
+      parameters:
+        - name: e164digits
+          in: path
+          required: true
+          description: E.164 number without the leading `+`
+          schema:
+            type: string
+            pattern: '^[1-9]\d{1,14}$'
+          example: '441614960123'
+      responses:
+        '200':
+          description: Discovery result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryResponse'
+              examples:
+                held:
+                  $ref: '#/components/examples/DiscoveryHeld'
+                redirect:
+                  $ref: '#/components/examples/DiscoveryRedirect'
+                notHeld:
+                  $ref: '#/components/examples/DiscoveryNotHeld'
+        '404':
+          description: Number not in service or unknown to this CP. Body optional.
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /keys:
+    get:
+      tags:
+        - Number Discovery
+      summary: Public signing keys of this CP
+      description: Ed25519 public keys used to verify this CP's signed responses (`kid`).
+      operationId: getKeys
+      responses:
+        '200':
+          description: Key set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeySet'
+
+  /numbering-list.json:
+    servers:
+      - url: https://numbering.regulator.example
+        description: Regulator (Ofcom) or an approved mirror
+    get:
+      tags:
+        - Numbering List
+      summary: Download the numbering list
+      description: |
+        Ofcom S1-S9 numbering data augmented with each Range Holder's PSTN2
+        URL. Download at least daily and cache locally; never query per call.
+        Match numbers by longest prefix.
+      operationId: getNumberingList
       parameters:
         - name: If-None-Match
           in: header
           required: false
-          description: |
-            Entity tag from a previous response. If the directory has not
-            changed, the server responds 304 Not Modified.
           schema:
             type: string
-          example: '"v42"'
       responses:
         '200':
-          description: Directory retrieved
+          description: Current list
           headers:
-            Content-Encoding:
-              schema:
-                type: string
-                enum: [gzip]
             ETag:
-              description: Entity tag for the current directory version (use with If-None-Match)
               schema:
                 type: string
-              example: '"v42"'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DirectoryResponse'
+                $ref: '#/components/schemas/NumberingList'
         '304':
-          description: Not modified (use If-None-Match header)
-        '429':
-          $ref: '#/components/responses/RateLimited'
-
-  /directory/publish:
-    post:
-      tags:
-        - Directory
-      summary: Publish directory updates
-      description: |
-        Publish changes to your CP's directory entry.
-
-        **Triggers:** Number range changes, porting events, endpoint updates
-      operationId: publishDirectory
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DirectoryPublishRequest'
-      responses:
-        '202':
-          description: Update accepted, propagating
-        '400':
-          description: Invalid directory entry
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /directory/lookup/{phoneNumber}:
-    get:
-      tags:
-        - Directory
-      summary: Lookup number range holder
-      description: |
-        Find which CP currently holds a specific number.
-
-        **Performance:** < 50ms (cache hit), < 200ms (cache miss)
-      operationId: lookupNumber
-      parameters:
-        - name: phoneNumber
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/PhoneNumber'
-          example: '+441234567890'
-      responses:
-        '200':
-          description: CP found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DirectoryLookupResponse'
-        '404':
-          description: Number not found in directory
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          description: Local copy is current
 
 components:
   securitySchemes:
@@ -381,9 +381,8 @@ components:
     # request schema carries a required `signature` field (Ed25519 over the
     # message body plus timestamp, per SPECIFICATION.md §4.1), so it is not
     # modelled as an OpenAPI security scheme.
-    psapCertificate:
-      type: mutualTLS
-      description: PSAP client certificate authentication
+    # PSAP requests to /emergency/location are additionally authenticated
+    # with TLS client certificates (mutual TLS) at the transport layer.
 
     tokenPoolJWT:
       type: http
@@ -506,29 +505,45 @@ components:
           maxLength: 100
           example: 'Account Security Alert'
 
-    PortingResponse:
+    CacheControl:
       type: object
       description: |
-        Returned with HTTP 200 when the number has been ported. The client
-        should re-query the directory and retry against the new range holder.
+        Caching instruction carried by any PSTN2 response (SPECIFICATION.md §9.4-9.5).
+      properties:
+        ttl:
+          type: integer
+          minimum: 0
+          description: Seconds the client may cache the number -> holder answer
+          example: 86400
+        invalidate:
+          type: boolean
+          description: Purge the cached entry and rediscover from the Range Holder
+        scope:
+          type: string
+          enum: [number, block]
+          default: number
+
+    NotHeldResponse:
+      type: object
+      description: |
+        HTTP 200 from a CP that no longer holds the number. Purge the cache and
+        rediscover from the Range Holder.
       required:
-        - verified
-        - ported
-        - newRcpid
-        - callReference
+        - result
+        - cache
       properties:
         verified:
           type: boolean
           enum: [false]
-        ported:
-          type: boolean
-          enum: [true]
-        newRcpid:
-          $ref: '#/components/schemas/RCPID'
-        portedAt:
-          $ref: '#/components/schemas/Timestamp'
+        result:
+          type: string
+          enum: [not_held]
         callReference:
           $ref: '#/components/schemas/CallReference'
+        cache:
+          $ref: '#/components/schemas/CacheControl'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
 
     TokenCreateRequest:
       type: object
@@ -860,117 +875,129 @@ components:
           description: ISO 3166-1 alpha-2 country code
           example: 'GB'
 
-    DirectoryResponse:
-      type: object
-      properties:
-        entries:
-          type: array
-          items:
-            $ref: '#/components/schemas/DirectoryEntry'
-        lastModified:
-          $ref: '#/components/schemas/Timestamp'
-        version:
-          type: integer
-
-    DirectoryEntry:
+    CpRef:
       type: object
       required:
         - cpId
-        - ranges
-        - endpoints
-        - publicKey
-        - lastUpdated
-        - version
+        - url
       properties:
         cpId:
           $ref: '#/components/schemas/RCPID'
-        ranges:
-          type: array
-          items:
-            $ref: '#/components/schemas/NumberRange'
-        endpoints:
-          type: object
-          properties:
-            auth:
-              type: string
-              format: uri
-            routing:
-              type: string
-              format: uri
-            emergency:
-              type: string
-              format: uri
-        publicKey:
+        cpName:
+          type: string
+          example: 'Bravo Networks'
+        url:
+          type: string
+          format: uri
+          description: Base URL of the CP's PSTN2 API (endpoints are {url}/pstn2/v1/...)
+          example: 'https://pstn2.bravo-networks.example'
+
+    DiscoveryResponse:
+      type: object
+      required:
+        - version
+        - result
+        - number
+      properties:
+        version:
+          type: string
+          example: '1.1'
+        result:
+          type: string
+          enum: [held, redirect, not_held]
+        number:
+          $ref: '#/components/schemas/PhoneNumber'
+        holder:
+          $ref: '#/components/schemas/CpRef'
+        ported:
+          type: boolean
+          description: (held) true when the holder is not the Range Holder
+        portedTo:
+          $ref: '#/components/schemas/CpRef'
+        cache:
+          $ref: '#/components/schemas/CacheControl'
+        issued:
+          $ref: '#/components/schemas/Timestamp'
+        kid:
+          type: string
+          description: Signing key id (see /keys)
+        signature:
           $ref: '#/components/schemas/Base64String'
-        certificates:
+
+    KeySet:
+      type: object
+      required:
+        - cpId
+        - keys
+      properties:
+        cpId:
+          $ref: '#/components/schemas/RCPID'
+        keys:
           type: array
           items:
             type: object
+            required: [kid, algorithm, publicKey]
             properties:
-              fingerprint:
+              kid:
                 type: string
+              algorithm:
+                type: string
+                enum: [ed25519]
+              publicKey:
+                $ref: '#/components/schemas/Base64String'
               validFrom:
                 $ref: '#/components/schemas/Timestamp'
               validTo:
                 $ref: '#/components/schemas/Timestamp'
-        lastUpdated:
-          $ref: '#/components/schemas/Timestamp'
-        version:
-          type: integer
 
-    NumberRange:
+    NumberingList:
       type: object
       required:
-        - numberRange
-        - status
+        - listVersion
+        - blocks
       properties:
-        numberRange:
+        listVersion:
           type: string
-          pattern: '^\+[1-9]\d{1,14}[X]*$'
-          example: '+4471234567XX'
+        publisher:
+          type: string
+          example: 'Ofcom'
+        source:
+          type: string
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/NumberingBlock'
+
+    NumberingBlock:
+      type: object
+      required:
+        - prefix
+        - numberLength
+        - status
+        - cpId
+      properties:
+        prefix:
+          type: string
+          pattern: '^[1-9]\d{0,14}$'
+          description: E.164 digits common to every number in the block
+          example: '441614960'
+        display:
+          type: string
+          example: '0161 496 0xxx'
+        numberLength:
+          type: integer
+          example: 12
         status:
           type: string
-          enum: [active, ported, reserved, deactivated]
-        portedTo:
-          $ref: '#/components/schemas/RCPID'
-        portedAt:
-          $ref: '#/components/schemas/Timestamp'
-
-    DirectoryPublishRequest:
-      type: object
-      required:
-        - entry
-      properties:
-        entry:
-          $ref: '#/components/schemas/DirectoryEntry'
-        signature:
-          $ref: '#/components/schemas/Base64String'
-
-    DirectoryLookupResponse:
-      type: object
-      required:
-        - phoneNumber
-        - cpId
-        - endpoints
-      properties:
-        phoneNumber:
-          $ref: '#/components/schemas/PhoneNumber'
+          enum: [Allocated, Free, Reserved, Protected]
         cpId:
           $ref: '#/components/schemas/RCPID'
-        endpoints:
-          type: object
-          properties:
-            auth:
-              type: string
-              format: uri
-            routing:
-              type: string
-              format: uri
-        cached:
-          type: boolean
-          description: Whether result came from cache
-        cachedAt:
-          $ref: '#/components/schemas/Timestamp'
+        cpName:
+          type: string
+        rangeHolderUrl:
+          type: string
+          format: uri
+          description: Absent = Range Holder does not participate (use traditional PSTN)
 
     ErrorResponse:
       type: object
@@ -994,6 +1021,8 @@ components:
                 - capacity_exceeded
                 - unsupported_codec
                 - number_not_found
+                - hop_limit_exceeded
+                - loop_detected
                 - location_unavailable
                 - unauthorized_psap
                 - timeout
@@ -1036,6 +1065,46 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
 
   examples:
+    DiscoveryHeld:
+      value:
+        version: '1.1'
+        result: held
+        number: '+441614960123'
+        holder:
+          cpId: CP1-UK-0102
+          cpName: Bravo Networks
+          url: https://pstn2.bravo-networks.example
+        ported: false
+        cache:
+          ttl: 86400
+        issued: '2026-10-06T09:00:00Z'
+        kid: bravo-2026-10
+        signature: 'kV6QbUqP3vD0aXk2y8z1Zr4sWm9tFh7nLc5eJg0oBdQ='
+    DiscoveryRedirect:
+      value:
+        version: '1.1'
+        result: redirect
+        number: '+441134960456'
+        portedTo:
+          cpId: CP1-UK-0102
+          cpName: Bravo Networks
+          url: https://pstn2.bravo-networks.example
+        cache:
+          ttl: 86400
+        issued: '2026-10-06T09:00:00Z'
+        kid: charlie-2026-10
+        signature: 'kV6QbUqP3vD0aXk2y8z1Zr4sWm9tFh7nLc5eJg0oBdQ='
+    DiscoveryNotHeld:
+      value:
+        version: '1.1'
+        result: not_held
+        number: '+441134960456'
+        cache:
+          invalidate: true
+          scope: number
+        issued: '2026-10-06T09:00:00Z'
+        kid: bravo-2026-10
+        signature: 'kV6QbUqP3vD0aXk2y8z1Zr4sWm9tFh7nLc5eJg0oBdQ='
     VerificationRequestBasic:
       summary: Basic verification request
       value:

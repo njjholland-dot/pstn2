@@ -1,0 +1,8 @@
+# Serve extensionless discovery answers as JSON and allow browser clients.
+<IfModule mod_mime.c>
+  ForceType application/json
+</IfModule>
+<IfModule mod_headers.c>
+  Header set Access-Control-Allow-Origin "*"
+  Header set Cache-Control "public, max-age=300"
+</IfModule>

@@ -1,0 +1,12 @@
+{
+  "cpId": "CP1-UK-9001",
+  "keys": [
+    {
+      "kid": "a-test-2026-10",
+      "algorithm": "ed25519",
+      "publicKey": "ZryipWOGr6h64z8rzZ50sd43J1AomwqCLHsuX355EwQ=",
+      "validFrom": "2026-10-01T00:00:00Z",
+      "validTo": "2027-10-01T00:00:00Z"
+    }
+  ]
+}

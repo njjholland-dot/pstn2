@@ -1,0 +1,16 @@
+{
+  "version": "1.1",
+  "number": "+447700900003",
+  "result": "redirect",
+  "portedTo": {
+    "cpId": "CP1-UK-9002",
+    "cpName": "PSTN2 Test CP B",
+    "url": "https://pstn2.org/testcp/b"
+  },
+  "cache": {
+    "ttl": 86400
+  },
+  "issued": "2026-10-06T06:00:00Z",
+  "kid": "a-test-2026-10",
+  "signature": "y9yk6gcSYfip1KwOhsuyTH+vjLbucKw4Vrde16Jqyj4Nz7Ka9KDrVTE57sQrUPDm4W33MoOUelBFY7o0Oa+aDw=="
+}

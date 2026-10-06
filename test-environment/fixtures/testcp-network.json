@@ -1,0 +1,39 @@
+{
+  "description": "Live dummy test CPs hosted (as static files) at https://pstn2.org/testcp/. Test CP A is the Range Holder for 07700 900 0xx; Test CP B holds 07700 900 1xx and receives a number ported from A. Numbers are from Ofcom's reserved drama range 07700 900xxx. This is a test list, not Ofcom data.",
+  "baseUrl": "https://pstn2.org/testcp",
+  "numberingList": {
+    "listVersion": "2026-10-06T06:00:00Z",
+    "publisher": "PSTN2 test numbering list (not Ofcom)",
+    "source": "Test blocks in Ofcom drama range 07700 900xxx with Range Holder URL",
+    "blocks": [
+      { "prefix": "4477009000", "display": "07700 900 0xx", "numberLength": 12, "status": "Allocated", "cpId": "CP1-UK-9001", "cpName": "PSTN2 Test CP A", "rangeHolderUrl": "https://pstn2.org/testcp/a" },
+      { "prefix": "4477009001", "display": "07700 900 1xx", "numberLength": 12, "status": "Allocated", "cpId": "CP1-UK-9002", "cpName": "PSTN2 Test CP B", "rangeHolderUrl": "https://pstn2.org/testcp/b" }
+    ]
+  },
+  "cps": [
+    {
+      "cpId": "CP1-UK-9001", "key": "a", "cpName": "PSTN2 Test CP A", "url": "https://pstn2.org/testcp/a",
+      "ranges": ["4477009000"],
+      "inService": ["+447700900001", "+447700900002", "+447700900004"],
+      "portedIn": [],
+      "portedOut": [ { "number": "+447700900003", "toCpId": "CP1-UK-9002" } ]
+    },
+    {
+      "cpId": "CP1-UK-9002", "key": "b", "cpName": "PSTN2 Test CP B", "url": "https://pstn2.org/testcp/b",
+      "ranges": ["4477009001"],
+      "inService": ["+447700900101"],
+      "portedIn": [ { "number": "+447700900003", "fromCpId": "CP1-UK-9001" } ],
+      "portedOut": [],
+      "previouslyHeld": ["+447700900004"]
+    }
+  ],
+  "testNumbers": [
+    { "number": "+447700900001", "expect": "held by Test CP A (unported)" },
+    { "number": "+447700900002", "expect": "held by Test CP A (unported)" },
+    { "number": "+447700900003", "expect": "Test CP A redirects -> held by Test CP B (ported)" },
+    { "number": "+447700900004", "expect": "held by Test CP A; querying Test CP B directly returns not_held + invalidate (stale-cache test)" },
+    { "number": "+447700900101", "expect": "held by Test CP B (unported)" },
+    { "number": "+447700900099", "expect": "404 from Test CP A (not in service)" }
+  ],
+  "defaults": { "ttl": 86400, "hopLimit": 5 }
+}

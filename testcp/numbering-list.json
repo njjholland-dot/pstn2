@@ -1,0 +1,25 @@
+{
+  "listVersion": "2026-10-06T06:00:00Z",
+  "publisher": "PSTN2 test numbering list (not Ofcom)",
+  "source": "Test blocks in Ofcom drama range 07700 900xxx with Range Holder URL",
+  "blocks": [
+    {
+      "prefix": "4477009000",
+      "display": "07700 900 0xx",
+      "numberLength": 12,
+      "status": "Allocated",
+      "cpId": "CP1-UK-9001",
+      "cpName": "PSTN2 Test CP A",
+      "rangeHolderUrl": "https://pstn2.org/testcp/a"
+    },
+    {
+      "prefix": "4477009001",
+      "display": "07700 900 1xx",
+      "numberLength": 12,
+      "status": "Allocated",
+      "cpId": "CP1-UK-9002",
+      "cpName": "PSTN2 Test CP B",
+      "rangeHolderUrl": "https://pstn2.org/testcp/b"
+    }
+  ]
+}

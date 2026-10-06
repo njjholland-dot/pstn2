@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSTN2 Test CP</title>
+<meta name="description" content="A live dummy PSTN2 Communication Provider for testing Number Discovery: a test numbering list, a Range Holder, a ported number and signed answers.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="testcp.css">
+</head>
+<body>
+<header class="hero">
+  <a class="back" href="/index.html">← pstn2.org</a>
+  <p class="eyebrow">Live test endpoint · protocol v1.1</p>
+  <h1>PSTN2 Test CP</h1>
+  <p class="lede">A dummy Communication Provider you can point your implementation at. It answers the Number Discovery question, <em>“who has this number?”</em>, for a handful of test numbers. One of them has been ported, so you can test the redirect.</p>
+</header>
+
+<main>
+<section>
+  <h2>How it is set up</h2>
+  <div class="cards">
+    <div class="card"><h3>Test numbering list</h3><p>Stands in for Ofcom's S1–S9 lists plus the PSTN2 <code>Range Holder URL</code> field.</p><p><a href="https://pstn2.org/testcp/numbering-list.json">numbering-list.json</a> · <a href="https://pstn2.org/testcp/numbering-list.csv">.csv</a></p></div>
+    <div class="card"><h3>Test CP A</h3><p>The Range Holder for <strong>07700 900 0xx</strong>. It has ported 07700 900003 out to Test CP B.</p><p><code>https://pstn2.org/testcp/a</code> · <a href="https://pstn2.org/testcp/a/pstn2/v1/keys">keys</a></p></div>
+    <div class="card"><h3>Test CP B</h3><p>The Range Holder for <strong>07700 900 1xx</strong>. It holds 07700 900003, which was ported in from A.</p><p><code>https://pstn2.org/testcp/b</code> · <a href="https://pstn2.org/testcp/b/pstn2/v1/keys">keys</a></p></div>
+  </div>
+  <p class="note">All numbers come from Ofcom's reserved drama range 07700 900xxx, so they never belong to real subscribers. This is a test list, not Ofcom data. The host is static, so only Number Discovery is available here. Authentication and routing are exercised against the local mock network in the <a href="/pstn2-test-harness.zip">test harness download</a>.</p>
+</section>
+
+<section>
+  <h2>Test numbers</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>E.164</th><th>National</th><th>Expected result</th></tr></thead>
+    <tbody>
+<tr><td><code>+447700900001</code></td><td>07700 900001</td><td>held by Test CP A (unported)</td></tr>
+<tr><td><code>+447700900002</code></td><td>07700 900002</td><td>held by Test CP A (unported)</td></tr>
+<tr><td><code>+447700900003</code></td><td>07700 900003</td><td>Test CP A redirects -> held by Test CP B (ported)</td></tr>
+<tr><td><code>+447700900004</code></td><td>07700 900004</td><td>held by Test CP A; querying Test CP B directly returns not_held + invalidate (stale-cache test)</td></tr>
+<tr><td><code>+447700900101</code></td><td>07700 900101</td><td>held by Test CP B (unported)</td></tr>
+<tr><td><code>+447700900099</code></td><td>07700 900099</td><td>404 from Test CP A (not in service)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Try it</h2>
+  <p>Query the Range Holder for a ported number. You get a <code>redirect</code> to Test CP B:</p>
+  <pre><code>curl -A "pstn2-curl/1.1" https://pstn2.org/testcp/a/pstn2/v1/numbers/447700900003</code></pre>
+  <p>Follow it:</p>
+  <pre><code>curl -A "pstn2-curl/1.1" https://pstn2.org/testcp/b/pstn2/v1/numbers/447700900003</code></pre>
+  <p class="note">Always send a descriptive <code>User-Agent</code>. The host's firewall rejects the default <code>curl/*</code> and <code>Go-http-client/*</code> agents. The SDKs send <code>pstn2-&lt;language&gt;-sdk/1.1.0</code>.</p>
+
+  <h3>With the SDKs</h3>
+  <div class="tabs">
+<pre><code># TypeScript
+cd code/typescript &amp;&amp; npm install &amp;&amp; PSTN2_NETWORK=live npm run example:06
+
+# Python
+cd code/python &amp;&amp; pip install -e . &amp;&amp; PSTN2_NETWORK=live python examples/06_number_discovery.py
+
+# Go
+cd code/go &amp;&amp; PSTN2_NETWORK=live go run ./examples/06-number-discovery</code></pre>
+  </div>
+</section>
+
+<section>
+  <h2>The algorithm you are testing</h2>
+  <ol class="steps">
+    <li><strong>Cache:</strong> if you hold an unexpired answer for the number, query that CP directly.</li>
+    <li><strong>Numbering list:</strong> find the block by longest prefix. That gives you the Range Holder and its URL.</li>
+    <li><strong>Range Holder:</strong> <code>GET {url}/pstn2/v1/numbers/{digits}</code>. The answer is <code>held</code>, or a <code>redirect</code> to the CP the number was ported to.</li>
+    <li><strong>Retry</strong> at the CP named in the redirect. Stop after 5 hops, and stop if you reach the same CP twice.</li>
+    <li><strong>Cache</strong> the answer for <code>cache.ttl</code> seconds. If any later response says <code>not_held</code> with <code>cache.invalidate</code>, purge the entry and start again from step 2.</li>
+  </ol>
+  <p><strong>Signatures:</strong> every answer is signed with Ed25519 over the canonical JSON of the body without the <code>signature</code> field (keys sorted, no whitespace). Verify it with the key named by <code>kid</code> at <code>{url}/pstn2/v1/keys</code>. Full details are in the specification, <a href="/docs/SPECIFICATION.html#number-discovery">§9 Number Discovery</a>.</p>
+</section>
+</main>
+
+<footer>Generated 2026-10-06T06:00:00Z · <a href="/docs/SPECIFICATION.html">Specification</a> · <a href="/src/test-harness/index.html">Watch the test harness</a> · Comms Council UK</footer>
+</body>
+</html>
