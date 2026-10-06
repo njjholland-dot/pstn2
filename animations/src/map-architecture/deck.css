@@ -1,0 +1,17 @@
+/* MAP Architecture — deck-specific styles */
+.ma-center { text-align: center; }
+.ma-node { border-radius: 50%; display: grid; place-items: center; background: var(--panel-solid); border: 2px solid var(--c); color: var(--c); box-shadow: 0 10px 30px rgba(0,0,0,.35); transition: all .5s var(--ease); }
+.ma-node.p2-active { box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 30%, transparent), 0 10px 30px rgba(0,0,0,.35); }
+.ma-price { font-size: 64px; font-weight: 800; letter-spacing: -0.03em; color: #fff; line-height: 1; margin-top: 6px; }
+.ma-price small { font-size: 24px; font-weight: 500; color: var(--ink-3); letter-spacing: 0; }
+.ma-url { font-family: var(--mono); font-size: 20px; transition: background .6s var(--ease), color .6s; padding: 2px 6px; border-radius: 6px; }
+.ma-url.ma-on { background: rgba(139, 92, 246, 0.3); color: #fff; }
+.p2-card.ma-down { border-color: var(--red); opacity: .45 !important; filter: grayscale(1) !important; }
+.ma-lic { opacity: 0; transform: scale(.9); transform-origin: left center; transition: opacity .5s var(--ease), transform .5s var(--ease); }
+.ma-lic.ma-on { opacity: 1; transform: none; }
+.ma-lic .p2-tag { font-size: 17px; }
+.ma-cost b { font-size: 48px; font-weight: 800; color: var(--c); letter-spacing: -0.02em; }
+.ma-cost span { font-size: 24px; color: var(--ink-3); }
+.ma-fact { display: flex; align-items: baseline; gap: 14px; margin-top: 8px; }
+.ma-fact b { font-size: 60px; font-weight: 800; color: #fff; letter-spacing: -0.02em; line-height: 1.05; }
+.ma-fact span { font-size: 28px; color: var(--ink-3); }

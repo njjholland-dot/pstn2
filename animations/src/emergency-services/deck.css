@@ -1,0 +1,64 @@
+/* Emergency Services — deck-specific styles */
+.es-center { text-align: center; }
+.es-num { font-family: var(--mono); font-size: 36px; font-weight: 700; color: #fff; letter-spacing: 0.02em; }
+.es-small { font-size: 20px; color: var(--ink-3); margin-top: 2px; }
+.es-loc, .es-live { display: flex; align-items: center; gap: 12px; font-size: 26px; color: var(--ink-2); }
+.es-loc .pi, .es-live .pi { color: var(--c); flex: none; }
+.es-q { font-size: 40px; color: var(--red-2); margin-left: 4px; }
+.es-path { text-transform: none !important; letter-spacing: 0.02em !important; font-family: var(--mono) !important; font-size: 17px !important; }
+
+/* Postcode area */
+.es-area { border: 3px dashed color-mix(in srgb, var(--amber) 70%, transparent); border-radius: 28px; background: rgba(245, 158, 11, 0.06); }
+.es-area-label { position: absolute; left: 24px; top: 22px; }
+.es-area-label .p2-tag { font-size: 20px; padding: 8px 16px; }
+.es-bld { display: grid; place-items: center; border-radius: 18px; background: var(--panel); border: 1.5px solid var(--line-2); color: var(--ink-2); transition: all .5s var(--ease); }
+.es-bld.es-checked { color: var(--ink-4); background: rgba(13,27,56,0.35); border-style: dashed; border-color: var(--line); }
+.es-bld.es-found { border-color: var(--red); color: var(--red-2); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.3); }
+.es-pin { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 700; color: #fff; background: var(--red); border-radius: 999px; padding: 6px 16px 6px 10px; white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,.4); z-index: 3; }
+.es-rural { position: relative; height: 300px; margin: 30px 0 20px; color: var(--ink-2); background: radial-gradient(circle at 50% 50%, rgba(239,68,68,0.06), transparent 70%); }
+.es-rural span { position: absolute; display: grid; place-items: center; width: 84px; height: 84px; border-radius: 18px; background: var(--panel-2); border: 1.5px solid var(--line-2); }
+.es-km { position: absolute; font-style: normal; font-size: 20px; font-weight: 700; color: var(--ink-3); border-bottom: 3px dashed var(--ink-4); padding: 0 40px 4px; }
+.es-rural-copy { font-size: 28px; line-height: 1.4; color: var(--ink-2); }
+
+/* GPS fix */
+.es-fix { display: grid; place-items: center; }
+.es-fix-ring { position: absolute; left: 50%; top: 44%; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; border: 3px solid var(--green); background: rgba(16, 185, 129, 0.12); }
+.es-fix-pin { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); color: var(--green-2); }
+.es-fix-label { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 26px; font-weight: 700; color: #fff; }
+
+/* Query scene */
+.es-dialled { display: flex; align-items: baseline; gap: 16px; margin-bottom: 22px; }
+.es-dialled span { font-size: 22px; color: var(--ink-3); }
+.es-dialled b { font-size: 76px; line-height: 1; font-weight: 800; color: var(--red-2); letter-spacing: -0.02em; }
+.es-reg { margin-top: 36px; opacity: 0; transform: translateY(10px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.es-reg.es-on { opacity: 1; transform: none; }
+.es-reg .p2-tag { font-size: 17px; white-space: normal; }
+
+/* Phone node */
+.es-node { border-radius: 50%; display: grid; place-items: center; text-align: center; font-size: 24px; font-weight: 700; background: var(--panel); border: 2.5px solid var(--c); box-shadow: 0 16px 50px rgba(0,0,0,.4); }
+.es-node .pi { color: var(--c); }
+
+/* Fixed line */
+.es-file { display: flex; align-items: center; gap: 24px; margin-top: 50px; padding: 24px; border-radius: 18px; background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.3); }
+.es-file .pi { color: var(--red-2); flex: none; }
+.es-file b { display: block; font-size: 30px; color: #fff; }
+.es-file small { display: block; font-size: 24px; color: var(--ink-3); margin-top: 4px; }
+
+/* Survival chart */
+.es-chart { border-radius: 24px; background: var(--panel); border: 1.5px solid var(--line); padding: 28px 34px; }
+.es-chart-h { font-size: 26px; font-weight: 650; color: var(--ink-2); }
+.es-bars { position: absolute; left: 34px; right: 34px; top: 110px; bottom: 120px; display: flex; align-items: flex-end; gap: 22px; }
+.es-bar { flex: 1; height: 100%; position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; }
+.es-bar i { display: block; height: 0; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, var(--red-2), var(--red)); transition: height 0.9s var(--ease); }
+.es-bar.es-on i { height: calc(var(--h) * 0.86); }
+.es-bar.es-good i { background: linear-gradient(180deg, var(--green-2), var(--green)); }
+.es-bar b { text-align: center; font-size: 22px; color: #fff; margin-bottom: 8px; opacity: 0; transition: opacity .6s var(--ease) .4s; }
+.es-bar.es-on b { opacity: 1; }
+.es-bar span { position: absolute; left: 0; right: 0; bottom: -36px; text-align: center; font-size: 20px; color: var(--ink-3); }
+.es-chart-note { position: absolute; left: 34px; bottom: 22px; }
+.es-chart-note .p2-tag { font-size: 17px; }
+
+/* Regulation */
+.es-req { display: flex; align-items: center; gap: 12px; font-size: 24px; color: var(--ink-2); margin-top: 10px; }
+.es-req .pi { color: var(--c); flex: none; }
+.p2-card.es-faded { opacity: .6 !important; filter: saturate(.5); transition: opacity .6s var(--ease), filter .6s; }

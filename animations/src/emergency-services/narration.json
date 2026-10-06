@@ -1,0 +1,100 @@
+{
+  "deck": "emergency-services",
+  "title": "Emergency Services",
+  "titleHtml": "Emergency <span>location, live</span>",
+  "kicker": "Use case",
+  "subtitle": "How PSTN2 gives 999 and 112 call handlers the caller’s current location in milliseconds, instead of yesterday’s batch file.",
+  "endNote": "Real-time caller location, from every participating provider, for every emergency call.",
+  "scenes": [
+    {
+      "id": "seconds",
+      "title": "Every second counts",
+      "segments": [
+        { "id": "a", "text": "When someone calls 999 or 112, every second counts." },
+        { "id": "b", "text": "Responders need to know exactly where the caller is, straight away." },
+        { "id": "c", "text": "Lives depend on finding people quickly." },
+        { "id": "d", "text": "Yet today’s systems often give them location data that is out of date, or too vague to act on." }
+      ]
+    },
+    {
+      "id": "batch",
+      "title": "Today: a daily batch file",
+      "segments": [
+        { "id": "a", "text": "Today’s emergency location system relies on batch updates." },
+        { "id": "b", "text": "Providers send their location records to the emergency services about once every 24 hours." },
+        { "id": "c", "text": "So the data can be up to a day old." },
+        { "id": "d", "text": "If a customer’s details changed recently, the emergency services receive the wrong information." }
+      ]
+    },
+    {
+      "id": "precision",
+      "title": "Too vague to act on",
+      "segments": [
+        { "id": "a", "text": "Current systems often place a caller only within a postcode area, which can cover several square kilometres." },
+        { "id": "b", "text": "In a town or city, that can take in dozens of buildings." },
+        { "id": "c", "text": "Responders lose precious time searching for the right one." },
+        { "id": "d", "text": "In rural areas, the problem is even worse." }
+      ]
+    },
+    {
+      "id": "realtime",
+      "title": "PSTN2: location in real time",
+      "segments": [
+        { "id": "a", "text": "PSTN2 replaces the batch file with a real-time location query." },
+        { "id": "b", "text": "When a 999 call arrives, the emergency call centre asks the caller’s provider for the device’s location, at that moment." },
+        { "id": "c", "text": "The answer includes GPS coordinates when they are available, typically accurate to within fifteen metres." },
+        { "id": "d", "text": "Current data, in milliseconds." }
+      ]
+    },
+    {
+      "id": "query",
+      "title": "Inside the location query",
+      "segments": [
+        { "id": "a", "text": "A 999 call arrives. The number dialled is enough to mark it as an emergency." },
+        { "id": "b", "text": "To find the caller’s provider, the call centre uses PSTN2 number discovery: its cache, then Ofcom’s numbering list, then the Range Holder." },
+        { "id": "c", "text": "This caller’s number was ported, so the Range Holder redirects to Bravo Networks. The answer is cached for next time." },
+        { "id": "d", "text": "The call centre sends Bravo a signed location request. Only registered emergency centres can ask." },
+        { "id": "e", "text": "Bravo checks its live records and answers within milliseconds, with the most recent location it has." }
+      ]
+    },
+    {
+      "id": "mobile",
+      "title": "Mobile: every location source",
+      "segments": [
+        { "id": "a", "text": "For a mobile phone, the location can draw on several sources." },
+        { "id": "b", "text": "GPS satellites, typically accurate to between five and fifteen metres." },
+        { "id": "c", "text": "Nearby Wi-Fi access points, to within about twenty to fifty metres." },
+        { "id": "d", "text": "And the serving cell, to within a hundred metres to a kilometre." },
+        { "id": "e", "text": "The provider gathers these from the device and sends the best available, in real time. Not from yesterday’s batch file." }
+      ]
+    },
+    {
+      "id": "fixed",
+      "title": "Fixed lines: better records",
+      "segments": [
+        { "id": "a", "text": "Even for fixed lines, PSTN2 improves accuracy." },
+        { "id": "b", "text": "Today, the emergency services may receive an address from a database that is a year out of date." },
+        { "id": "c", "text": "With PSTN2, the provider answers from its live records: a recently verified billing address, and its installation records." },
+        { "id": "d", "text": "Plus any location the customer has confirmed. All of it up to date, at the moment of the call." }
+      ]
+    },
+    {
+      "id": "impact",
+      "title": "Minutes saved, lives saved",
+      "segments": [
+        { "id": "a", "text": "Real-time location can cut emergency response times by minutes." },
+        { "id": "b", "text": "Studies show that in cardiac arrest, every minute of delay reduces the chance of survival by around ten percent." },
+        { "id": "c", "text": "Faster response translates directly into lives saved." }
+      ]
+    },
+    {
+      "id": "regulation",
+      "title": "Where regulation is heading",
+      "segments": [
+        { "id": "a", "text": "Regulators already expect accurate, real-time caller location." },
+        { "id": "b", "text": "The EU’s eCall system for vehicles, Enhanced 911 in the United States, and Advanced Mobile Location in the UK all point the same way.", "say": "The E U’s e-call system for vehicles, Enhanced nine one one in the United States, and Advanced Mobile Location in the U K all point the same way." },
+        { "id": "c", "text": "PSTN2 goes further. It provides the infrastructure to deliver real-time location from every participating provider, for every call." }
+      ]
+    }
+  ]
+}

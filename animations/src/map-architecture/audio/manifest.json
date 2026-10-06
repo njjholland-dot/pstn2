@@ -1,0 +1,328 @@
+{
+ "deck": "map-architecture",
+ "voice": "Daniel (English (UK))",
+ "rate": 172,
+ "generated": "2026-10-06T11:49:51.828Z",
+ "loudness": "-16 LUFS / -1.5 dBTP",
+ "scenes": {
+  "challenge": {
+   "file": "challenge.mp3",
+   "duration": 25.236,
+   "voice": "Daniel (English (UK))",
+   "sig": "9a643f40b0738cfa",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 10.012
+    },
+    {
+     "id": "b",
+     "start": 10.462,
+     "end": 13.739
+    },
+    {
+     "id": "c",
+     "start": 14.189,
+     "end": 19.775
+    },
+    {
+     "id": "d",
+     "start": 20.225,
+     "end": 24.336
+    }
+   ]
+  },
+  "maps": {
+   "file": "maps.mp3",
+   "duration": 18.511,
+   "voice": "Daniel (English (UK))",
+   "sig": "217e7749857eed0e",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.55
+    },
+    {
+     "id": "b",
+     "start": 5,
+     "end": 9.042
+    },
+    {
+     "id": "c",
+     "start": 9.492,
+     "end": 14.176
+    },
+    {
+     "id": "d",
+     "start": 14.626,
+     "end": 17.611
+    }
+   ]
+  },
+  "services": {
+   "file": "services.mp3",
+   "duration": 29.462,
+   "voice": "Daniel (English (UK))",
+   "sig": "5fd8729661539d80",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.279
+    },
+    {
+     "id": "b",
+     "start": 4.729,
+     "end": 11.469
+    },
+    {
+     "id": "c",
+     "start": 11.919,
+     "end": 15.214
+    },
+    {
+     "id": "d",
+     "start": 15.664,
+     "end": 23.085
+    },
+    {
+     "id": "e",
+     "start": 23.535,
+     "end": 28.562
+    }
+   ]
+  },
+  "integration": {
+   "file": "integration.mp3",
+   "duration": 21.896,
+   "voice": "Daniel (English (UK))",
+   "sig": "34d8e625bea75556",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.24
+    },
+    {
+     "id": "b",
+     "start": 4.69,
+     "end": 7.518
+    },
+    {
+     "id": "c",
+     "start": 7.968,
+     "end": 11.547
+    },
+    {
+     "id": "d",
+     "start": 11.997,
+     "end": 15.636
+    },
+    {
+     "id": "e",
+     "start": 16.086,
+     "end": 20.996
+    }
+   ]
+  },
+  "market": {
+   "file": "market.mp3",
+   "duration": 17.661,
+   "voice": "Daniel (English (UK))",
+   "sig": "2d90db718cf9aae8",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.496
+    },
+    {
+     "id": "b",
+     "start": 4.946,
+     "end": 7.369
+    },
+    {
+     "id": "c",
+     "start": 7.819,
+     "end": 12.766
+    },
+    {
+     "id": "d",
+     "start": 13.216,
+     "end": 16.761
+    }
+   ]
+  },
+  "cost": {
+   "file": "cost.mp3",
+   "duration": 18.339,
+   "voice": "Daniel (English (UK))",
+   "sig": "c3b8545fb6688e32",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.936
+    },
+    {
+     "id": "b",
+     "start": 5.386,
+     "end": 11.657
+    },
+    {
+     "id": "c",
+     "start": 12.107,
+     "end": 17.439
+    }
+   ]
+  },
+  "trust": {
+   "file": "trust.mp3",
+   "duration": 26.325,
+   "voice": "Daniel (English (UK))",
+   "sig": "75c209dec651c000",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.9
+    },
+    {
+     "id": "b",
+     "start": 5.35,
+     "end": 14.014
+    },
+    {
+     "id": "c",
+     "start": 14.464,
+     "end": 17.187
+    },
+    {
+     "id": "d",
+     "start": 17.637,
+     "end": 25.425
+    }
+   ]
+  },
+  "regulation": {
+   "file": "regulation.mp3",
+   "duration": 18.186,
+   "voice": "Daniel (English (UK))",
+   "sig": "91527f20759211d9",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.511
+    },
+    {
+     "id": "b",
+     "start": 4.961,
+     "end": 6.764
+    },
+    {
+     "id": "c",
+     "start": 7.214,
+     "end": 13.972
+    },
+    {
+     "id": "d",
+     "start": 14.422,
+     "end": 17.286
+    }
+   ]
+  },
+  "scale": {
+   "file": "scale.mp3",
+   "duration": 19.018,
+   "voice": "Daniel (English (UK))",
+   "sig": "9d77308754706cf4",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.386
+    },
+    {
+     "id": "b",
+     "start": 5.836,
+     "end": 9.182
+    },
+    {
+     "id": "c",
+     "start": 9.632,
+     "end": 13.621
+    },
+    {
+     "id": "d",
+     "start": 14.071,
+     "end": 18.118
+    }
+   ]
+  },
+  "example": {
+   "file": "example.mp3",
+   "duration": 27.149,
+   "voice": "Daniel (English (UK))",
+   "sig": "7b5c94e8c4fb8e10",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.75
+    },
+    {
+     "id": "b",
+     "start": 5.2,
+     "end": 8.867
+    },
+    {
+     "id": "c",
+     "start": 9.316,
+     "end": 16.611
+    },
+    {
+     "id": "d",
+     "start": 17.061,
+     "end": 21.89
+    },
+    {
+     "id": "e",
+     "start": 22.34,
+     "end": 26.249
+    }
+   ]
+  },
+  "everyone": {
+   "file": "everyone.mp3",
+   "duration": 19.622,
+   "voice": "Daniel (English (UK))",
+   "sig": "26ca112b21b19e3c",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.909
+    },
+    {
+     "id": "b",
+     "start": 6.359,
+     "end": 11.037
+    },
+    {
+     "id": "c",
+     "start": 11.487,
+     "end": 13.868
+    },
+    {
+     "id": "d",
+     "start": 14.318,
+     "end": 18.722
+    }
+   ]
+  }
+ },
+ "phrases": {}
+}

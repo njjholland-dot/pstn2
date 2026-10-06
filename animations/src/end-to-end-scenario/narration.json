@@ -1,0 +1,160 @@
+{
+  "deck": "end-to-end-scenario",
+  "title": "End-to-End Scenario",
+  "titleHtml": "One call, <span>every step</span>",
+  "kicker": "Use case",
+  "subtitle": "Follow one call from Alice to Bob through number discovery, caller verification, encryption and direct routing, step by step.",
+  "endNote": "Every PSTN2 capability, working together on a single call.",
+  "scenes": [
+    {
+      "id": "meet",
+      "title": "Meet Alice and Bob",
+      "segments": [
+        { "id": "a", "text": "Alice is a customer of Alpha Telecom, a large mobile carrier." },
+        { "id": "b", "text": "Bob is a customer of Bravo Networks, a regional fixed-line provider." },
+        { "id": "c", "text": "Alice wants to call Bob, and both providers have deployed PSTN2." },
+        { "id": "d", "text": "Let’s follow the call, step by step, in real time." }
+      ]
+    },
+    {
+      "id": "dial",
+      "title": "Alice dials",
+      "segments": [
+        { "id": "a", "text": "Alice dials Bob’s number on her mobile." },
+        { "id": "b", "text": "Her phone sends a SIP INVITE into Alpha’s network, and Alpha receives the call request.", "say": "Her phone sends a sip invite into Alpha’s network, and Alpha receives the call request." },
+        { "id": "c", "text": "Elapsed time: fifty milliseconds." },
+        { "id": "d", "text": "Now the PSTN2 steps begin, in the background." }
+      ]
+    },
+    {
+      "id": "discover",
+      "title": "Who has Bob’s number?",
+      "segments": [
+        { "id": "a", "text": "First, Alpha must find out which provider serves Bob’s number today. Its cache has no entry." },
+        { "id": "b", "text": "Alpha’s copy of Ofcom’s numbering list names the Range Holder, Charlie Comms, and gives its PSTN2 address." },
+        { "id": "c", "text": "Alpha asks Charlie. Bob ported his number away, so Charlie redirects Alpha to Bravo Networks." },
+        { "id": "d", "text": "Alpha asks Bravo, and Bravo answers: held, signed with its key. Alpha caches the answer." },
+        { "id": "e", "text": "Elapsed time: about a hundred milliseconds. Alpha now knows where to send the call." }
+      ]
+    },
+    {
+      "id": "verify",
+      "title": "Is it really Alice?",
+      "segments": [
+        { "id": "a", "text": "Alpha sends Bravo a signed request to take the call directly, with Alice’s number as the caller ID." },
+        { "id": "b", "text": "Before accepting, Bravo checks the caller. It finds Alice’s provider with the same discovery, and asks Alpha: did you originate this call?" },
+        { "id": "c", "text": "Alpha checks its live call record and answers: yes, verified. The answer is signed with Alpha’s key." },
+        { "id": "d", "text": "The call is proven genuine, not spoofed. Elapsed time: a hundred and fifty milliseconds." }
+      ]
+    },
+    {
+      "id": "encrypt",
+      "title": "Agreeing encryption",
+      "segments": [
+        { "id": "a", "text": "Alpha’s request and Bravo’s answer each carry the provider’s identity key, and the encryption it supports." },
+        { "id": "b", "text": "They agree on SRTP, with AES-256.", "say": "They agree on S R T P, with A E S two fifty-six." },
+        { "id": "c", "text": "Fresh keys, for this call only, come from a DTLS 1.3 handshake. Each side’s identity key proves who is at the other end.", "say": "Fresh keys, for this call only, come from a D T L S one point three handshake. Each side’s identity key proves who is at the other end." },
+        { "id": "d", "text": "All media will be encrypted end to end. Elapsed time: two hundred and fifty milliseconds." }
+      ]
+    },
+    {
+      "id": "media",
+      "title": "A direct media path",
+      "segments": [
+        { "id": "a", "text": "Bravo’s answer also gives the address and port for the media, so the call can go direct." },
+        { "id": "b", "text": "No transit providers in between." },
+        { "id": "c", "text": "They agree on the Opus codec, for high-quality voice." },
+        { "id": "d", "text": "The media path is ready at four hundred milliseconds. Now Bob’s phone can ring." }
+      ]
+    },
+    {
+      "id": "brand",
+      "title": "Who’s calling, verified",
+      "segments": [
+        { "id": "a", "text": "Alpha’s verification answer also carries Alice’s caller details." },
+        { "id": "b", "text": "Her chosen display name, verified by Alpha, and an optional business logo." },
+        { "id": "c", "text": "Bravo shows this on Bob’s screen. Bob sees far more than a number." }
+      ]
+    },
+    {
+      "id": "answer",
+      "title": "Bob answers",
+      "segments": [
+        { "id": "a", "text": "Bob sees that Alice is verified, and answers." },
+        { "id": "b", "text": "The encrypted media path comes alive. Alice’s voice travels directly from Alpha to Bravo, with no intermediaries." },
+        { "id": "c", "text": "Encryption keeps it private. The direct path keeps it clear." },
+        { "id": "d", "text": "Under half a second of setup, then ringing: about 3.2 seconds from dialling to talking.", "say": "Under half a second of setup, then ringing: about three point two seconds from dialling to talking." }
+      ]
+    },
+    {
+      "id": "quality",
+      "title": "HD voice",
+      "segments": [
+        { "id": "a", "text": "During the call, Alice and Bob enjoy HD audio.", "say": "During the call, Alice and Bob enjoy H D audio." },
+        { "id": "b", "text": "The Opus codec gives natural-sounding, wideband voice." },
+        { "id": "c", "text": "Direct routing keeps latency low, at around 40 milliseconds." },
+        { "id": "d", "text": "With fewer hops, there is less jitter and packet loss. The conversation is crystal clear." }
+      ]
+    },
+    {
+      "id": "emergency",
+      "title": "If Alice dials 999",
+      "segments": [
+        { "id": "a", "text": "Now imagine Alice needs to call 999. Alpha recognises the emergency number at once." },
+        { "id": "b", "text": "Alpha has her phone’s real-time location: GPS, the serving cell and nearby Wi-Fi." },
+        { "id": "c", "text": "The emergency call centre asks Alpha for it with a PSTN2 location query, and gets it immediately." },
+        { "id": "d", "text": "Not from yesterday’s batch file. Right now." }
+      ]
+    },
+    {
+      "id": "learn",
+      "title": "Next time: straight to Bravo",
+      "segments": [
+        { "id": "a", "text": "When Bravo answered held, Alpha cached the answer against Bob’s number, for 24 hours." },
+        { "id": "b", "text": "So next time anyone at Alpha calls Bob, Alpha skips the list and the Range Holder, and goes straight to Bravo. One query." },
+        { "id": "c", "text": "If Bob ever moves again, Bravo will answer: not held, invalidate your cache. Alpha simply discovers again, and the call still connects." },
+        { "id": "d", "text": "The network learns, call by call, with no central database." }
+      ]
+    },
+    {
+      "id": "compare",
+      "title": "Today’s PSTN and PSTN2",
+      "segments": [
+        { "id": "a", "text": "Let’s compare. On today’s network, nobody can be sure a caller ID is genuine. With PSTN2, the caller is verified." },
+        { "id": "b", "text": "Today, calls cross several transit hops, unencrypted. PSTN2 connects directly, encrypted end to end." },
+        { "id": "c", "text": "Today’s voice quality is basic, and emergency location can be a day old. PSTN2 brings HD voice and real-time location.", "say": "Today’s voice quality is basic, and emergency location can be a day old. P S T N two brings H D voice and real-time location." },
+        { "id": "d", "text": "And call setup falls from five to eight seconds, to under one second." }
+      ]
+    },
+    {
+      "id": "cost",
+      "title": "The cost of a call",
+      "segments": [
+        { "id": "a", "text": "A traditional call might cost around 5p a minute, much of it in transit fees.", "say": "A traditional call might cost around five pence a minute, much of it in transit fees." },
+        { "id": "b", "text": "With PSTN2 direct routing, it could be less than 1p a minute.", "say": "With P S T N two direct routing, it could be less than a penny a minute." },
+        { "id": "c", "text": "Across millions of calls, that adds up to millions of pounds." },
+        { "id": "d", "text": "Savings that can be passed on to customers, or invested in better networks." }
+      ]
+    },
+    {
+      "id": "experience",
+      "title": "It just works",
+      "segments": [
+        { "id": "a", "text": "To Alice and Bob, none of this complexity is visible." },
+        { "id": "b", "text": "Alice dials. Bob answers. They talk." },
+        { "id": "c", "text": "It just works, only better: clearer audio, faster setup, more trust and better privacy." },
+        { "id": "d", "text": "That is the promise of PSTN2: better technology, with a seamless experience." }
+      ]
+    },
+    {
+      "id": "vision",
+      "title": "Everything, working together",
+      "segments": [
+        { "id": "a", "text": "This one call shows PSTN2’s capabilities working together." },
+        { "id": "b", "text": "Number discovery, caller verification, direct routing, encryption, branding and emergency location." },
+        { "id": "c", "text": "Not separate add-ons, but one integrated set of capabilities." },
+        { "id": "d", "text": "And every part of it can be built today, at the edge of the network, with no central database." }
+      ]
+    }
+  ]
+}

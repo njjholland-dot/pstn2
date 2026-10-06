@@ -1,0 +1,122 @@
+{
+  "deck": "map-architecture",
+  "title": "MAP Architecture",
+  "titleHtml": "PSTN2 for <span>every provider</span>",
+  "kicker": "Deployment model",
+  "subtitle": "How Managed Access Providers give smaller providers every PSTN2 capability as a hosted service, without building it themselves.",
+  "endNote": "PSTN2 for every provider, large or small, with each one still in control of its own numbers.",
+  "scenes": [
+    {
+      "id": "challenge",
+      "title": "The small provider challenge",
+      "segments": [
+        { "id": "a", "text": "PSTN2 needs some technical infrastructure: APIs, TLS certificates, signing keys, number discovery answers and a cache." },
+        { "id": "b", "text": "Large providers have engineering teams to build all of this." },
+        { "id": "c", "text": "But small providers, which make up most providers by number, often lack those resources." },
+        { "id": "d", "text": "Without help, they would be locked out of PSTN2’s benefits." }
+      ]
+    },
+    {
+      "id": "maps",
+      "title": "Managed Access Providers",
+      "segments": [
+        { "id": "a", "text": "Managed Access Providers, or MAPs, solve this problem." },
+        { "id": "b", "text": "A MAP offers PSTN2 capabilities as a hosted service." },
+        { "id": "c", "text": "Small providers connect to the MAP, and the MAP handles the technical complexity." },
+        { "id": "d", "text": "Think of it as cloud infrastructure for telecoms." }
+      ]
+    },
+    {
+      "id": "services",
+      "title": "What a MAP provides",
+      "segments": [
+        { "id": "a", "text": "A MAP provides the API endpoints for caller verification." },
+        { "id": "b", "text": "It answers number discovery queries for its customers’ numbers, including redirects for numbers they have ported out." },
+        { "id": "c", "text": "It runs discovery and caching for their outgoing calls." },
+        { "id": "d", "text": "It answers emergency location queries, manages signing and encryption keys, and offers a web portal for configuration." },
+        { "id": "e", "text": "Small providers get enterprise-grade infrastructure, without building it themselves." }
+      ]
+    },
+    {
+      "id": "integration",
+      "title": "Ways to connect",
+      "segments": [
+        { "id": "a", "text": "Small providers can connect to a MAP in whichever way suits them." },
+        { "id": "b", "text": "A web portal, with no technical staff needed." },
+        { "id": "c", "text": "REST APIs, for those with some technical capability." },
+        { "id": "d", "text": "A SIP proxy, for traditional PBX integration." },
+        { "id": "e", "text": "Or pre-built connectors for popular switching platforms. MAPs meet providers where they are." }
+      ]
+    },
+    {
+      "id": "market",
+      "title": "A competitive market",
+      "segments": [
+        { "id": "a", "text": "Several MAPs compete on service quality, price and features." },
+        { "id": "b", "text": "That makes sure providers get good value." },
+        { "id": "c", "text": "Unlike monopoly infrastructure, a MAP has to earn its customers, and keep them." },
+        { "id": "d", "text": "Competition drives innovation, and keeps costs down." }
+      ]
+    },
+    {
+      "id": "cost",
+      "title": "What it costs",
+      "segments": [
+        { "id": "a", "text": "MAPs typically charge a monthly subscription, based on call volume." },
+        { "id": "b", "text": "For a small provider handling a few thousand calls a month, that might be £50 to £200 a month.", "say": "For a small provider handling a few thousand calls a month, that might be fifty to two hundred pounds a month." },
+        { "id": "c", "text": "That is far less than hiring engineering staff, or building the infrastructure in-house." }
+      ]
+    },
+    {
+      "id": "trust",
+      "title": "The provider stays in control",
+      "segments": [
+        { "id": "a", "text": "A MAP acts on behalf of its providers, but never controls their numbers." },
+        { "id": "b", "text": "Each block stays allocated to the provider in Ofcom’s lists. The MAP simply hosts the provider’s PSTN2 address and answers on its behalf." },
+        { "id": "c", "text": "That limits how far anyone has to trust a MAP." },
+        { "id": "d", "text": "If a MAP fails, calls simply fall back to today’s network. And the provider can point its Range Holder URL at another MAP." }
+      ]
+    },
+    {
+      "id": "regulation",
+      "title": "Regulatory oversight",
+      "segments": [
+        { "id": "a", "text": "MAPs could be licensed, and subject to regulatory oversight." },
+        { "id": "b", "text": "That provides accountability." },
+        { "id": "c", "text": "Regulators could require MAPs to meet service standards, security requirements and operational transparency." },
+        { "id": "d", "text": "That protects small providers from a poorly run MAP." }
+      ]
+    },
+    {
+      "id": "scale",
+      "title": "Network effects",
+      "segments": [
+        { "id": "a", "text": "As more providers use MAPs, MAP services improve through economies of scale." },
+        { "id": "b", "text": "Better infrastructure, more features and lower costs." },
+        { "id": "c", "text": "Early adopters benefit too, as the ecosystem grows around them." },
+        { "id": "d", "text": "That creates a positive feedback loop, which accelerates adoption." }
+      ]
+    },
+    {
+      "id": "example",
+      "title": "A rural provider",
+      "segments": [
+        { "id": "a", "text": "Imagine a rural provider with five thousand customers and two employees." },
+        { "id": "b", "text": "It could never build PSTN2 infrastructure itself." },
+        { "id": "c", "text": "But by subscribing to a MAP for around £100 a month, it gets the full set of PSTN2 capabilities.", "say": "But by subscribing to a MAP for around a hundred pounds a month, it gets the full set of PSTN2 capabilities." },
+        { "id": "d", "text": "Caller verification, direct routing, encryption and emergency location." },
+        { "id": "e", "text": "Its customers get the same benefits as those of the largest carriers." }
+      ]
+    },
+    {
+      "id": "everyone",
+      "title": "PSTN2 for everyone",
+      "segments": [
+        { "id": "a", "text": "MAPs make sure PSTN2 benefits everyone, not just the largest carriers." },
+        { "id": "b", "text": "Small providers can take part. Rural providers can offer modern features." },
+        { "id": "c", "text": "The whole telecoms ecosystem improves." },
+        { "id": "d", "text": "That is how a well-designed architecture opens up technology to every provider." }
+      ]
+    }
+  ]
+}

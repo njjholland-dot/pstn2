@@ -3,152 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSTN2 - MAP Architecture: Democratizing Access</title>
-    <meta name="description" content="Animated walkthrough of the PSTN2 MAP architecture: managed access points that democratize network access for communication providers of every size.">
+    <title>MAP Architecture | PSTN2</title>
+    <meta name="description" content="How Managed Access Providers give small communication providers every PSTN2 capability as a hosted service, while the provider keeps control of its numbers.">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/pstn2-player.css">
+    <link rel="stylesheet" href="deck.css">
+    <script src="../../shared/vendor/d3.v7.9.0.min.js"></script>
+    <script type="module" src="scenes.js"></script>
 </head>
 <body>
-    <div class="animation-container">
-        <!-- Scene 1: The Small CP Challenge -->
-        <div class="scene" id="scene-1">
-            <h1 class="scene-title">The Small CP Challenge</h1>
-            <div class="visual-content">
-                <svg id="scene-1-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Most of PSTN2's capabilities require technical infrastructure: APIs, TLS certificates, directory services, caching layers. Large CPs have engineering teams to build this. But small CPs, which make up most providers by number, often lack these resources.">
-                Most of PSTN2's capabilities require technical infrastructure: APIs, TLS certificates, directory services, caching layers. Large CPs have engineering teams to build this. But small CPs, which make up most providers by number, often lack these resources.
-            </div>
-        </div>
-
-        <!-- Scene 2: Managed Access Providers -->
-        <div class="scene" id="scene-2" style="display: none;">
-            <h1 class="scene-title">Managed Access Providers</h1>
-            <div class="visual-content">
-                <svg id="scene-2-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="MAPs, or Managed Access Providers, solve this problem. They offer PSTN2 capabilities as a hosted service. Small CPs integrate with the MAP, and the MAP handles all the technical complexity. It's like cloud infrastructure for telecommunications.">
-                MAPs, or Managed Access Providers, solve this problem. They offer PSTN2 capabilities as a hosted service. Small CPs integrate with the MAP, and the MAP handles all the technical complexity. It's like cloud infrastructure for telecommunications.
-            </div>
-        </div>
-
-        <!-- Scene 3: Services Offered -->
-        <div class="scene" id="scene-3" style="display: none;">
-            <h1 class="scene-title">Services Offered</h1>
-            <div class="visual-content">
-                <svg id="scene-3-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="MAPs provide API endpoints for authentication queries, directory lookup services, number porting coordination, emergency location queries, encryption key management, and web portals for configuration. Small CPs get enterprise-grade infrastructure without building it themselves.">
-                MAPs provide API endpoints for authentication queries, directory lookup services, number porting coordination, emergency location queries, encryption key management, and web portals for configuration. Small CPs get enterprise-grade infrastructure without building it themselves.
-            </div>
-        </div>
-
-        <!-- Scene 4: Integration Options -->
-        <div class="scene" id="scene-4" style="display: none;">
-            <h1 class="scene-title">Integration Options</h1>
-            <div class="visual-content">
-                <svg id="scene-4-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Small CPs can integrate via web portals requiring no technical staff, RESTful APIs for those with some capability, SIP proxies for traditional PBX integration, or pre-built connectors for popular switching platforms. MAPs meet CPs where they are.">
-                Small CPs can integrate via web portals requiring no technical staff, RESTful APIs for those with some capability, SIP proxies for traditional PBX integration, or pre-built connectors for popular switching platforms. MAPs meet CPs where they are.
-            </div>
-        </div>
-
-        <!-- Scene 5: Competitive Market -->
-        <div class="scene" id="scene-5" style="display: none;">
-            <h1 class="scene-title">Competitive Market</h1>
-            <div class="visual-content">
-                <svg id="scene-5-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Multiple MAPs compete on service quality, pricing, and features. This ensures CPs get good value. Unlike monopoly infrastructure, MAP services must earn their customers. Competition drives innovation and keeps costs low.">
-                Multiple MAPs compete on service quality, pricing, and features. This ensures CPs get good value. Unlike monopoly infrastructure, MAP services must earn their customers. Competition drives innovation and keeps costs low.
-            </div>
-        </div>
-
-        <!-- Scene 6: Cost Structure -->
-        <div class="scene" id="scene-6" style="display: none;">
-            <h1 class="scene-title">Cost Structure</h1>
-            <div class="visual-content">
-                <svg id="scene-6-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="MAPs typically charge per-month subscription fees based on call volume. For a small CP handling a few thousand calls monthly, costs might be 50 to 200 pounds per month. This is far less than hiring engineering staff or building infrastructure in-house.">
-                MAPs typically charge per-month subscription fees based on call volume. For a small CP handling a few thousand calls monthly, costs might be 50 to 200 pounds per month. This is far less than hiring engineering staff or building infrastructure in-house.
-            </div>
-        </div>
-
-        <!-- Scene 7: Security and Trust -->
-        <div class="scene" id="scene-7" style="display: none;">
-            <h1 class="scene-title">Security and Trust</h1>
-            <div class="visual-content">
-                <svg id="scene-7-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="MAPs act on behalf of CPs but never control numbers directly. The CP remains the authoritative source. MAPs just provide infrastructure and API services. This limits trust requirements. Even if a MAP fails, the CP retains control of their numbers.">
-                MAPs act on behalf of CPs but never control numbers directly. The CP remains the authoritative source. MAPs just provide infrastructure and API services. This limits trust requirements. Even if a MAP fails, the CP retains control of their numbers.
-            </div>
-        </div>
-
-        <!-- Scene 8: Regulatory Position -->
-        <div class="scene" id="scene-8" style="display: none;">
-            <h1 class="scene-title">Regulatory Position</h1>
-            <div class="visual-content">
-                <svg id="scene-8-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="MAPs could be licensed entities subject to regulatory oversight. This provides accountability. Regulators could require MAPs to meet service standards, security requirements, and operational transparency. This protects small CPs from poor MAP behavior.">
-                MAPs could be licensed entities subject to regulatory oversight. This provides accountability. Regulators could require MAPs to meet service standards, security requirements, and operational transparency. This protects small CPs from poor MAP behavior.
-            </div>
-        </div>
-
-        <!-- Scene 9: Network Effects -->
-        <div class="scene" id="scene-9" style="display: none;">
-            <h1 class="scene-title">Network Effects</h1>
-            <div class="visual-content">
-                <svg id="scene-9-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="As more CPs use MAPs, MAP services improve through economies of scale. Better infrastructure, more features, lower costs. Early MAP adopters benefit as the ecosystem grows. This creates positive feedback loops accelerating adoption.">
-                As more CPs use MAPs, MAP services improve through economies of scale. Better infrastructure, more features, lower costs. Early MAP adopters benefit as the ecosystem grows. This creates positive feedback loops accelerating adoption.
-            </div>
-        </div>
-
-        <!-- Scene 10: Real-World Example -->
-        <div class="scene" id="scene-10" style="display: none;">
-            <h1 class="scene-title">Real-World Example</h1>
-            <div class="visual-content">
-                <svg id="scene-10-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Imagine a rural CP with 5,000 customers and two employees. They can't build PSTN2 infrastructure themselves. But by subscribing to a MAP for 100 pounds monthly, they get full PSTN2 capabilities: authentication, direct routing, encryption, emergency location. Their customers get benefits equal to major carriers.">
-                Imagine a rural CP with 5,000 customers and two employees. They can't build PSTN2 infrastructure themselves. But by subscribing to a MAP for 100 pounds monthly, they get full PSTN2 capabilities: authentication, direct routing, encryption, emergency location. Their customers get benefits equal to major carriers.
-            </div>
-        </div>
-
-        <!-- Scene 11: Democratization Impact -->
-        <div class="scene" id="scene-11" style="display: none;">
-            <h1 class="scene-title">Democratization Impact</h1>
-            <div class="visual-content">
-                <svg id="scene-11-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="MAPs ensure PSTN2 benefits everyone, not just large carriers. Small CPs can participate. Rural providers can offer modern features. The entire telecommunications ecosystem improves. This is true democratization of technology through well-designed architecture.">
-                MAPs ensure PSTN2 benefits everyone, not just large carriers. Small CPs can participate. Rural providers can offer modern features. The entire telecommunications ecosystem improves. This is true democratization of technology through well-designed architecture.
-            </div>
-        </div>
-
-        <!-- Navigation Controls -->
-        <div class="controls">
-            <button id="prev-btn" class="control-btn">← Previous</button>
-            <div class="scene-indicator">
-                <span id="current-scene">1</span> / <span id="total-scenes">11</span>
-            </div>
-            <button id="next-btn" class="control-btn">Next →</button>
-            <button id="play-btn" class="control-btn primary">▶ Play</button>
-            <button id="audio-btn" class="control-btn">🔊 Audio On</button>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill"></div>
-        </div>
-    </div>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="animation.js"></script>
+    <noscript>This presentation needs JavaScript. The script is in <a href="narration.json">narration.json</a>.</noscript>
 </body>
 </html>

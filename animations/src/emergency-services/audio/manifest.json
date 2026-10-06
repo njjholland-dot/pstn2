@@ -1,0 +1,261 @@
+{
+ "deck": "emergency-services",
+ "voice": "Daniel (English (UK))",
+ "rate": 172,
+ "generated": "2026-10-06T11:43:51.545Z",
+ "loudness": "-16 LUFS / -1.5 dBTP",
+ "scenes": {
+  "seconds": {
+   "file": "seconds.mp3",
+   "duration": 19.091,
+   "voice": "Daniel (English (UK))",
+   "sig": "e8fafe6285d72605",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.254
+    },
+    {
+     "id": "b",
+     "start": 5.704,
+     "end": 9.612
+    },
+    {
+     "id": "c",
+     "start": 10.062,
+     "end": 12.356
+    },
+    {
+     "id": "d",
+     "start": 12.806,
+     "end": 18.191
+    }
+   ]
+  },
+  "batch": {
+   "file": "batch.mp3",
+   "duration": 20.395,
+   "voice": "Daniel (English (UK))",
+   "sig": "5ab43a52fe1e90f0",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.308
+    },
+    {
+     "id": "b",
+     "start": 4.758,
+     "end": 10.663
+    },
+    {
+     "id": "c",
+     "start": 11.113,
+     "end": 13.216
+    },
+    {
+     "id": "d",
+     "start": 13.666,
+     "end": 19.495
+    }
+   ]
+  },
+  "precision": {
+   "file": "precision.mp3",
+   "duration": 18.805,
+   "voice": "Daniel (English (UK))",
+   "sig": "fdc529059d610c3c",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 6.935
+    },
+    {
+     "id": "b",
+     "start": 7.385,
+     "end": 10.85
+    },
+    {
+     "id": "c",
+     "start": 11.3,
+     "end": 14.501
+    },
+    {
+     "id": "d",
+     "start": 14.951,
+     "end": 17.905
+    }
+   ]
+  },
+  "realtime": {
+   "file": "realtime.mp3",
+   "duration": 23.561,
+   "voice": "Daniel (English (UK))",
+   "sig": "10d2769a6588080b",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.047
+    },
+    {
+     "id": "b",
+     "start": 5.497,
+     "end": 13.385
+    },
+    {
+     "id": "c",
+     "start": 13.835,
+     "end": 20.025
+    },
+    {
+     "id": "d",
+     "start": 20.475,
+     "end": 22.661
+    }
+   ]
+  },
+  "query": {
+   "file": "query.mp3",
+   "duration": 37.447,
+   "voice": "Daniel (English (UK))",
+   "sig": "eee65c1daa6cc40d",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 5.653
+    },
+    {
+     "id": "b",
+     "start": 6.103,
+     "end": 15.434
+    },
+    {
+     "id": "c",
+     "start": 15.884,
+     "end": 23.256
+    },
+    {
+     "id": "d",
+     "start": 23.706,
+     "end": 29.971
+    },
+    {
+     "id": "e",
+     "start": 30.421,
+     "end": 36.547
+    }
+   ]
+  },
+  "mobile": {
+   "file": "mobile.mp3",
+   "duration": 26.792,
+   "voice": "Daniel (English (UK))",
+   "sig": "ef360e6153be2d40",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.626
+    },
+    {
+     "id": "b",
+     "start": 5.076,
+     "end": 9.826
+    },
+    {
+     "id": "c",
+     "start": 10.276,
+     "end": 14.589
+    },
+    {
+     "id": "d",
+     "start": 15.039,
+     "end": 18.544
+    },
+    {
+     "id": "e",
+     "start": 18.994,
+     "end": 25.892
+    }
+   ]
+  },
+  "fixed": {
+   "file": "fixed.mp3",
+   "duration": 26.739,
+   "voice": "Daniel (English (UK))",
+   "sig": "81fe7acc4b7f2368",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.843
+    },
+    {
+     "id": "b",
+     "start": 5.293,
+     "end": 10.769
+    },
+    {
+     "id": "c",
+     "start": 11.219,
+     "end": 19.819
+    },
+    {
+     "id": "d",
+     "start": 20.269,
+     "end": 25.839
+    }
+   ]
+  },
+  "impact": {
+   "file": "impact.mp3",
+   "duration": 16.359,
+   "voice": "Daniel (English (UK))",
+   "sig": "8bd11fd4ce33c632",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.71
+    },
+    {
+     "id": "b",
+     "start": 5.16,
+     "end": 11.724
+    },
+    {
+     "id": "c",
+     "start": 12.174,
+     "end": 15.459
+    }
+   ]
+  },
+  "regulation": {
+   "file": "regulation.mp3",
+   "duration": 24.519,
+   "voice": "Daniel (English (UK))",
+   "sig": "af60467661f75b1c",
+   "segments": [
+    {
+     "id": "a",
+     "start": 0.6,
+     "end": 4.876
+    },
+    {
+     "id": "b",
+     "start": 5.326,
+     "end": 14.552
+    },
+    {
+     "id": "c",
+     "start": 15.002,
+     "end": 23.619
+    }
+   ]
+  }
+ }
+}

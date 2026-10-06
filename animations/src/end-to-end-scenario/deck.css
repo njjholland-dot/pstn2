@@ -1,0 +1,59 @@
+/* End-to-End Scenario — deck-specific styles */
+.e2-center { text-align: center; }
+.e2-section { font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-4); margin-top: 4px; }
+.e2-empty td { color: var(--ink-4) !important; font-style: italic; }
+.e2-path { text-transform: none !important; letter-spacing: 0.02em !important; font-family: var(--mono) !important; font-size: 17px !important; }
+
+/* Elapsed-time readout */
+.e2-clock { display: flex; align-items: baseline; justify-content: flex-end; gap: 14px; }
+.e2-clock span { font-size: 20px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.e2-clock b { font-family: var(--mono); font-size: 46px; font-weight: 700; color: var(--amber-2); }
+
+/* Struck-through pills (transit, skipped steps, batch file) */
+.p2-pill.e2-struck span { text-decoration: line-through; text-decoration-thickness: 3px; text-decoration-color: var(--red); }
+
+/* Bob's phone */
+.e2-phone { border-radius: 44px; background: linear-gradient(180deg, #0f1f40, #08132b); border: 3px solid rgba(148,163,184,0.45); box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 0 0 8px #050b19; display: flex; flex-direction: column; align-items: center; padding: 44px 28px 34px; text-align: center; }
+.e2-ph-top { font-size: 20px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+.e2-ph-avatar { width: 116px; height: 116px; border-radius: 50%; margin: 30px 0 18px; display: grid; place-items: center; font-size: 56px; font-weight: 800; color: #fff; background: var(--brand); }
+.e2-ph-name { font-size: 44px; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+.e2-ph-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 18px; font-weight: 700; color: var(--green-2); background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.45); border-radius: 999px; padding: 6px 14px; }
+.e2-ph-num { font-family: var(--mono); font-size: 24px; color: var(--ink-2); margin-top: 16px; }
+.e2-ph-btns { margin-top: auto; display: flex; gap: 70px; }
+.e2-ph-btns span { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+.e2-no { background: var(--red); }
+.e2-yes { background: var(--green); }
+
+/* HD audio waveform */
+.e2-wave { border-radius: 24px; background: var(--panel); border: 1.5px solid var(--line); overflow: hidden; }
+.e2-wave-bars { position: absolute; inset: 28px 340px 28px 34px; display: flex; align-items: center; gap: 6px; }
+.e2-wave-bars i { flex: 1; height: var(--h); border-radius: 6px; background: linear-gradient(180deg, var(--blue-2), var(--green)); animation: e2-wave 1.3s ease-in-out infinite; animation-delay: var(--d); }
+@keyframes e2-wave { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
+.p2-capture .e2-wave-bars i { animation: none; }
+.e2-wave-label { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 64px; font-weight: 800; letter-spacing: -0.02em; background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.e2-big { font-size: 64px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin-top: 10px; }
+
+/* Emergency */
+.e2-999 { display: flex; align-items: baseline; gap: 14px; }
+.e2-999 span { font-size: 24px; color: var(--ink-3); }
+.e2-999 b { font-size: 70px; line-height: 1; font-weight: 800; color: var(--red-2); }
+
+/* Comparison */
+.e2-cmp li { font-size: 30px; }
+.e2-cmp li .p2-chip { width: 50px; height: 50px; margin-top: -4px; }
+
+/* Cost bars */
+.e2-bar { border-radius: 12px; background: rgba(148,163,184,0.14); overflow: hidden; }
+.e2-bar i { display: block; height: 100%; width: 0; border-radius: 12px; background: var(--c); transition: width 1.2s var(--ease); }
+.e2-bar.e2-on i { width: var(--w); }
+
+/* Vision hub */
+.e2-hub { border-radius: 50%; display: grid; place-items: center; text-align: center; background: radial-gradient(circle at 50% 35%, rgba(59,130,246,0.35), transparent 70%), var(--panel-solid); border: 3px solid var(--blue); box-shadow: 0 20px 60px rgba(0,0,0,.45); transition: all .6s var(--ease); }
+.e2-hub b { display: block; font-size: 52px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.e2-hub span { font-size: 24px; color: var(--ink-3); }
+.e2-hub.e2-lit { border-color: var(--green); box-shadow: 0 0 0 10px rgba(16,185,129,0.18), 0 20px 60px rgba(0,0,0,.45); }
+.p2-pill.e2-lit { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 30%, transparent), 0 12px 34px rgba(0,0,0,0.35); }
+
+.e2-recog { opacity: 0; transform: translateY(8px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+.e2-recog.e2-on { opacity: 1; transform: none; }
+.e2-recog .p2-tag { font-size: 17px; }

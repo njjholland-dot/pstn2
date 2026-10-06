@@ -3,130 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSTN2 - Emergency Services Location</title>
-    <meta name="description" content="Animated walkthrough of PSTN2 emergency services support: real-time caller location delivered with every 999 call instead of overnight batch files.">
+    <title>Emergency Services | PSTN2</title>
+    <meta name="description" content="How PSTN2 gives 999 and 112 call centres the caller's real-time location from the caller's provider, found with number discovery, instead of a daily batch file.">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../../shared/pstn2-player.css">
+    <link rel="stylesheet" href="deck.css">
+    <script src="../../shared/vendor/d3.v7.9.0.min.js"></script>
+    <script type="module" src="scenes.js"></script>
 </head>
 <body>
-    <div class="animation-container">
-        <!-- Scene 1: The Life-or-Death Problem -->
-        <div class="scene" id="scene-1">
-            <h1 class="scene-title">The Life-or-Death Problem</h1>
-            <div class="visual-content">
-                <svg id="scene-1-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="When someone calls 999 or 112, every second counts. Emergency responders need accurate location information immediately. Lives depend on finding people quickly. Current systems often provide outdated or imprecise location data.">
-                When someone calls 999 or 112, every second counts. Emergency responders need accurate location information immediately. Lives depend on finding people quickly. Current systems often provide outdated or imprecise location data.
-            </div>
-        </div>
-
-        <!-- Scene 2: Current System Limitations -->
-        <div class="scene" id="scene-2" style="display: none;">
-            <h1 class="scene-title">Current System Limitations</h1>
-            <div class="visual-content">
-                <svg id="scene-2-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Today's emergency location system uses batch updates. CPs send location databases to emergency services once every 24 hours. This means the data can be up to a day old. If someone's location changed recently, the wrong information is sent.">
-                Today's emergency location system uses batch updates. CPs send location databases to emergency services once every 24 hours. This means the data can be up to a day old. If someone's location changed recently, the wrong information is sent.
-            </div>
-        </div>
-
-        <!-- Scene 3: Precision Problems -->
-        <div class="scene" id="scene-3" style="display: none;">
-            <h1 class="scene-title">Precision Problems</h1>
-            <div class="visual-content">
-                <svg id="scene-3-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Current systems often provide only postcode area precision, which can cover several square kilometers. In urban areas, this might encompass dozens of buildings. Responders waste precious time searching. In rural areas, the problem is even worse.">
-                Current systems often provide only postcode area precision, which can cover several square kilometers. In urban areas, this might encompass dozens of buildings. Responders waste precious time searching. In rural areas, the problem is even worse.
-            </div>
-        </div>
-
-        <!-- Scene 4: PSTN2 Real-Time Location -->
-        <div class="scene" id="scene-4" style="display: none;">
-            <h1 class="scene-title">PSTN2 Real-Time Location</h1>
-            <div class="visual-content">
-                <svg id="scene-4-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="PSTN2 provides real-time location queries. When a 999 call comes in, the terminating CP queries the originating CP immediately for current device location. The response includes GPS coordinates if available, accurate to within 10 meters.">
-                PSTN2 provides real-time location queries. When a 999 call comes in, the terminating CP queries the originating CP immediately for current device location. The response includes GPS coordinates if available, accurate to within 10 meters.
-            </div>
-        </div>
-
-        <!-- Scene 5: The Query Process -->
-        <div class="scene" id="scene-5" style="display: none;">
-            <h1 class="scene-title">The Query Process</h1>
-            <div class="visual-content">
-                <svg id="scene-5-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Emergency call arrives at CP. CP identifies it as emergency based on the destination number. CP queries the originating network: what is the current location of this device? Originating CP checks its database and responds within milliseconds with the most recent location data.">
-                Emergency call arrives at CP. CP identifies it as emergency based on the destination number. CP queries the originating network: what is the current location of this device? Originating CP checks its database and responds within milliseconds with the most recent location data.
-            </div>
-        </div>
-
-        <!-- Scene 6: Mobile Device Integration -->
-        <div class="scene" id="scene-6" style="display: none;">
-            <h1 class="scene-title">Mobile Device Integration</h1>
-            <div class="visual-content">
-                <svg id="scene-6-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="For mobile devices, location can include GPS coordinates, cell tower information, and WiFi access point data. The originating CP aggregates this information from the device. All of this is available in real-time, not from yesterday's batch file.">
-                For mobile devices, location can include GPS coordinates, cell tower information, and WiFi access point data. The originating CP aggregates this information from the device. All of this is available in real-time, not from yesterday's batch file.
-            </div>
-        </div>
-
-        <!-- Scene 7: Fixed Line Intelligence -->
-        <div class="scene" id="scene-7" style="display: none;">
-            <h1 class="scene-title">Fixed Line Intelligence</h1>
-            <div class="visual-content">
-                <svg id="scene-7-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Even for fixed lines, PSTN2 improves accuracy. Instead of just an address from last year's database, CPs can provide recently verified billing address, installation records, and customer-confirmed location information. All updated in real-time.">
-                Even for fixed lines, PSTN2 improves accuracy. Instead of just an address from last year's database, CPs can provide recently verified billing address, installation records, and customer-confirmed location information. All updated in real-time.
-            </div>
-        </div>
-
-        <!-- Scene 8: Response Time Impact -->
-        <div class="scene" id="scene-8" style="display: none;">
-            <h1 class="scene-title">Response Time Impact</h1>
-            <div class="visual-content">
-                <svg id="scene-8-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="Real-time location data can reduce emergency response times by minutes. Studies show that in cardiac arrest cases, every minute of delay reduces survival chance by 10%. Faster response times directly translate to lives saved.">
-                Real-time location data can reduce emergency response times by minutes. Studies show that in cardiac arrest cases, every minute of delay reduces survival chance by 10%. Faster response times directly translate to lives saved.
-            </div>
-        </div>
-
-        <!-- Scene 9: Regulatory Compliance -->
-        <div class="scene" id="scene-9" style="display: none;">
-            <h1 class="scene-title">Regulatory Compliance</h1>
-            <div class="visual-content">
-                <svg id="scene-9-diagram" width="700" height="400"></svg>
-            </div>
-            <div class="narration" data-speech="PSTN2 emergency location exceeds current regulatory requirements. The EU's eCall directive, US's E911, and UK's Advanced Mobile Location all envision real-time location. PSTN2 provides the infrastructure to deliver it across all carriers.">
-                PSTN2 emergency location exceeds current regulatory requirements. The EU's eCall directive, US's E911, and UK's Advanced Mobile Location all envision real-time location. PSTN2 provides the infrastructure to deliver it across all carriers.
-            </div>
-        </div>
-
-        <!-- Navigation Controls -->
-        <div class="controls">
-            <button id="prev-btn" class="control-btn">← Previous</button>
-            <div class="scene-indicator">
-                <span id="current-scene">1</span> / <span id="total-scenes">9</span>
-            </div>
-            <button id="next-btn" class="control-btn">Next →</button>
-            <button id="play-btn" class="control-btn primary">▶ Play</button>
-            <button id="audio-btn" class="control-btn">🔊 Audio On</button>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill"></div>
-        </div>
-    </div>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="animation.js"></script>
+    <noscript>This presentation needs JavaScript. The script is in <a href="narration.json">narration.json</a>.</noscript>
 </body>
 </html>
