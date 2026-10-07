@@ -1,0 +1,10 @@
+# Always revalidate presentation files, so a redeploy (new scenes, new narration)
+# reaches every viewer immediately. Unchanged files cost one 304 round trip.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|css|json|mp3)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(woff2|svg|png|ico)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
