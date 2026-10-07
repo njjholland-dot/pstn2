@@ -40,7 +40,7 @@ node tools/narrate/build-narration.mjs <deck>                 # only changed lin
 PSTN2_VOICE="Jamie (Premium)" node tools/narrate/build-narration.mjs --force   # re-voice everything
 ```
 
-The best installed en-GB voice is chosen automatically (Premium, then Enhanced, then Daniel). To add Premium voices, go to System Settings › Accessibility › Spoken Content › System voice › Manage Voices.
+The current narration uses the **Siri British English voice C**, rendered with `PSTN2_VOICE=system`: `say` with no voice name speaks with the macOS System Voice, and Siri voices are only reachable that way. Without `PSTN2_VOICE`, the best installed en-GB voice is chosen (Premium, then Enhanced, then Daniel). To add Premium voices, go to System Settings › Accessibility › Spoken Content › System voice › Manage Voices.
 
 ## Authoring
 

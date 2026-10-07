@@ -17,7 +17,7 @@
                 <a href="#delivered">Delivered</a>
                 <a href="#per-presentation">Per presentation</a>
                 <a href="#quality-checks-performed">Quality checks performed</a>
-                <a href="#known-limitation">Known limitation</a>
+                <a href="#narration-voice">Narration voice</a>
                 <a href="DELIVERY_COMPLETE.md">View Markdown</a>
             </div>
         </nav>
@@ -140,12 +140,12 @@ by eye.</li>
 <li>Normal playback verified for caption and cue sync.</li>
 <li>Loudness measured on rendered audio.</li>
 </ul>
-<h2 id="known-limitation">Known limitation</h2>
-<p>The narration was rendered with the standard macOS voice "Daniel
-(English (UK))" because no Premium or Enhanced en-GB voice was installed
-when it was built. Install one, then re-render with
-<code>--force</code>. The scripts and cue timings don't change; the
-timings regenerate automatically.</p>
+<h2 id="narration-voice">Narration voice</h2>
+<p>All narration is rendered with the <strong>Siri British English voice
+C</strong> (<code>com.apple.siri.natural.en-GB-C</code>), set as the
+macOS System Voice and rendered with
+<code>PSTN2_VOICE=system node tools/narrate/build-narration.mjs --force</code>.
+Loudness was measured at −16.5 to −16.7 LUFS.</p>
     </main>
 
     <footer class="doc-footer">

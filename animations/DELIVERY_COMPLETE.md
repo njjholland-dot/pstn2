@@ -38,5 +38,5 @@
 - Normal playback verified for caption and cue sync.
 - Loudness measured on rendered audio.
 
-## Known limitation
-The narration was rendered with the standard macOS voice "Daniel (English (UK))" because no Premium or Enhanced en-GB voice was installed when it was built. Install one, then re-render with `--force`. The scripts and cue timings don't change; the timings regenerate automatically.
+## Narration voice
+All narration is rendered with the **Siri British English voice C** (`com.apple.siri.natural.en-GB-C`), set as the macOS System Voice and rendered with `PSTN2_VOICE=system node tools/narrate/build-narration.mjs --force`. Loudness was measured at −16.5 to −16.7 LUFS.

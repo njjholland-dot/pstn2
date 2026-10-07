@@ -161,9 +161,14 @@ then run:</p>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/narrate/build-narration.mjs <span class="op">&lt;</span>deck<span class="op">&gt;</span>                 <span class="co"># only changed lines are re-rendered</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_VOICE</span><span class="op">=</span><span class="st">&quot;Jamie (Premium)&quot;</span> <span class="ex">node</span> tools/narrate/build-narration.mjs <span class="at">--force</span>   <span class="co"># re-voice everything</span></span></code></pre></div>
-<p>The best installed en-GB voice is chosen automatically (Premium, then
-Enhanced, then Daniel). To add Premium voices, go to System Settings ›
-Accessibility › Spoken Content › System voice › Manage Voices.</p>
+<p>The current narration uses the <strong>Siri British English voice
+C</strong>, rendered with <code>PSTN2_VOICE=system</code>:
+<code>say</code> with no voice name speaks with the macOS System Voice,
+and Siri voices are only reachable that way. Without
+<code>PSTN2_VOICE</code>, the best installed en-GB voice is chosen
+(Premium, then Enhanced, then Daniel). To add Premium voices, go to
+System Settings › Accessibility › Spoken Content › System voice › Manage
+Voices.</p>
 <h2 id="authoring">Authoring</h2>
 <p>See <a
 href="https://github.com/njjholland-dot/pstn2/blob/main/animations/shared/README.md">shared/README.md</a>

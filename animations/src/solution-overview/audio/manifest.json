@@ -1,325 +1,324 @@
 {
  "deck": "solution-overview",
- "voice": "Daniel (English (UK))",
+ "voice": "system:com.apple.siri.natural.en-GB-C",
  "rate": 172,
- "generated": "2026-10-06T11:58:06.903Z",
+ "generated": "2026-10-06T18:46:11.885Z",
  "loudness": "-16 LUFS / -1.5 dBTP",
  "scenes": {
   "insight": {
    "file": "insight.mp3",
-   "duration": 20.431,
-   "voice": "Daniel (English (UK))",
-   "sig": "ecc565db49963a8b",
+   "duration": 19.549,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "b8594cdb59663357",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 6.622
+     "end": 6.432
     },
     {
      "id": "b",
-     "start": 7.072,
-     "end": 14.262
+     "start": 6.882,
+     "end": 13.531
     },
     {
      "id": "c",
-     "start": 14.712,
-     "end": 16.516
+     "start": 13.981,
+     "end": 15.639
     },
     {
      "id": "d",
-     "start": 16.966,
-     "end": 19.531
+     "start": 16.089,
+     "end": 18.649
     }
    ]
   },
   "distributed": {
    "file": "distributed.mp3",
-   "duration": 17.874,
-   "voice": "Daniel (English (UK))",
-   "sig": "4517c2e2156a6b88",
+   "duration": 17.016,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "b719ba9f6340ff7e",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 7.148
+     "end": 6.671
     },
     {
      "id": "b",
-     "start": 7.598,
-     "end": 12.548
+     "start": 7.121,
+     "end": 11.953
     },
     {
      "id": "c",
-     "start": 12.998,
-     "end": 16.974
+     "start": 12.403,
+     "end": 16.116
     }
    ]
   },
   "capabilities": {
    "file": "capabilities.mp3",
-   "duration": 29.098,
-   "voice": "Daniel (English (UK))",
-   "sig": "071b6ed7a8e98e7c",
+   "duration": 27.599,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "5eab8b878c46ce6e",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 7.165
+     "end": 6.745
     },
     {
      "id": "b",
-     "start": 7.615,
-     "end": 13.611
+     "start": 7.195,
+     "end": 12.855
     },
     {
      "id": "c",
-     "start": 14.061,
-     "end": 19.738
+     "start": 13.305,
+     "end": 18.648
     },
     {
      "id": "d",
-     "start": 20.188,
-     "end": 28.198
+     "start": 19.098,
+     "end": 26.699
     }
    ]
   },
   "optional": {
    "file": "optional.mp3",
-   "duration": 26.408,
-   "voice": "Daniel (English (UK))",
-   "sig": "e5d9a7e5b7776273",
+   "duration": 24.838,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "aa267a2ecd0689e6",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 3.454
+     "end": 3.216
     },
     {
      "id": "b",
-     "start": 3.904,
-     "end": 8.28
+     "start": 3.666,
+     "end": 7.786
     },
     {
      "id": "c",
-     "start": 8.73,
-     "end": 17.065
+     "start": 8.236,
+     "end": 15.907
     },
     {
      "id": "d",
-     "start": 17.515,
-     "end": 25.508
+     "start": 16.357,
+     "end": 23.938
     }
    ]
   },
   "nocdb": {
    "file": "nocdb.mp3",
-   "duration": 41.842,
-   "voice": "Daniel (English (UK))",
-   "sig": "831ffb4ec8d261a8",
+   "duration": 39.806,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "a921d42802d75baa",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 9.447
+     "end": 9.173
     },
     {
      "id": "b",
-     "start": 9.897,
-     "end": 14.006
+     "start": 9.623,
+     "end": 13.492
     },
     {
      "id": "c",
-     "start": 14.456,
-     "end": 22.647
+     "start": 13.942,
+     "end": 21.883
     },
     {
      "id": "d",
-     "start": 23.097,
-     "end": 29.945
+     "start": 22.333,
+     "end": 28.77
     },
     {
      "id": "e",
-     "start": 30.395,
-     "end": 40.942
+     "start": 29.22,
+     "end": 38.906
     }
    ]
   },
   "how": {
    "file": "how.mp3",
-   "duration": 48.236,
-   "voice": "Daniel (English (UK))",
-   "sig": "b6f740eac26bf414",
+   "duration": 45.868,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "8ad33804e5b17867",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 5.024
+     "end": 4.692
     },
     {
      "id": "b",
-     "start": 5.474,
-     "end": 10.092
+     "start": 5.142,
+     "end": 9.399
     },
     {
      "id": "c",
-     "start": 10.542,
-     "end": 17.614
+     "start": 9.849,
+     "end": 16.684
     },
     {
      "id": "d",
-     "start": 18.064,
-     "end": 27.262
+     "start": 17.134,
+     "end": 26.157
     },
     {
      "id": "e",
-     "start": 27.712,
-     "end": 30.176
+     "start": 26.607,
+     "end": 28.935
     },
     {
      "id": "f",
-     "start": 30.626,
-     "end": 32.809
+     "start": 29.385,
+     "end": 31.447
     },
     {
      "id": "g",
-     "start": 33.259,
-     "end": 39.901
+     "start": 31.897,
+     "end": 38.274
     },
     {
      "id": "h",
-     "start": 40.351,
-     "end": 44.246
+     "start": 38.724,
+     "end": 42.306
     },
     {
      "id": "i",
-     "start": 44.696,
-     "end": 47.336
+     "start": 42.756,
+     "end": 44.968
     }
    ]
   },
   "regulator": {
    "file": "regulator.mp3",
-   "duration": 53.172,
-   "voice": "Daniel (English (UK))",
-   "sig": "7f61c73720465f90",
+   "duration": 50.345,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "64b4968196d0bfc3",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 7.871
+     "end": 7.5
     },
     {
      "id": "b",
-     "start": 8.321,
-     "end": 15.457
+     "start": 7.95,
+     "end": 14.728
     },
     {
      "id": "c",
-     "start": 15.907,
-     "end": 24.244
+     "start": 15.178,
+     "end": 23.127
     },
     {
      "id": "d",
-     "start": 24.694,
-     "end": 32.802
+     "start": 23.577,
+     "end": 31.478
     },
     {
      "id": "e",
-     "start": 33.252,
-     "end": 39.701
+     "start": 31.928,
+     "end": 37.759
     },
     {
      "id": "f",
-     "start": 40.151,
-     "end": 44.539
+     "start": 38.209,
+     "end": 42.073
     },
     {
      "id": "g",
-     "start": 44.989,
-     "end": 52.272
+     "start": 42.523,
+     "end": 49.445
     }
    ]
   },
   "security": {
    "file": "security.mp3",
-   "duration": 25.024,
-   "voice": "Daniel (English (UK))",
-   "sig": "20c9a21e7a104005",
+   "duration": 23.791,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "f0767fa44de6665e",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 4.17
+     "end": 3.938
     },
     {
      "id": "b",
-     "start": 4.62,
-     "end": 10.788
+     "start": 4.388,
+     "end": 10.2
     },
     {
      "id": "c",
-     "start": 11.238,
-     "end": 18.061
+     "start": 10.65,
+     "end": 17.076
     },
     {
      "id": "d",
-     "start": 18.511,
-     "end": 24.124
+     "start": 17.526,
+     "end": 22.891
     }
    ]
   },
   "maps": {
    "file": "maps.mp3",
-   "duration": 37.629,
-   "voice": "Daniel (English (UK))",
-   "sig": "a976abfd0cf7d74b",
+   "duration": 35.801,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "9a132f34e601de8e",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 7.02
+     "end": 6.566
     },
     {
      "id": "b",
-     "start": 7.47,
-     "end": 16.605
+     "start": 7.016,
+     "end": 15.799
     },
     {
      "id": "c",
-     "start": 17.055,
-     "end": 24.947
+     "start": 16.249,
+     "end": 23.501
     },
     {
      "id": "d",
-     "start": 25.397,
-     "end": 27.748
+     "start": 23.951,
+     "end": 26.206
     },
     {
      "id": "e",
-     "start": 28.198,
-     "end": 36.729
+     "start": 26.656,
+     "end": 34.901
     }
    ]
   },
   "join": {
    "file": "join.mp3",
-   "duration": 21.389,
-   "voice": "Daniel (English (UK))",
-   "sig": "7d17b70c75b1ce17",
+   "duration": 20.297,
+   "voice": "system:com.apple.siri.natural.en-GB-C",
+   "sig": "48701c560770c5f0",
    "segments": [
     {
      "id": "a",
      "start": 0.6,
-     "end": 10.487
+     "end": 10.02
     },
     {
      "id": "b",
-     "start": 10.937,
-     "end": 20.489
+     "start": 10.47,
+     "end": 19.397
     }
    ]
   }
- },
- "phrases": {}
+ }
 }

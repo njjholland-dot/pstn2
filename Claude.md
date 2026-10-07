@@ -47,9 +47,6 @@ PSTN2 is a telecom industry standards project that tackles critical problems in 
 6. **Documentation:** specification, API spec, implementation guide, testing specification, EXAMPLES, MAP guides. All are rendered to HTML with `tools/render-docs.py`.
 
 ### 🚧 Next phases
-- A Premium/Enhanced macOS en-GB voice for the final narration render.
-  - `say -v '?'` lists the installed voices.
-  - Re-render with `PSTN2_VOICE="<name>" node tools/narrate/build-narration.mjs --force`.
 - Persuade Ofcom to publish the Range Holder URL field on the S1–S9 lists.
 - CI pipeline running `test-environment/conformance/run.sh`.
 - Community contributions on GitHub.
@@ -142,7 +139,7 @@ pstn2/
 
 ### Presentations and website
 - HTML5/CSS3, vanilla JavaScript ES modules, and D3.js v7 (self-hosted).
-- Pre-rendered narration: macOS `say` with an en-GB voice, then ffmpeg loudnorm to MP3.
+- Pre-rendered narration: macOS `say`, then ffmpeg loudnorm to MP3. The current voice is Siri British English C, set as the System Voice and rendered with `PSTN2_VOICE=system` (Siri voices aren't listed by `say -v '?'`).
   - The live Web Speech fallback uses the Law Enforcement voice ranking (Google en-GB, Neural en-GB, Daniel, Kate).
 - Inter font and Lucide icons (ISC licence), both self-hosted. **No emoji in presentations.**
 
