@@ -1,5 +1,5 @@
 /**
- * Example 6: Number Discovery — "who has this number?"
+ * Example 5: Number Discovery — "who has this number?"
  *
  * Walks through Number Discovery hop by hop (SPECIFICATION.md §9).
  *
@@ -8,15 +8,15 @@
  *   D number ports back, stale cache invalidated (POST /admin/port) ·
  *   E not in service · F Range Holder not participating · G unallocated
  *     node test-environment/mock-network/server.mjs     (repo root)
- *     npm run example:06
+ *     npm run example:05
  *
  * LIVE: against the dummy test CPs at https://pstn2.org/testcp, verifying
  * every answer's Ed25519 signature:
- *     PSTN2_NETWORK=live npm run example:06
+ *     PSTN2_NETWORK=live npm run example:05
  *   or a local copy of the dummy CP (static-host emulator):
  *     node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/testcp
  *     node test-environment/mock-network/static-server.mjs --dir /tmp/testcp --port 47902
- *     PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:06
+ *     PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:05
  *
  * The walkthrough is picked from the numbering list's contents: the dummy
  * test CP blocks (07700 900 xxx) → test-CP walkthrough; otherwise A–G.
@@ -145,7 +145,7 @@ function testCpSteps(): Step[] {
 }
 
 async function main() {
-  banner('PSTN2 Example 6 — Number Discovery', '"Which CP currently holds this number?" — no central database');
+  banner('PSTN2 Example 5 — Number Discovery', '"Which CP currently holds this number?" — no central database');
   const env = networkConfigFromEnv();
   // Peek at the list to choose the walkthrough (startOrExit reports load failures).
   const list = NumberingList.fromUrl(env.numberingListUrl);

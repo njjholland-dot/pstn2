@@ -1,22 +1,21 @@
 # PSTN2 presentations
 
-Eleven narrated presentations explaining PSTN2. They are built for television and for large conference screens, and they run on a shared broadcast player (`shared/`).
+Ten narrated presentations explaining PSTN2. They are built for television and for large conference screens, and they run on a shared broadcast player (`shared/`).
 
 | # | Presentation | Series | Scenes | Running time |
 |---|---|---|---|---|
-| 1 | [The Problem](https://pstn2.org/src/problem-statement/) | Core presentation | 8 | 3.8 min |
-| 2 | [Solution Overview](https://pstn2.org/src/solution-overview/) | Core presentation | 10 | 5.4 min |
-| 3 | [Authentication: Direct Query](https://pstn2.org/src/authentication-option1/) | Technical deep dive | 10 | 4.5 min |
-| 4 | [Authentication: Token Pool](https://pstn2.org/src/authentication-option2/) | Technical deep dive | 11 | 4.1 min |
-| 5 | [Direct Routing](https://pstn2.org/src/direct-routing/) | Technical deep dive | 12 | 4.5 min |
-| 6 | [Emergency Services](https://pstn2.org/src/emergency-services/) | Use case | 9 | 3.6 min |
-| 7 | [Who Has This Number?](https://pstn2.org/src/distributed-database/) | Distributed Database | 12 | 6.6 min |
-| 8 | [Test Harness: Who Has This Number?](https://pstn2.org/src/test-harness/) | Live demo | 8 | 4.7 min |
-| 9 | [MAP Architecture](https://pstn2.org/src/map-architecture/) | Deployment model | 11 | 4.0 min |
-| 10 | [End-to-End Scenario](https://pstn2.org/src/end-to-end-scenario/) | Use case | 15 | 6.0 min |
-| 11 | [Law Enforcement Access](https://pstn2.org/src/law-enforcement/) | Use case | 8 | 4.6 min |
+| 1 | [The Problem](https://pstn2.org/src/problem-statement/) | Core presentation | 8 | 3.6 min |
+| 2 | [Solution Overview](https://pstn2.org/src/solution-overview/) | Core presentation | 10 | 5.1 min |
+| 3 | [Caller Authentication](https://pstn2.org/src/authentication/) | Technical deep dive | 10 | 4.3 min |
+| 4 | [Direct Routing](https://pstn2.org/src/direct-routing/) | Technical deep dive | 12 | 4.3 min |
+| 5 | [Emergency Services](https://pstn2.org/src/emergency-services/) | Use case | 9 | 3.4 min |
+| 6 | [Who Has This Number?](https://pstn2.org/src/distributed-database/) | Distributed Database | 12 | 6.3 min |
+| 7 | [Test Harness: Who Has This Number?](https://pstn2.org/src/test-harness/) | Live demo | 8 | 4.5 min |
+| 8 | [MAP Architecture](https://pstn2.org/src/map-architecture/) | Deployment model | 11 | 3.9 min |
+| 9 | [End-to-End Scenario](https://pstn2.org/src/end-to-end-scenario/) | Use case | 15 | 5.7 min |
+| 10 | [Law Enforcement Access](https://pstn2.org/src/law-enforcement/) | Use case | 8 | 4.3 min |
 
-**Total: 114 scenes, about 52 minutes.**
+**Total: 103 scenes, about 45 minutes.**
 
 ## Watching and presenting
 
@@ -74,7 +73,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 9. Managed Access Providers
 10. Join the movement
 
-### 3. Authentication: Direct Query
+### 3. Caller Authentication
 1. Caller ID can be faked
 2. Just ask the caller’s provider
 3. The query, step by step
@@ -86,20 +85,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 9. One endpoint to build
 10. Restoring trust in the phone
 
-### 4. Authentication: Token Pool
-1. A second way to verify
-2. Creating a token
-3. Checking the token
-4. Governing a shared pool
-5. Built for volume
-6. No single pool to fail
-7. Security model
-8. Simpler for small providers
-9. Both options, side by side
-10. The trade-offs
-11. Open to every provider
-
-### 5. Direct Routing
+### 4. Direct Routing
 1. The transit problem
 2. Connect directly
 3. Finding the other provider
@@ -113,7 +99,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 11. Peering made simple
 12. Geographic optimisation
 
-### 6. Emergency Services
+### 5. Emergency Services
 1. Every second counts
 2. Today: a daily batch file
 3. Too vague to act on
@@ -124,7 +110,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 8. Minutes saved, lives saved
 9. Where regulation is heading
 
-### 7. Who Has This Number?
+### 6. Who Has This Number?
 1. One question behind every call
 2. The central database answer
 3. The data already exists
@@ -138,7 +124,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 11. Resilient and secure by design
 12. Who has this number? Ask.
 
-### 8. Test Harness: Who Has This Number?
+### 7. Test Harness: Who Has This Number?
 1. Meet the test network
 2. Every provider keeps a copy of Ofcom’s list
 3. Scenario A · An unported number
@@ -148,7 +134,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 7. When there is no PSTN2 answer
 8. Your turn
 
-### 9. MAP Architecture
+### 8. MAP Architecture
 1. The small provider challenge
 2. Managed Access Providers
 3. What a MAP provides
@@ -161,7 +147,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 10. A rural provider
 11. PSTN2 for everyone
 
-### 10. End-to-End Scenario
+### 9. End-to-End Scenario
 1. Meet Alice and Bob
 2. Alice dials
 3. Who has Bob’s number?
@@ -178,7 +164,7 @@ See [shared/README.md](https://github.com/njjholland-dot/pstn2/blob/main/animati
 14. It just works
 15. Everything, working together
 
-### 11. Law Enforcement Access
+### 10. Law Enforcement Access
 1. The core insight
 2. How it works
 3. Authorised parties use the same steps

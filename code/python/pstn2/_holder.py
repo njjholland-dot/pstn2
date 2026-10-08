@@ -1,6 +1,6 @@
 """Calling a number's current holder, with the §5.1.2 / §9.5 not_held recovery.
 
-Every service call (verify, token pool, routing, emergency) is addressed to the CP that
+Every service call (verify, routing, emergency) is addressed to the CP that
 currently holds a number:
 
 1. find the holder with ``discover(number)`` (or use one the caller already resolved);

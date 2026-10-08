@@ -43,8 +43,8 @@ are then sent to the holder it finds.</p>
 prefix) → Range Holder → redirect for ported numbers → holder, with
 per-number caching, stale-cache invalidation, hop limit and loop
 detection, and optional Ed25519 signature verification</li>
-<li><strong>Caller ID verification</strong>: Direct Query (§5.1) and
-Token Pool (§5.2)</li>
+<li><strong>Caller ID verification</strong>: Direct Query (§5.1) to the
+caller ID's holder</li>
 <li><strong>Direct routing</strong> with codec and SRTP negotiation
 (§6)</li>
 <li><strong>Emergency location</strong> for PSAPs (§8)</li>
@@ -165,7 +165,7 @@ suite checks this directly. A cached entry is only a hint: if the number
 has moved, the CP you reach answers <code>not_held</code> with
 <code>cache.invalidate</code>, and discovery goes back to the Range
 Holder. A stale entry costs one extra query, never a misrouted call.</p>
-<p>Service calls apply the same rule (§5.1.2): if a verification, token,
+<p>Service calls apply the same rule (§5.1.2): if a verification,
 routing or emergency request reaches a CP that answers HTTP 200
 <code>{"result": "not_held", "cache": {"invalidate": true}}</code>, the
 SDK purges the entry, rediscovers and retries <strong>once</strong> at
@@ -182,10 +182,9 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a hr
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    timeout<span class="op">=</span><span class="fl">2.0</span>, retries<span class="op">=</span><span class="dv">3</span>,         <span class="co"># per request; retries only for 503/504/network errors (§10.3)</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    hop_limit<span class="op">=</span><span class="dv">5</span>, default_ttl<span class="op">=</span><span class="dv">86400</span>, list_refresh_seconds<span class="op">=</span><span class="dv">86400</span>,</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    private_key<span class="op">=</span><span class="va">None</span>,               <span class="co"># Ed25519 key for request signatures (ephemeral if None)</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    token_pool_url<span class="op">=</span><span class="va">None</span>, token_pool_auth<span class="op">=</span><span class="va">None</span>,   <span class="co"># dedicated token pool, if any</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    on_event<span class="op">=</span><span class="va">None</span>,                  <span class="co"># discovery event hook (sync or async)</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    http_client<span class="op">=</span><span class="va">None</span>,               <span class="co"># bring your own httpx.AsyncClient</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    on_event<span class="op">=</span><span class="va">None</span>,                  <span class="co"># discovery event hook (sync or async)</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    http_client<span class="op">=</span><span class="va">None</span>,               <span class="co"># bring your own httpx.AsyncClient</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <table>
 <thead>
 <tr>
@@ -207,16 +206,8 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a hr
 <td>the <code>NumberingList</code> and <code>DiscoveryCache</code></td>
 </tr>
 <tr>
-<td><code>client.auth.verify_call(caller_id, called_id, call_reference=None, *, token_id=None, holder=None)</code></td>
+<td><code>client.auth.verify_call(caller_id, called_id, call_reference=None, *, holder=None)</code></td>
 <td><code>VerificationResult</code></td>
-</tr>
-<tr>
-<td><code>client.auth.create_token(caller_id, called_id, call_reference=None, *, ttl=30, branding=None)</code></td>
-<td><code>TokenCreateResult</code></td>
-</tr>
-<tr>
-<td><code>client.auth.verify_token(token_id, caller_id)</code></td>
-<td><code>TokenVerifyResponse</code> or <code>None</code></td>
 </tr>
 <tr>
 <td><code>client.routing.request_routing(destination, caller_id, media_capabilities=None, call_reference=None, *, branding=None, holder=None)</code></td>
@@ -238,7 +229,7 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a hr
 </table>
 <p><code>holder=</code> accepts a <code>CpRef</code> or a held
 <code>DiscoveryResult</code> you already have, to skip the discovery
-query (example 05 reuses its Phase 1 answer for routing).</p>
+query (example 04 reuses its Phase 1 answer for routing).</p>
 <p>Outcomes, not exceptions: <code>verify_call</code> and
 <code>request_routing</code> return <code>verified=False</code> /
 <code>accepted=False</code> with <code>reason</code> and
@@ -368,7 +359,6 @@ default page) means <code>unknown</code>.</p>
 <code>.status</code>) → <code>PSTN2TimeoutError</code>,
 <code>NetworkError</code>, <code>InvalidResponseError</code>,
 <code>ApiError</code> (<code>CallNotFoundError</code>,
-<code>TokenExpiredError</code>, <code>InvalidTokenError</code>,
 <code>RateLimitError</code>), <code>DiscoveryError</code>
 (<code>.discovery</code>), <code>NotHeldError</code>,
 <code>ValidationError</code>.</p>
@@ -396,25 +386,19 @@ fallbacks</td>
 </tr>
 <tr>
 <td>03</td>
-<td><code>examples/03_token_pool.py</code></td>
-<td>Originating CP creates a token, terminating CP verifies it; forged
-token falls back to Direct Query</td>
-</tr>
-<tr>
-<td>04</td>
-<td><code>examples/04_emergency_services.py</code></td>
+<td><code>examples/03_emergency_services.py</code></td>
 <td>PSAP location query for a held number; fallback for an unknown
 one</td>
 </tr>
 <tr>
-<td>05</td>
-<td><code>examples/05_complete_call_flow.py</code></td>
+<td>04</td>
+<td><code>examples/04_complete_call_flow.py</code></td>
 <td>Discovery (with redirect) → authentication → routing → summary, then
 a cache hit</td>
 </tr>
 <tr>
-<td>06</td>
-<td><code>examples/06_number_discovery.py</code></td>
+<td>05</td>
+<td><code>examples/05_number_discovery.py</code></td>
 <td>"Who has this number?" hop by hop: scenarios A–G locally, or the
 dummy test CP with signatures</td>
 </tr>
@@ -427,12 +411,12 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href=
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># terminal 2</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python</span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/01_basic_authentication.py</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/05_complete_call_flow.py</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/06_number_discovery.py</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/04_complete_call_flow.py</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> examples/05_number_discovery.py</span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 06 against the live dummy test CP (signatures verified)</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">python</span> examples/06_number_discovery.py</span></code></pre></div>
-<p>Examples 01–05 need the mock network (the dummy test CP only answers
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 05 against the live dummy test CP (signatures verified)</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">python</span> examples/05_number_discovery.py</span></code></pre></div>
+<p>Examples 01–04 need the mock network (the dummy test CP only answers
 discovery). Every example exits non-zero if something did not go as
 expected.</p>
 <h2 id="live-dummy-test-cp">Live dummy test CP</h2>
@@ -473,7 +457,7 @@ invalidate (stale-cache test)</td>
 <div class="sourceCode" id="cb11"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp-local</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp-local <span class="at">--port</span> 47902</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">python</span> examples/06_number_discovery.py</span></code></pre></div>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">python</span> examples/05_number_discovery.py</span></code></pre></div>
 <h2 id="running-the-tests">Running the tests</h2>
 <div class="sourceCode" id="cb12"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python</span>
@@ -486,8 +470,8 @@ signatures (including answers signed by the Node build),
 <code>RangeHolderResponder</code> parity with the reference engine,
 scenarios A–G in memory and over HTTP, the six test numbers with
 signature verification, the WAF user-agent check, and verification /
-token pool / routing / emergency including the not_held → rediscover →
-retry path.</p>
+routing / emergency including the not_held → rediscover → retry
+path.</p>
 <h2 id="further-reading">Further reading</h2>
 <ul>
 <li><a href="../../docs/SPECIFICATION.md">SPECIFICATION.md</a> —

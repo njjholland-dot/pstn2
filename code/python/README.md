@@ -12,7 +12,7 @@ then sent to the holder it finds.
 - **Number Discovery** (§9): numbering list (longest prefix) → Range Holder → redirect
   for ported numbers → holder, with per-number caching, stale-cache invalidation,
   hop limit and loop detection, and optional Ed25519 signature verification
-- **Caller ID verification**: Direct Query (§5.1) and Token Pool (§5.2)
+- **Caller ID verification**: Direct Query (§5.1) to the caller ID's holder
 - **Direct routing** with codec and SRTP negotiation (§6)
 - **Emergency location** for PSAPs (§8)
 - **Range Holder responder**: the server side of discovery, built from your own number database
@@ -114,7 +114,7 @@ A cached entry is only a hint: if the number has moved, the CP you reach answers
 `not_held` with `cache.invalidate`, and discovery goes back to the Range Holder. A stale
 entry costs one extra query, never a misrouted call.
 
-Service calls apply the same rule (§5.1.2): if a verification, token, routing or
+Service calls apply the same rule (§5.1.2): if a verification, routing or
 emergency request reaches a CP that answers HTTP 200 `{"result": "not_held", "cache":
 {"invalidate": true}}`, the SDK purges the entry, rediscovers and retries **once** at the
 new holder (`result.rediscovered` is then `True`).
@@ -132,7 +132,6 @@ PSTN2Client(
     timeout=2.0, retries=3,         # per request; retries only for 503/504/network errors (§10.3)
     hop_limit=5, default_ttl=86400, list_refresh_seconds=86400,
     private_key=None,               # Ed25519 key for request signatures (ephemeral if None)
-    token_pool_url=None, token_pool_auth=None,   # dedicated token pool, if any
     on_event=None,                  # discovery event hook (sync or async)
     http_client=None,               # bring your own httpx.AsyncClient
 )
@@ -143,16 +142,14 @@ PSTN2Client(
 | `await client.discover(number, on_event=None)` | `DiscoveryResult` |
 | `client.discovery` | the `DiscoveryClient` |
 | `client.numbering_list` / `client.cache` | the `NumberingList` and `DiscoveryCache` |
-| `client.auth.verify_call(caller_id, called_id, call_reference=None, *, token_id=None, holder=None)` | `VerificationResult` |
-| `client.auth.create_token(caller_id, called_id, call_reference=None, *, ttl=30, branding=None)` | `TokenCreateResult` |
-| `client.auth.verify_token(token_id, caller_id)` | `TokenVerifyResponse` or `None` |
+| `client.auth.verify_call(caller_id, called_id, call_reference=None, *, holder=None)` | `VerificationResult` |
 | `client.routing.request_routing(destination, caller_id, media_capabilities=None, call_reference=None, *, branding=None, holder=None)` | `RoutingResult` |
 | `client.emergency.get_location(caller_id, psap_id, call_reference=None, *, holder=None)` | `EmergencyLocationResult` |
 | `client.public_key` | this client's Ed25519 identity key (base64) |
 | `await client.close()` / `async with` | clear the cache, close connections |
 
 `holder=` accepts a `CpRef` or a held `DiscoveryResult` you already have, to skip the
-discovery query (example 05 reuses its Phase 1 answer for routing).
+discovery query (example 04 reuses its Phase 1 answer for routing).
 
 Outcomes, not exceptions: `verify_call` and `request_routing` return `verified=False` /
 `accepted=False` with `reason` and `fallback_to_pstn=True` when there is no PSTN2 holder
@@ -245,8 +242,7 @@ an HTML body (a static host's default page) means `unknown`.
 ### Errors
 
 `PSTN2Error` (base, with `.code` and `.status`) → `PSTN2TimeoutError`, `NetworkError`,
-`InvalidResponseError`, `ApiError` (`CallNotFoundError`, `TokenExpiredError`,
-`InvalidTokenError`, `RateLimitError`), `DiscoveryError` (`.discovery`), `NotHeldError`,
+`InvalidResponseError`, `ApiError` (`CallNotFoundError`, `RateLimitError`), `DiscoveryError` (`.discovery`), `NotHeldError`,
 `ValidationError`.
 
 ## Examples
@@ -255,10 +251,9 @@ an HTML body (a static host's default page) means `unknown`.
 |---|---|---|
 | 01 | `examples/01_basic_authentication.py` | Charlie Comms verifies four inbound caller IDs, including a spoofed one and a ported one |
 | 02 | `examples/02_direct_routing.py` | Alpha routes to Bravo with codec/SRTP negotiation; two PSTN fallbacks |
-| 03 | `examples/03_token_pool.py` | Originating CP creates a token, terminating CP verifies it; forged token falls back to Direct Query |
-| 04 | `examples/04_emergency_services.py` | PSAP location query for a held number; fallback for an unknown one |
-| 05 | `examples/05_complete_call_flow.py` | Discovery (with redirect) → authentication → routing → summary, then a cache hit |
-| 06 | `examples/06_number_discovery.py` | "Who has this number?" hop by hop: scenarios A–G locally, or the dummy test CP with signatures |
+| 03 | `examples/03_emergency_services.py` | PSAP location query for a held number; fallback for an unknown one |
+| 04 | `examples/04_complete_call_flow.py` | Discovery (with redirect) → authentication → routing → summary, then a cache hit |
+| 05 | `examples/05_number_discovery.py` | "Who has this number?" hop by hop: scenarios A–G locally, or the dummy test CP with signatures |
 
 ```bash
 # terminal 1 (repository root)
@@ -267,14 +262,14 @@ node test-environment/mock-network/server.mjs
 # terminal 2
 cd code/python
 python examples/01_basic_authentication.py
-python examples/05_complete_call_flow.py
-python examples/06_number_discovery.py
+python examples/04_complete_call_flow.py
+python examples/05_number_discovery.py
 
-# 06 against the live dummy test CP (signatures verified)
-PSTN2_NETWORK=live python examples/06_number_discovery.py
+# 05 against the live dummy test CP (signatures verified)
+PSTN2_NETWORK=live python examples/05_number_discovery.py
 ```
 
-Examples 01–05 need the mock network (the dummy test CP only answers discovery).
+Examples 01–04 need the mock network (the dummy test CP only answers discovery).
 Every example exits non-zero if something did not go as expected.
 
 ## Live dummy test CP
@@ -294,7 +289,7 @@ To emulate it locally (same files, same static-host behaviour):
 ```bash
 node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/testcp-local
 node test-environment/mock-network/static-server.mjs --dir /tmp/testcp-local --port 47902
-PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json python examples/06_number_discovery.py
+PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json python examples/05_number_discovery.py
 ```
 
 ## Running the tests
@@ -310,7 +305,7 @@ it) and covers: numbering list matching and ETag/304, cache TTL and purge, canon
 and signatures (including answers signed by the Node build), `RangeHolderResponder`
 parity with the reference engine, scenarios A–G in memory and over HTTP, the six test
 numbers with signature verification, the WAF user-agent check, and verification /
-token pool / routing / emergency including the not_held → rediscover → retry path.
+routing / emergency including the not_held → rediscover → retry path.
 
 ## Further reading
 

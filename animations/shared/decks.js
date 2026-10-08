@@ -3,8 +3,7 @@
 export const DECKS = [
     { id: 'problem-statement', title: 'The Problem', blurb: 'Why today’s PSTN cannot stop fraud' },
     { id: 'solution-overview', title: 'Solution Overview', blurb: 'PSTN2 in seven ideas' },
-    { id: 'authentication-option1', title: 'Authentication: Direct Query', blurb: 'Ask the caller’s CP in real time' },
-    { id: 'authentication-option2', title: 'Authentication: Token Pool', blurb: 'Verify with a short-lived token' },
+    { id: 'authentication', title: 'Caller Authentication', blurb: 'Ask the caller’s provider in real time' },
     { id: 'direct-routing', title: 'Direct Routing', blurb: 'Peer-to-peer call setup' },
     { id: 'emergency-services', title: 'Emergency Services', blurb: 'Real-time location for 999 and 112' },
     { id: 'distributed-database', title: 'Who Has This Number?', blurb: 'Number discovery without a central database' },

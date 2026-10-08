@@ -195,11 +195,9 @@ is `{url}/pstn2/v1`.
 v, err := client.Auth().VerifyCall(ctx, pstn2.VerifyCallRequest{CallerID: callerID, CalledID: calledID})
 // v.Verified, v.Reason (verified | caller_id_unknown | unallocated | not_participating |
 // call_not_found | not_verified | discovery_error), v.Fallback, v.Via (holder, discovery, retry)
-
-// Token Pool (§5.2): created at the caller ID's holder, verified there by the terminating CP.
-tok, err := originating.Auth().CreateToken(ctx, pstn2.TokenRequest{CallerID: callerID, CalledID: calledID, TTL: 30})
-tv, err := terminating.Auth().VerifyToken(ctx, callerID, tok.TokenID) // invalid_token (404), expired_token (410)
 ```
+
+Direct Query is the only authentication method.
 
 An unverifiable caller ID is an outcome, not an error: `VerifyCall` returns
 `Verified == false` with a `Reason` and `Fallback == true`. An error means the
@@ -298,10 +296,9 @@ failure and closes its clients on exit.
 |---|---|
 | `01-basic-authentication` | Charlie Comms (terminating) verifies four caller IDs: Alpha's, Bravo's, a spoofed not-in-service number (flagged, PSTN fallback) and a ported number (Range Holder redirect → Bravo verifies) |
 | `02-direct-routing` | Alpha routes +441614960123 directly to Bravo with codec/SRTP negotiation; a call to non-participating Delta falls back to PSTN |
-| `03-token-pool` | Alpha creates a token, Bravo verifies it; a forged token is rejected and Bravo falls back to Direct Query |
-| `04-emergency-services` | A PSAP gets the live location of a 999 caller from the number's holder; a non-participating caller falls back to traditional location |
-| `05-complete-call-flow` | Discovery (with redirect), authentication, routing and timing summary; the second call is a cache hit |
-| `06-number-discovery` | "Who has this number?" hop by hop: scenarios A–G locally, or the dummy test CPs (signatures verified) |
+| `03-emergency-services` | A PSAP gets the live location of a 999 caller from the number's holder; a non-participating caller falls back to traditional location |
+| `04-complete-call-flow` | Discovery (with redirect), authentication, routing and timing summary; the second call is a cache hit |
+| `05-number-discovery` | "Who has this number?" hop by hop: scenarios A–G locally, or the dummy test CPs (signatures verified) |
 
 ```bash
 # from the repository root, in one terminal:
@@ -310,13 +307,12 @@ node test-environment/mock-network/server.mjs
 # in another, from code/go:
 go run ./examples/01-basic-authentication
 go run ./examples/02-direct-routing
-go run ./examples/03-token-pool
-go run ./examples/04-emergency-services
-go run ./examples/05-complete-call-flow
-go run ./examples/06-number-discovery
+go run ./examples/03-emergency-services
+go run ./examples/04-complete-call-flow
+go run ./examples/05-number-discovery
 ```
 
-Example 06 resets the mock network before and after it runs (it ports a number
+Example 05 resets the mock network before and after it runs (it ports a number
 in scenario D), so the examples can be run in any order.
 
 ### Live dummy test CPs
@@ -333,7 +329,7 @@ answers for the Ofcom drama range 07700 900xxx:
 | +447700900099 | 404 from Test CP A |
 
 ```bash
-PSTN2_NETWORK=live go run ./examples/06-number-discovery
+PSTN2_NETWORK=live go run ./examples/05-number-discovery
 ```
 
 Or emulate them locally (same files, same 403-for-generic-agents behaviour):
@@ -341,10 +337,10 @@ Or emulate them locally (same files, same 403-for-generic-agents behaviour):
 ```bash
 node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/testcp-local
 node test-environment/mock-network/static-server.mjs --dir /tmp/testcp-local --port 47902
-PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json go run ./examples/06-number-discovery
+PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json go run ./examples/05-number-discovery
 ```
 
-Only Number Discovery is available on the static test CPs; examples 01–05 need
+Only Number Discovery is available on the static test CPs; examples 01–04 need
 the mock network.
 
 ## Running the tests
@@ -368,7 +364,7 @@ is on `PATH` the integration tests also:
   User-Agent against the static host emulator, with signatures verified;
 - compare `RangeHolderResponder` with the reference engine's `Network.respond()`
   and with the signed files from `build.mjs`;
-- exercise auth, tokens, routing and emergency against the mock network,
+- exercise auth (Direct Query), routing and emergency against the mock network,
   including `not_held` → purge → rediscover → retry after `POST /admin/port`.
 
 Without `node` those tests are skipped.

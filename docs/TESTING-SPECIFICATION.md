@@ -184,7 +184,7 @@ Alice (Alpha) calls Bob (+441134960456: Charlie's range, ported to Bravo):
   11. Second call: cache hit, one query straight to Bravo
 ```
 
-Example 05 in each SDK (`05-complete-call-flow`) is this journey; see
+Example 04 in each SDK (`04-complete-call-flow`) is this journey; see
 [EXAMPLES.md](https://pstn2.org/docs/EXAMPLES.md).
 
 **Test Code:**
@@ -241,7 +241,7 @@ describe('End-to-End Call Flow', () => {
 Defined in `test-environment/fixtures/scenarios.json` and run **in order, with
 one client whose cache persists between steps**, by the browser test harness,
 the reference engine tests, the mock-network integration tests of every SDK,
-and example 06 in every SDK. The acting CP is Alpha Telecom (`CP1-UK-0101`).
+and example 05 in every SDK. The acting CP is Alpha Telecom (`CP1-UK-0101`).
 
 | | Scenario | Number | Expected result | Expected hops | Flags |
 |---|---|---|---|---|---|
@@ -446,7 +446,7 @@ These requirements are normative (SPECIFICATION.md §9, §5.1.2, §10.3).
 | ND-C14 | Every request sends a descriptive `User-Agent` (never `curl/*`, `Go-http-client/*` or empty) and `X-PSTN2-Version: 1.1`; discovery `GET`s carry no body and no `Content-Type` | Static emulator returns 403 for generic agents |
 | ND-C15 | Responses are parsed as JSON whatever their `Content-Type` (static hosts may send `application/octet-stream`) | Static emulator |
 | ND-C16 | The numbering list is refreshed with `If-None-Match`; `304` keeps the local copy; a `cache.scope: "block"` invalidation triggers a refresh | Unit tests, mock network ETag |
-| ND-C17 | A `not_held` answer on **any** service endpoint (auth/verify, auth/tokens, routing, emergency) → purge, rediscover, retry **once** at the new holder | Mock network after `POST /admin/port` |
+| ND-C17 | A `not_held` answer on **any** service endpoint (auth/verify, routing, emergency) → purge, rediscover, retry **once** at the new holder | Mock network after `POST /admin/port` |
 | ND-C18 | A redirect or `not_held` is a `200` result, never retried against the same CP; only `503`/`504`/network errors are retried (100/200/400 ms, max 3) | Unit tests |
 | ND-C19 | Every non-`held` outcome and every failure leads to traditional PSTN handling; discovery never blocks a call | Scenarios E–G, unreachable CP |
 
@@ -782,11 +782,10 @@ Each CP's URL in the served list is rewritten to
 | `GET /cp/{key}/pstn2/v1/numbers/{digits}` | held / redirect / not_held / 404, from the engine |
 | `GET /cp/{key}/pstn2/v1/keys` | Empty key set (mock answers are unsigned) |
 | `POST /cp/{key}/pstn2/v1/auth/verify` | Verified for any number the CP holds; otherwise `200 not_held` + invalidate |
-| `POST /cp/{key}/pstn2/v1/auth/tokens`, `GET …/auth/tokens/{id}` | Token Pool at the caller ID's holder (`404 invalid_token`, `410 expired_token`) |
 | `POST /cp/{key}/pstn2/v1/routing/request` | Accepted with `media.{key}.example:5061/tls`; `400 unsupported_codec` if no common codec; `not_held` for numbers not held |
 | `POST /cp/{key}/pstn2/v1/emergency/location` | Fixed mock location (Manchester); `not_held` for numbers not held |
 | `POST /admin/port` `{number, fromCpId, toCpId}` | Port a number (scenario D, invalidation tests) |
-| `POST /admin/reset` | Reload the fixture, clear tokens and the log, change the list ETag |
+| `POST /admin/reset` | Reload the fixture, clear the log, change the list ETag |
 | `GET /admin/log` | Every query received, in order, with the caller's `User-Agent` |
 | `GET /health` | `{ok: true, fixture}` |
 
@@ -809,7 +808,7 @@ node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/test
 node test-environment/mock-network/static-server.mjs --dir /tmp/testcp-local --port 47902
 
 # Point an SDK example at it
-PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:06
+PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:05
 ```
 
 ### 8.3 Browser Test Harness
@@ -853,9 +852,9 @@ curl -A "pstn2-curl/1.1" https://pstn2.org/testcp/a/pstn2/v1/numbers/44770090000
 curl -A "pstn2-curl/1.1" https://pstn2.org/testcp/b/pstn2/v1/numbers/447700900003   # held
 
 # With the SDKs (signatures verified by default in live mode)
-cd code/typescript && PSTN2_NETWORK=live npm run example:06
-cd code/python && PSTN2_NETWORK=live .venv/bin/python examples/06_number_discovery.py
-cd code/go && PSTN2_NETWORK=live go run ./examples/06-number-discovery
+cd code/typescript && PSTN2_NETWORK=live npm run example:05
+cd code/python && PSTN2_NETWORK=live .venv/bin/python examples/05_number_discovery.py
+cd code/go && PSTN2_NETWORK=live go run ./examples/05-number-discovery
 ```
 
 The host is static, so only Number Discovery is available there;
@@ -876,7 +875,7 @@ deployed: use the emulator (§8.2), which serves the same files.
 | Suite | Command | Covers |
 |---|---|---|
 | Reference engine | `node --test test-environment/conformance/engine.test.mjs` | Scenarios A–G, event sequence, responder answers, hop limit, loops, cache expiry, longest prefix, test CP numbers, fixture drift between harness and `fixtures/` |
-| TypeScript SDK | `cd code/typescript && npm ci && npm test` (`npm run test:unit`, `npm run test:integration`, `npm run test:coverage`) | Numbering list (ETag/304, refresh), cache, canonical JSON + Ed25519 (every file from `build.mjs`), responder parity with `Network.respond()`, discovery parity with the engine (A–G, events), hop limit, loops, timeouts, signatures; mock network A–G; auth/tokens/routing/emergency incl. not_held retry; static emulator: six test numbers signed, stale cache, tamper, WAF 403 |
+| TypeScript SDK | `cd code/typescript && npm ci && npm test` (`npm run test:unit`, `npm run test:integration`, `npm run test:coverage`) | Numbering list (ETag/304, refresh), cache, canonical JSON + Ed25519 (every file from `build.mjs`), responder parity with `Network.respond()`, discovery parity with the engine (A–G, events), hop limit, loops, timeouts, signatures; mock network A–G; auth/routing/emergency incl. not_held retry; static emulator: six test numbers signed, stale cache, tamper, WAF 403 |
 | Python SDK | `cd code/python && python3 -m venv .venv && .venv/bin/pip install -e '.[dev]' && .venv/bin/pytest` | Same coverage; tests needing Node.js are skipped without it |
 | Go SDK | `cd code/go && go test ./...` (also `go vet ./...`, `go test -race ./pkg/pstn2`) | Same coverage plus concurrency; integration tests skipped without `node` on `PATH` |
 
@@ -965,7 +964,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci && PSTN2_NETWORK=live npm run example:06
+      - run: npm ci && PSTN2_NETWORK=live npm run example:05
         working-directory: code/typescript
 ```
 
@@ -998,14 +997,13 @@ jobs:
 ### 9.3 Certification Levels
 
 **Level 1 - Basic:**
-- Authentication (Option 1)
+- Caller authentication (direct query)
 - Routing
 - Number Discovery: client (ND-C01 to ND-C19) and responder (ND-S01 to ND-S11)
 - Fallback to PSTN
 
 **Level 2 - Advanced:**
 - Level 1 requirements
-- Authentication (Option 2)
 - Emergency services
 - Call branding
 - Signed discovery answers

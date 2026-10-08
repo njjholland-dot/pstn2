@@ -1,4 +1,4 @@
-// Authentication: Direct Query — PSTN2 v1.1 (SPECIFICATION.md §5.1, §9)
+// Caller Authentication — PSTN2 v1.1 (SPECIFICATION.md §5, §9)
 // Alpha Telecom is the receiving (terminating) provider and always sits on the left.
 // Numbers are from Ofcom's reserved TV/drama ranges; providers are fictional.
 import { createDeck } from '../../shared/pstn2-player.js';

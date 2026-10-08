@@ -2,7 +2,7 @@
 
 ## Delivered
 
-- **Presentations:** 11 narrated presentations, 114 scenes, about 52 minutes, on one shared broadcast player. They include the rebuilt **Who Has This Number? (Distributed Database)** and the new **Test Harness: Live Demo**.
+- **Presentations:** 10 narrated presentations, 103 scenes, about 45 minutes, on one shared broadcast player. They include the rebuilt **Who Has This Number? (Distributed Database)** and the new **Test Harness: Live Demo**.
 - **Narration:** pre-rendered UK English, loudness-normalised (−16 LUFS), with captions and a live-speech fallback.
 - **Visual standard:**
   - a 1920×1080 stage;
@@ -19,17 +19,16 @@
 
 | # | Presentation | Scenes | Running time |
 |---|---|---|---|
-| 1 | The Problem | 8 | 3.8 min |
-| 2 | Solution Overview | 10 | 5.4 min |
-| 3 | Authentication: Direct Query | 10 | 4.5 min |
-| 4 | Authentication: Token Pool | 11 | 4.1 min |
-| 5 | Direct Routing | 12 | 4.5 min |
-| 6 | Emergency Services | 9 | 3.6 min |
-| 7 | Who Has This Number? | 12 | 6.6 min |
-| 8 | Test Harness: Who Has This Number? | 8 | 4.7 min |
-| 9 | MAP Architecture | 11 | 4.0 min |
-| 10 | End-to-End Scenario | 15 | 6.0 min |
-| 11 | Law Enforcement Access | 8 | 4.6 min |
+| 1 | The Problem | 8 | 3.6 min |
+| 2 | Solution Overview | 10 | 5.1 min |
+| 3 | Caller Authentication | 10 | 4.3 min |
+| 4 | Direct Routing | 12 | 4.3 min |
+| 5 | Emergency Services | 9 | 3.4 min |
+| 6 | Who Has This Number? | 12 | 6.3 min |
+| 7 | Test Harness: Who Has This Number? | 8 | 4.5 min |
+| 8 | MAP Architecture | 11 | 3.9 min |
+| 9 | End-to-End Scenario | 15 | 5.7 min |
+| 10 | Law Enforcement Access | 8 | 4.3 min |
 
 ## Quality checks performed
 - Capture-mode screenshots of every scene at 1920×1080, each reviewed by eye.

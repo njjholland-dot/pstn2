@@ -1,5 +1,5 @@
 /**
- * Example 4: Emergency Services
+ * Example 3: Emergency Services
  *
  * A PSAP answers a 999 call from +441614960123. It discovers the CP that
  * holds the caller's number (Bravo Networks) and asks it for live location.
@@ -8,7 +8,7 @@
  * provide location, the PSAP uses its other sources (cell, billing address).
  *
  * Run:  node test-environment/mock-network/server.mjs   (repo root)
- *       npm run example:04
+ *       npm run example:03
  */
 
 // In your application: import { PSTN2Client, DiscoveryError } from '@pstn2/core';
@@ -19,7 +19,7 @@ const PSAP_ID = 'UK-999-MANCHESTER-01';
 const callers = ['+441614960123', '+441134960456', '+441614960999'];
 
 async function main() {
-  banner('PSTN2 Example 4 — Emergency Services', `PSAP ${PSAP_ID} queries live caller location`);
+  banner('PSTN2 Example 3 — Emergency Services', `PSAP ${PSAP_ID} queries live caller location`);
   const psap = PSTN2Client.fromEnv({ cpId: 'PSAP-UK-999-01' });
   await startOrExit(psap);
 

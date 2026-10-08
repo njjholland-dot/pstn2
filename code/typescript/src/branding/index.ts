@@ -4,7 +4,7 @@
  *
  * NOTE: The standalone /branding endpoint used here is an EXTENSION beyond
  * the core PSTN2 specification. The spec carries branding inline in
- * verification, token, and routing payloads (BrandingInfo); this module
+ * verification and routing payloads (BrandingInfo); this module
  * additionally supports fetching branding on demand from CPs that expose it.
  */
 

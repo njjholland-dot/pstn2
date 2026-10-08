@@ -1,5 +1,5 @@
 """
-Example 4: Emergency Services location
+Example 3: Emergency Services location
 
 A 999 call arrives at the PSAP from +441614960123. The PSAP (here acting through
 the SDK) discovers the caller ID's holder — Bravo Networks — and asks it for the
@@ -12,7 +12,7 @@ uses its other location sources (cell, billing address).
 Run the local mock network first:
     node test-environment/mock-network/server.mjs
 then:
-    python examples/04_emergency_services.py
+    python examples/03_emergency_services.py
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ async def locate(client: PSTN2Client, caller_id: str) -> bool:
 async def main() -> int:
     logging.basicConfig(level=os.environ.get("PSTN2_LOG_LEVEL", "WARNING"))
     config = NetworkConfig.from_env()
-    print("PSTN2 Example 4: Emergency Services")
+    print("PSTN2 Example 3: Emergency Services")
     print(f"  Network:   {config.network}  ({config.numbering_list_url})")
     print(f"  PSAP:      {PSAP_ID}  (requests sent as {config.cp_id})")
     print("---")

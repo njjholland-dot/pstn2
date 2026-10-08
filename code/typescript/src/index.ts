@@ -28,8 +28,8 @@ export * from './errors';
 export * from './discovery';
 
 // Modules (for advanced usage)
-export { AuthenticationModule, DirectQueryAuth, TokenPoolAuth, TOKEN_PATTERN } from './auth';
-export type { VerifyCallParams, CreateTokenParams, VerificationResult, CreatedToken } from './auth';
+export { AuthenticationModule, DirectQueryAuth } from './auth';
+export type { VerifyCallParams, VerificationResult } from './auth';
 export { RoutingModule } from './routing';
 export type { RoutingResult, RequestRoutingParams } from './routing';
 export { EmergencyModule } from './emergency';

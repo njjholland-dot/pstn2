@@ -1,5 +1,5 @@
 /**
- * Authentication Option 1: Direct Query (SPECIFICATION.md §5.1).
+ * Caller authentication by direct query (SPECIFICATION.md §5.1).
  *
  * The terminating CP finds the CP that currently holds the caller ID with
  * Number Discovery (following the Range Holder's redirect for a ported

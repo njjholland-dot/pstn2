@@ -1,5 +1,5 @@
 /**
- * Auth (direct query + token pool), routing and emergency against the mock
+ * Auth (direct query), routing and emergency against the mock
  * network — including not_held → purge → rediscover → retry once.
  */
 import { PSTN2Client, DiscoveryError, PSTN2Error, FetchLike } from '../../src';
@@ -100,36 +100,6 @@ describe('PSTN2 services over Number Discovery (mock network)', () => {
         `${BRAVO}:held`,
         `${CHARLIE}:held`,
       ]);
-    });
-  });
-
-  describe('token pool', () => {
-    it('originating CP creates a token; terminating CP verifies it', async () => {
-      const alpha = client(ALPHA);
-      const bravo = client(BRAVO);
-      const token = await alpha.createToken({ callerID: '+442079460100', calledID: '+441614960123', ttl: 30 });
-      expect(token.tokenId).toMatch(/^TK-[A-Za-z0-9]{16}$/);
-      expect(token.pool.cpId).toBe(ALPHA);
-
-      const data = await bravo.verifyToken(token.tokenId, '+442079460100');
-      expect(data).toMatchObject({ tokenId: token.tokenId, originatingCP: ALPHA, callerID: '+442079460100', calledID: '+441614960123', verified: true });
-
-      const v = await bravo.verifyCall({ callerID: '+442079460100', calledID: '+441614960123', tokenId: token.tokenId });
-      expect(v).toMatchObject({ verified: true, trustLevel: 'verified' });
-    });
-
-    it('returns null for unknown or malformed tokens and falls back to direct query', async () => {
-      const bravo = client(BRAVO);
-      expect(await bravo.verifyToken('TK-AAAAAAAAAAAAAAAA', '+442079460100')).toBeNull();
-      expect(await bravo.verifyToken('nope', '+442079460100')).toBeNull();
-      const v = await bravo.verifyCall({ callerID: '+442079460100', calledID: '+441614960123', tokenId: 'TK-AAAAAAAAAAAAAAAA' });
-      expect(v.verified).toBe(true); // direct query fallback
-    });
-
-    it('create retries at the new holder after not_held', async () => {
-      const bravo = client(BRAVO, portJustBefore(/\/cp\/bravo\/pstn2\/v1\/auth\/tokens$/));
-      const token = await bravo.createToken({ callerID: PORTED, calledID: '+441614960123' });
-      expect(token.pool.cpId).toBe(CHARLIE);
     });
   });
 

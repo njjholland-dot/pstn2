@@ -20,10 +20,9 @@
     "typecheck:examples": "tsc --noEmit -p examples/tsconfig.json",
     "example:01": "ts-node -P examples/tsconfig.json examples/01-basic-authentication.ts",
     "example:02": "ts-node -P examples/tsconfig.json examples/02-direct-routing.ts",
-    "example:03": "ts-node -P examples/tsconfig.json examples/03-token-pool.ts",
-    "example:04": "ts-node -P examples/tsconfig.json examples/04-emergency-services.ts",
-    "example:05": "ts-node -P examples/tsconfig.json examples/05-complete-call-flow.ts",
-    "example:06": "ts-node -P examples/tsconfig.json examples/06-number-discovery.ts",
+    "example:03": "ts-node -P examples/tsconfig.json examples/03-emergency-services.ts",
+    "example:04": "ts-node -P examples/tsconfig.json examples/04-complete-call-flow.ts",
+    "example:05": "ts-node -P examples/tsconfig.json examples/05-number-discovery.ts",
     "test:unit": "jest test/unit",
     "test:integration": "jest test/integration"
   },

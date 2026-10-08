@@ -9,14 +9,13 @@
 
 import { KeyObject, createPrivateKey, generateKeyPairSync } from 'node:crypto';
 import { MessagingClient, HttpClient } from './messaging';
-import { AuthenticationModule, VerifyCallParams, CreateTokenParams } from './auth';
+import { AuthenticationModule, VerifyCallParams } from './auth';
 import { RoutingModule, RequestRoutingParams } from './routing';
 import { EncryptionModule } from './encryption';
 import { BrandingModule } from './branding';
 import { EmergencyModule, GetLocationParams } from './emergency';
 import { NumberingList, DiscoveryCache, DiscoveryClient, DiscoverOptions, KeyStore, rawPublicKey } from './discovery';
 import {
-  AuthenticationMode,
   DiscoveryEventHandler,
   DiscoveryResult,
   FetchLike,
@@ -45,13 +44,6 @@ export interface PSTN2Config {
   /** Ed25519 private key (PEM or KeyObject) for request signatures. A per-process key is generated if omitted. */
   privateKey?: string | KeyObject;
 
-  /** Default DirectQuery. */
-  authMode?: AuthenticationMode;
-  /** Shared token pool base URL (default: the caller ID's holder). */
-  tokenPoolUrl?: string;
-  /** Bearer JWT for a shared token pool. */
-  tokenPoolAuth?: string;
-
   /** Verify Ed25519 signatures on discovery answers (default false). */
   verifySignatures?: boolean;
   /** Max discovery queries per lookup (default 5). */
@@ -69,9 +61,6 @@ export interface PSTN2Config {
   retries?: number;
   /** Inject a fetch implementation. */
   fetch?: FetchLike;
-
-  /** Fall back to Direct Query / traditional PSTN when PSTN2 can't verify (default true). */
-  fallbackToTraditional?: boolean;
 
   logLevel?: LogLevel;
 }
@@ -125,13 +114,7 @@ export class PSTN2Client {
     this.publicKey = rawPublicKey(privateKey);
 
     this.messaging = new MessagingClient({ cpId: config.cpId, http: this.http, discovery: this.discovery, privateKey });
-    this.auth = new AuthenticationModule(this.messaging, {
-      cpId: config.cpId,
-      authMode: config.authMode,
-      tokenPoolUrl: config.tokenPoolUrl,
-      tokenPoolAuth: config.tokenPoolAuth,
-      fallbackToTraditional: config.fallbackToTraditional,
-    });
+    this.auth = new AuthenticationModule(this.messaging);
     this.routing = new RoutingModule(this.messaging, this.publicKey);
     this.emergency = new EmergencyModule(this.messaging);
     this.branding = new BrandingModule(this.messaging);
@@ -165,7 +148,7 @@ export class PSTN2Client {
     return this.discovery.discover(number, options);
   }
 
-  /** Verify an inbound call's caller ID (Direct Query, or Token Pool with tokenId). */
+  /** Verify an inbound call's caller ID (Direct Query to the caller ID's holder). */
   verifyCall(params: VerifyCallParams) {
     return this.auth.verifyCall(params);
   }
@@ -178,16 +161,6 @@ export class PSTN2Client {
   /** Emergency location (PSAP use). */
   getEmergencyLocation(params: GetLocationParams) {
     return this.emergency.getLocation(params);
-  }
-
-  /** Token Pool: create a token before placing a call. */
-  createToken(params: CreateTokenParams) {
-    return this.auth.createToken(params);
-  }
-
-  /** Token Pool: verify a token on an inbound call. */
-  verifyToken(tokenId: string, callerID?: PhoneNumber) {
-    return this.auth.verifyToken(tokenId, callerID);
   }
 
   generateCallReference(): string {

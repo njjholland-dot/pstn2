@@ -243,7 +243,7 @@ class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb2-
   9. Encrypted conversation
   10. Call ends
   11. Second call: cache hit, one query straight to Bravo</code></pre>
-<p>Example 05 in each SDK (<code>05-complete-call-flow</code>) is this
+<p>Example 04 in each SDK (<code>04-complete-call-flow</code>) is this
 journey; see <a
 href="https://pstn2.org/docs/EXAMPLES.md">EXAMPLES.md</a>.</p>
 <p><strong>Test Code:</strong></p>
@@ -295,7 +295,7 @@ A–G</h3>
 <p>Defined in <code>test-environment/fixtures/scenarios.json</code> and
 run <strong>in order, with one client whose cache persists between
 steps</strong>, by the browser test harness, the reference engine tests,
-the mock-network integration tests of every SDK, and example 06 in every
+the mock-network integration tests of every SDK, and example 05 in every
 SDK. The acting CP is Alpha Telecom (<code>CP1-UK-0101</code>).</p>
 <table>
 <thead>
@@ -607,8 +607,8 @@ body and no <code>Content-Type</code></td>
 <tr>
 <td>ND-C17</td>
 <td>A <code>not_held</code> answer on <strong>any</strong> service
-endpoint (auth/verify, auth/tokens, routing, emergency) → purge,
-rediscover, retry <strong>once</strong> at the new holder</td>
+endpoint (auth/verify, routing, emergency) → purge, rediscover, retry
+<strong>once</strong> at the new holder</td>
 <td>Mock network after <code>POST /admin/port</code></td>
 </tr>
 <tr>
@@ -1129,12 +1129,6 @@ CPs:</p>
 <code>200 not_held</code> + invalidate</td>
 </tr>
 <tr>
-<td><code>POST /cp/{key}/pstn2/v1/auth/tokens</code>,
-<code>GET …/auth/tokens/{id}</code></td>
-<td>Token Pool at the caller ID's holder
-(<code>404 invalid_token</code>, <code>410 expired_token</code>)</td>
-</tr>
-<tr>
 <td><code>POST /cp/{key}/pstn2/v1/routing/request</code></td>
 <td>Accepted with <code>media.{key}.example:5061/tls</code>;
 <code>400 unsupported_codec</code> if no common codec;
@@ -1152,8 +1146,7 @@ not held</td>
 </tr>
 <tr>
 <td><code>POST /admin/reset</code></td>
-<td>Reload the fixture, clear tokens and the log, change the list
-ETag</td>
+<td>Reload the fixture, clear the log, change the list ETag</td>
 </tr>
 <tr>
 <td><code>GET /admin/log</code></td>
@@ -1188,7 +1181,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href=
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp-local <span class="at">--port</span> 47902</span>
 <span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Point an SDK example at it</span></span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">npm</span> run example:06</span></code></pre></div>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">npm</span> run example:05</span></code></pre></div>
 <h3 id="83-browser-test-harness">8.3 Browser Test Harness</h3>
 <p><a
 href="https://pstn2.org/src/test-harness/">https://pstn2.org/src/test-harness/</a>
@@ -1290,9 +1283,9 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href=
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-A</span> <span class="st">&quot;pstn2-curl/1.1&quot;</span> https://pstn2.org/testcp/b/pstn2/v1/numbers/447700900003   <span class="co"># held</span></span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="co"># With the SDKs (signatures verified by default in live mode)</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/typescript <span class="kw">&amp;&amp;</span> <span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">npm</span> run example:06</span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python <span class="kw">&amp;&amp;</span> <span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">.venv/bin/python</span> examples/06_number_discovery.py</span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/go <span class="kw">&amp;&amp;</span> <span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/typescript <span class="kw">&amp;&amp;</span> <span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">npm</span> run example:05</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/python <span class="kw">&amp;&amp;</span> <span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">.venv/bin/python</span> examples/05_number_discovery.py</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/go <span class="kw">&amp;&amp;</span> <span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">go</span> run ./examples/05-number-discovery</span></code></pre></div>
 <p>The host is static, so only Number Discovery is available there;
 authentication, routing and emergency are tested against the mock
 network. If <code>numbering-list.json</code> itself returns 404, the
@@ -1351,8 +1344,8 @@ harness and <code>fixtures/</code></td>
 (every file from <code>build.mjs</code>), responder parity with
 <code>Network.respond()</code>, discovery parity with the engine (A–G,
 events), hop limit, loops, timeouts, signatures; mock network A–G;
-auth/tokens/routing/emergency incl. not_held retry; static emulator: six
-test numbers signed, stale cache, tamper, WAF 403</td>
+auth/routing/emergency incl. not_held retry; static emulator: six test
+numbers signed, stale cache, tamper, WAF 403</td>
 </tr>
 <tr>
 <td>Python SDK</td>
@@ -1452,7 +1445,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb29-1"><a href=
 <span id="cb29-77"><a href="#cb29-77" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/setup-node@v4</span></span>
 <span id="cb29-78"><a href="#cb29-78" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
 <span id="cb29-79"><a href="#cb29-79" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">node-version</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
-<span id="cb29-80"><a href="#cb29-80" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm ci &amp;&amp; PSTN2_NETWORK=live npm run example:06</span></span>
+<span id="cb29-80"><a href="#cb29-80" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> npm ci &amp;&amp; PSTN2_NETWORK=live npm run example:05</span></span>
 <span id="cb29-81"><a href="#cb29-81" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">working-directory</span><span class="kw">:</span><span class="at"> code/typescript</span></span></code></pre></div>
 <hr />
 <h2 id="9-certification-process">9. Certification Process</h2>
@@ -1480,7 +1473,7 @@ responder, your client against the dummy test CP)</li>
 <h3 id="93-certification-levels">9.3 Certification Levels</h3>
 <p><strong>Level 1 - Basic:</strong></p>
 <ul>
-<li>Authentication (Option 1)</li>
+<li>Caller authentication (direct query)</li>
 <li>Routing</li>
 <li>Number Discovery: client (ND-C01 to ND-C19) and responder (ND-S01 to
 ND-S11)</li>
@@ -1489,7 +1482,6 @@ ND-S11)</li>
 <p><strong>Level 2 - Advanced:</strong></p>
 <ul>
 <li>Level 1 requirements</li>
-<li>Authentication (Option 2)</li>
 <li>Emergency services</li>
 <li>Call branding</li>
 <li>Signed discovery answers</li>

@@ -18,7 +18,7 @@
 //   - [RangeHolderResponder]: the server side of a discovery query (§9.2),
 //     optionally Ed25519-signed (§9.6).
 //   - [CanonicalJSON], [VerifySignature], [SignBody]: §9.6 signatures.
-//   - [Client] with Auth (Direct Query and Token Pool), Routing and Emergency
+//   - [Client] with Auth (Direct Query), Routing and Emergency
 //     modules, all of which find the holder with Discover() and handle a
 //     not_held answer by purging the cache, rediscovering and retrying once.
 //

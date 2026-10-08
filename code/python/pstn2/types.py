@@ -250,36 +250,6 @@ class CallVerificationResponse(Model):
     signature: Optional[str] = None
 
 
-class TokenCreateRequest(Model):
-    message_id: str
-    timestamp: str
-    version: str
-    originating_cp: str = Field(alias="originatingCP")
-    caller_id: str = Field(alias="callerID")
-    called_id: str = Field(alias="calledID")
-    call_reference: str
-    ttl: int = Field(default=30, ge=10, le=60)
-    branding: Optional[BrandingInfo] = None
-    signature: Optional[str] = None
-
-
-class TokenCreateResponse(Model):
-    token_id: str
-    expires_at: Optional[str] = None
-    call_reference: Optional[str] = None
-
-
-class TokenVerifyResponse(Model):
-    token_id: str
-    originating_cp: Optional[str] = Field(default=None, alias="originatingCP")
-    caller_id: Optional[str] = Field(default=None, alias="callerID")
-    called_id: Optional[str] = Field(default=None, alias="calledID")
-    call_reference: Optional[str] = None
-    verified: bool = False
-    branding: Optional[BrandingInfo] = None
-    expires_at: Optional[str] = None
-
-
 # ---------------------------------------------------------------------------
 # Routing (§6)
 # ---------------------------------------------------------------------------
@@ -443,16 +413,6 @@ class EmergencyLocationResult(EmergencyLocationResponse):
     rediscovered: bool = False
 
 
-class TokenCreateResult(TokenCreateResponse):
-    """:meth:`TokenPoolAuth.create_token` result (``TokenCreateResponse`` + the pool used)."""
-
-    _sdk_fields: ClassVar[frozenset[str]] = _HOLDER_FIELDS
-
-    holder: Optional[CpRef] = None
-    discovery: Optional[DiscoveryResult] = None
-    rediscovered: bool = False
-
-
 __all__ = [
     "AdditionalLocationInfo",
     "AddressData",
@@ -484,10 +444,6 @@ __all__ = [
     "RoutingRequest",
     "RoutingResponse",
     "RoutingResult",
-    "TokenCreateRequest",
-    "TokenCreateResponse",
-    "TokenCreateResult",
-    "TokenVerifyResponse",
     "VerificationResult",
     "digits_of",
     "display_number",

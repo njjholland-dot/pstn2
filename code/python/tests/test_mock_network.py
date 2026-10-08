@@ -1,5 +1,5 @@
 """Integration tests against the local mock network (test-environment/mock-network/server.mjs)
-on a free port: scenarios A–G over real HTTP, then auth / token pool / routing /
+on a free port: scenarios A–G over real HTTP, then auth / routing /
 emergency including the not_held → purge → rediscover → retry-once path."""
 
 from __future__ import annotations
@@ -110,28 +110,6 @@ async def test_stale_cache_is_caught_by_discovery_itself(mock) -> None:
         r = await alpha.request_routing(PORTED, "+442079460100")
         assert r.accepted and r.holder.cp_id == CHARLIE
         assert r.discovery.hops == [BRAVO, CHARLIE] and r.discovery.invalidated and not r.rediscovered
-
-
-async def test_token_pool(mock) -> None:
-    async with _client(mock) as alpha, _client(mock, BRAVO) as bravo:
-        tok = await alpha.create_token("+442079460100", "+441614960123", ttl=30)
-        assert tok.token_id.startswith("TK-") and len(tok.token_id) == 19 and tok.holder.cp_id == ALPHA
-        got = await bravo.verify_token(tok.token_id, "+442079460100")
-        assert got is not None and got.verified and got.originating_cp == ALPHA and got.caller_id == "+442079460100"
-        assert await bravo.verify_token("TK-AAAAAAAAAAAAAAAA", "+442079460100") is None
-        assert await bravo.verify_token("not-a-token", "+442079460100") is None
-        # verify_call with a token, and with a bad token falling back to direct query
-        v = await bravo.verify_call("+442079460100", "+441614960123", token_id=tok.token_id)
-        assert v.verified and v.trust_level == "high"
-        v = await bravo.verify_call("+442079460100", "+441614960123", token_id="TK-AAAAAAAAAAAAAAAA")
-        assert v.verified and v.trust_level == "verified"  # direct query answered
-
-
-async def test_token_pool_not_held_retry(mock) -> None:
-    async with _client(mock, BRAVO) as bravo:
-        stale = CpRef(cp_id=CHARLIE, cp_name="Charlie Comms", url=f"{mock}/cp/charlie")
-        tok = await bravo.create_token(PORTED, "+442079460100", holder=stale)  # Charlie no longer holds it
-        assert tok.rediscovered and tok.holder.cp_id == BRAVO
 
 
 async def test_routing(mock) -> None:

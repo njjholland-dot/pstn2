@@ -1,5 +1,5 @@
 """
-Example 5: Complete call flow
+Example 4: Complete call flow
 
 Alice (+442079460100, Alpha Telecom) calls Bob on +441134960456. Bob's number is in
 Charlie Comms' range but has been ported to Bravo Networks.
@@ -15,7 +15,7 @@ Any failure falls back to traditional PSTN — PSTN2 never blocks a call.
 Run the local mock network first:
     node test-environment/mock-network/server.mjs
 then:
-    python examples/05_complete_call_flow.py
+    python examples/04_complete_call_flow.py
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ async def main() -> int:
     logging.basicConfig(level=os.environ.get("PSTN2_LOG_LEVEL", "WARNING"))
     alpha_cfg = NetworkConfig.from_env(default_cp_id="CP1-UK-0101")
     bravo_cfg = dataclasses.replace(alpha_cfg, cp_id=os.environ.get("PSTN2_TERMINATING_CP_ID", "CP1-UK-0102"))
-    print("PSTN2 Example 5: Complete Call Flow")
+    print("PSTN2 Example 4: Complete Call Flow")
     print(f"  Network: {alpha_cfg.network}  ({alpha_cfg.numbering_list_url})\n")
     ok = True
     async with PSTN2Client.from_config(alpha_cfg) as alpha, PSTN2Client.from_config(bravo_cfg) as bravo:

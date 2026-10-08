@@ -118,8 +118,7 @@ pstn2-client/
 │   │   ├── signatures.{...}       # Canonical JSON + Ed25519, key store per CP
 │   │   └── responder.{...}        # Server side: answer for your own numbers
 │   ├── auth/                      # Authentication module
-│   │   ├── direct-query.{...}
-│   │   └── token-pool.{...}
+│   │   └── direct-query.{...}
 │   ├── routing/                   # Routing module
 │   ├── encryption/                # Identity keys (media keys come from DTLS-SRTP)
 │   ├── emergency/                 # Emergency services
@@ -241,7 +240,7 @@ responses, not errors: they are never retried against the same CP.
 
 #### 2.3.2 Holder Calls with `not_held` Retry
 
-Authentication, token pool, routing and emergency requests all go to the CP
+Authentication, routing and emergency requests all go to the CP
 that currently holds the subject number (the caller ID for verification and
 emergency, the destination for routing). A cached holder can be stale, so
 every PSTN2 response may carry `"result": "not_held"` and
@@ -429,7 +428,7 @@ entry), which is what the conformance scenarios check.
 
 ### 3.5 Invalidation
 
-Any PSTN2 response (discovery, verification, token, routing, emergency) MAY
+Any PSTN2 response (discovery, verification, routing, emergency) MAY
 carry:
 
 ```json
@@ -666,17 +665,16 @@ only `"strict": true` and a Node 18+ target:
 One `PSTN2Client` per acting CP. It wires Number Discovery into every module:
 
 ```typescript
-import { PSTN2Client, AuthenticationMode } from '@pstn2/core';
+import { PSTN2Client } from '@pstn2/core';
 
 const client = new PSTN2Client({
   cpId: 'CP1-UK-0103',
   numberingListUrl: process.env.PSTN2_NUMBERING_LIST_URL!,
   privateKey: process.env.PSTN2_PRIVATE_KEY_PEM,   // Ed25519 PEM; ephemeral if omitted
   verifySignatures: true,
-  authMode: AuthenticationMode.DirectQuery,
 });
 
-// Authentication (Option 1): discovery finds the caller ID's holder, then POST /auth/verify there
+// Authentication: discovery finds the caller ID's holder, then POST /auth/verify there
 const v = await client.verifyCall({ callerID: '+442079460100', calledID: '+441134960789' });
 if (v.verified) {
   console.log(`Verified by ${v.holder?.cpName}`, v.retried ? '(after not_held retry)' : '');
@@ -780,7 +778,7 @@ pstn2/
 ├── config.py        # NetworkConfig.from_env() (PSTN2_* variables)
 ├── discovery.py     # numbering list, cache, key store, discovery client, responder
 ├── _holder.py       # holder calls with not_held → rediscover → retry once
-├── auth.py          # Direct Query + Token Pool
+├── auth.py          # Caller authentication (direct query)
 ├── routing.py
 ├── emergency.py
 ├── crypto.py        # Ed25519, canonical JSON
@@ -834,12 +832,12 @@ All wire messages and results are Pydantic v2 models (`pstn2.types`).
 url)`), `ported`, `hops`, `from_cache`, `invalidated`, `error` and
 `range_holder`, plus `held` / `fallback_to_pstn` helpers and `to_wire()` for
 the camelCase JSON form. Service results (`VerificationResult`,
-`RoutingResult`, `EmergencyLocationResult`, `TokenCreateResult`) are the wire
+`RoutingResult`, `EmergencyLocationResult`) are the wire
 response plus `holder`, `discovery` and `rediscovered`.
 
 Errors: `PSTN2Error` (with `.code`, `.status`) → `PSTN2TimeoutError`,
 `NetworkError`, `InvalidResponseError`, `ApiError` (`CallNotFoundError`,
-`TokenExpiredError`, `InvalidTokenError`, `RateLimitError`), `DiscoveryError`,
+`RateLimitError`), `DiscoveryError`,
 `NotHeldError`, `ValidationError`.
 
 ---
@@ -873,7 +871,7 @@ code/go/
 │       ├── signature.go     # SignBody, VerifySignature, KeyStore
 │       ├── canonical.go     # CanonicalJSON
 │       ├── responder.go     # RangeHolderResponder (http.Handler)
-│       ├── auth.go          # VerifyCall, CreateToken, VerifyToken
+│       ├── auth.go          # VerifyCall
 │       ├── routing.go
 │       ├── emergency.go
 │       ├── httpclient.go    # User-Agent, retries, timeouts
@@ -976,7 +974,7 @@ it('follows a Range Holder redirect', async () => {
 Run against the **local mock network** (`node
 test-environment/mock-network/server.mjs`): a simulated Ofcom numbering list,
 Alpha, Bravo and Charlie participating, Delta not. It answers discovery,
-auth, tokens, routing and emergency over real HTTP, and has admin endpoints to
+auth, routing and emergency over real HTTP, and has admin endpoints to
 port a number (`POST /admin/port`), reset (`POST /admin/reset`) and read the
 query log (`GET /admin/log`). Run scenarios A–G from
 `test-environment/fixtures/scenarios.json` in order with one client:
@@ -1451,7 +1449,7 @@ the canonical JSON differs (key order, escaped `/`, whitespace).
 ### TypeScript
 
 ```typescript
-import { PSTN2Client, AuthenticationMode, PSTN2Config } from '@pstn2/core';
+import { PSTN2Client, PSTN2Config } from '@pstn2/core';
 
 const config: PSTN2Config = {
   cpId: 'CP1-UK-0001',
@@ -1462,7 +1460,6 @@ const config: PSTN2Config = {
   hopLimit: 5,
   defaultTtl: 86400,
   privateKey: process.env.PSTN2_PRIVATE_KEY_PEM,   // Ed25519 PEM
-  authMode: AuthenticationMode.DirectQuery,
   timeout: 2000,
   retries: 3,
   fallbackToTraditional: true,

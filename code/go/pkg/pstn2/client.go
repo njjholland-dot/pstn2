@@ -169,7 +169,7 @@ func (c *Client) Config() Config { return c.cfg }
 // Discovery returns the Number Discovery client.
 func (c *Client) Discovery() *DiscoveryClient { return c.discovery }
 
-// Auth returns the authentication module (Direct Query and Token Pool).
+// Auth returns the authentication module (Direct Query).
 func (c *Client) Auth() *AuthModule { return c.auth }
 
 // Routing returns the direct routing module.

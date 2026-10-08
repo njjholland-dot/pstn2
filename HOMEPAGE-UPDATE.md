@@ -47,7 +47,7 @@ Each language card now highlights the **5 working examples** instead of generic 
 
 **TypeScript Features:**
 - 5 complete working examples
-- Authentication (Direct Query & Token Pool)
+- Caller authentication (direct query)
 - Direct routing with media negotiation
 - Emergency services integration
 - Complete end-to-end call flow

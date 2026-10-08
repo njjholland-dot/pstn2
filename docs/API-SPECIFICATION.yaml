@@ -33,8 +33,7 @@ servers:
     description: Example CP2 Server
 
 # Requests are authenticated by body-level Ed25519 signatures (and mutual TLS
-# for PSAPs), not by an OpenAPI security scheme. Token-pool operations may
-# additionally carry a bearer JWT.
+# for PSAPs), not by an OpenAPI security scheme.
 security: []
 
 tags:
@@ -107,80 +106,6 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
-
-  /auth/tokens:
-    post:
-      tags:
-        - Authentication
-      summary: Create authentication token (Token Pool)
-      description: |
-        Create a short-lived token in the shared token pool.
-        Used before placing an outbound call.
-
-        **TTL:** 30-60 seconds typical
-      operationId: createToken
-      security:
-        - {}
-        - tokenPoolJWT: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenCreateRequest'
-      responses:
-        '201':
-          description: Token created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenCreateResponse'
-        '400':
-          description: Invalid request format or timestamp out of range
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-
-  /auth/tokens/{tokenId}:
-    get:
-      tags:
-        - Authentication
-      summary: Verify authentication token
-      description: |
-        Retrieve and verify a token from the shared pool.
-        Used by recipient CP on inbound call.
-      operationId: verifyToken
-      security:
-        - {}
-        - tokenPoolJWT: []
-      parameters:
-        - name: tokenId
-          in: path
-          required: true
-          schema:
-            type: string
-            pattern: '^TK-[A-Za-z0-9]{16}$'
-          example: TK-abc123XYZ789defG
-      responses:
-        '200':
-          description: Token valid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenVerifyResponse'
-        '404':
-          description: Token not found or expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
   /routing/request:
     post:
@@ -376,19 +301,12 @@ paths:
           description: Local copy is current
 
 components:
-  securitySchemes:
-    # NOTE: CP request signing is body-level, not header-level. Each signed
-    # request schema carries a required `signature` field (Ed25519 over the
-    # message body plus timestamp, per SPECIFICATION.md §4.1), so it is not
-    # modelled as an OpenAPI security scheme.
-    # PSAP requests to /emergency/location are additionally authenticated
-    # with TLS client certificates (mutual TLS) at the transport layer.
-
-    tokenPoolJWT:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT for token pool operations
+  # NOTE: CP request signing is body-level, not header-level. Each signed
+  # request schema carries a required `signature` field (Ed25519 over the
+  # message body plus timestamp, per SPECIFICATION.md §4.1), so it is not
+  # modelled as an OpenAPI security scheme.
+  # PSAP requests to /emergency/location are additionally authenticated
+  # with TLS client certificates (mutual TLS) at the transport layer.
 
   schemas:
     PhoneNumber:
@@ -543,90 +461,6 @@ components:
         cache:
           $ref: '#/components/schemas/CacheControl'
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
-
-    TokenCreateRequest:
-      type: object
-      required:
-        - messageId
-        - timestamp
-        - version
-        - originatingCP
-        - callerID
-        - calledID
-        - callReference
-        - ttl
-        - signature
-      properties:
-        messageId:
-          type: string
-          format: uuid
-        timestamp:
-          $ref: '#/components/schemas/Timestamp'
-        version:
-          type: string
-          example: '1.1'
-        originatingCP:
-          $ref: '#/components/schemas/RCPID'
-        callerID:
-          $ref: '#/components/schemas/PhoneNumber'
-        calledID:
-          $ref: '#/components/schemas/PhoneNumber'
-        callReference:
-          $ref: '#/components/schemas/CallReference'
-        ttl:
-          type: integer
-          minimum: 10
-          maximum: 60
-          description: Time-to-live in seconds
-          example: 30
-        branding:
-          $ref: '#/components/schemas/BrandingInfo'
-        signature:
-          $ref: '#/components/schemas/Base64String'
-
-    TokenCreateResponse:
-      type: object
-      required:
-        - tokenId
-        - expiresAt
-        - callReference
-      properties:
-        tokenId:
-          type: string
-          pattern: '^TK-[A-Za-z0-9]{16}$'
-          example: 'TK-abc123XYZ789defG'
-        expiresAt:
-          $ref: '#/components/schemas/Timestamp'
-        callReference:
-          $ref: '#/components/schemas/CallReference'
-
-    TokenVerifyResponse:
-      type: object
-      required:
-        - tokenId
-        - originatingCP
-        - callerID
-        - calledID
-        - callReference
-        - verified
-        - expiresAt
-      properties:
-        tokenId:
-          type: string
-        originatingCP:
-          $ref: '#/components/schemas/RCPID'
-        callerID:
-          $ref: '#/components/schemas/PhoneNumber'
-        calledID:
-          $ref: '#/components/schemas/PhoneNumber'
-        callReference:
-          $ref: '#/components/schemas/CallReference'
-        verified:
-          type: boolean
-        branding:
-          $ref: '#/components/schemas/BrandingInfo'
-        expiresAt:
           $ref: '#/components/schemas/Timestamp'
 
     RoutingRequest:
@@ -1016,8 +850,6 @@ components:
               enum:
                 - call_not_found
                 - invalid_signature
-                - expired_token
-                - invalid_token
                 - capacity_exceeded
                 - unsupported_codec
                 - number_not_found

@@ -1,5 +1,5 @@
 /*
-Example 05: Complete call flow
+Example 04: Complete call flow
 
 Alice (+442079460100, Alpha Telecom) calls Bob (+441134960456). Bob's number
 is in Charlie Comms' range but has been ported to Bravo Networks.
@@ -12,7 +12,7 @@ is in Charlie Comms' range but has been ported to Bravo Networks.
 	Then a second call to Bob goes straight to Bravo from the cache.
 
 	node test-environment/mock-network/server.mjs     # in another terminal
-	go run ./examples/05-complete-call-flow
+	go run ./examples/04-complete-call-flow
 */
 package main
 
@@ -77,7 +77,7 @@ func main() {
 	bob := struct{ Name, Number string }{"Bob Johnson", "+441134960456"}
 
 	fmt.Println(strings.Repeat("=", 64))
-	fmt.Println("PSTN2 Example 05: Complete Call Flow")
+	fmt.Println("PSTN2 Example 04: Complete Call Flow")
 	fmt.Printf("%s (%s, %s) → %s (%s)\n", alice.Name, alice.Number, aliceCfg.CPID, bob.Name, bob.Number)
 	fmt.Println(strings.Repeat("=", 64))
 	fmt.Printf("Network: %s   Numbering list: %s\n\n", env.Network, env.NumberingListURL)

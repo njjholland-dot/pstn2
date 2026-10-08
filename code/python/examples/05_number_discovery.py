@@ -1,5 +1,5 @@
 """
-Example 6: Number Discovery — "who has this number?"
+Example 5: Number Discovery — "who has this number?"
 
 Walks through Number Discovery (SPECIFICATION.md §9) hop by hop:
 
@@ -12,14 +12,14 @@ Two modes, chosen from the numbering list you point it at:
   (via the mock's POST /admin/port), not in service, Range Holder not participating,
   unallocated.
       node test-environment/mock-network/server.mjs
-      python examples/06_number_discovery.py
+      python examples/05_number_discovery.py
 
 * The dummy test CP (live at https://pstn2.org/testcp, or its local static emulator):
   test numbers 447700900001/002/003/004/101/099, with Ed25519 signatures verified.
   …004 is run with a stale cache entry pre-seeded (Test CP B) to show invalidation.
-      PSTN2_NETWORK=live python examples/06_number_discovery.py
+      PSTN2_NETWORK=live python examples/05_number_discovery.py
       PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json \\
-          python examples/06_number_discovery.py
+          python examples/05_number_discovery.py
 
 Exit status is 0 only if every lookup matched its expected outcome.
 """
@@ -174,7 +174,7 @@ async def main() -> int:
     # Signatures: the dummy test CP signs its answers, so verify them there unless told not to.
     verify = parse_flag(os.environ.get("PSTN2_VERIFY_SIGNATURES"), True if testcp else config.verify_signatures)
     steps = TESTCP_NUMBERS if testcp else LOCAL_SCENARIOS
-    print("PSTN2 Example 6: Number Discovery — who has this number?")
+    print("PSTN2 Example 5: Number Discovery — who has this number?")
     print(f"  Network:        {'dummy test CP' if testcp else 'local mock network'}  ({config.network})")
     print(f"  Numbering list: {config.numbering_list_url}")
     print(f"  Acting CP:      {config.cp_id}")

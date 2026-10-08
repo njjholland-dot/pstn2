@@ -9,7 +9,7 @@
 | Repository | Site |
 |---|---|
 | `animations/index.html`, `changes.html`, favicons | `/` |
-| `animations/src/<deck>/` (11 presentations including `test-harness/`) | `/src/<deck>/` |
+| `animations/src/<deck>/` (10 presentations including `test-harness/`) | `/src/<deck>/` |
 | `animations/shared/` (player, fonts, D3, icons) | `/shared/` |
 | `animations/{README,QUICKSTART,DELIVERY_COMPLETE,TESTING_CHECKLIST}.*` | `/animations/` |
 | `code/` (minus node_modules, dist, .venv, caches) | `/code/` |

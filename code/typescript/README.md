@@ -72,7 +72,7 @@ kept in memory and revalidated daily with `ETag` / `If-None-Match`.
 ## Features
 
 - ✅ **Number Discovery**: numbering list → Range Holder → redirect for ported numbers, cached per number
-- ✅ **Authentication**: verify caller IDs in real time (Option 1 Direct Query, Option 2 Token Pool)
+- ✅ **Authentication**: verify caller IDs in real time by Direct Query to the caller ID's holder
 - ✅ **Direct Routing**: connection details and codec/SRTP negotiation for peer-to-peer calls
 - ✅ **Emergency Services**: live location for 999/112 calls from the caller's current CP
 - ✅ **Signed answers**: Ed25519 over canonical JSON, keys from `{url}/pstn2/v1/keys`
@@ -117,7 +117,7 @@ holds the number answers `not_held` with `cache.invalidate`.
 ### Modules
 
 - **discovery/**: `NumberingList`, `DiscoveryCache`, `DiscoveryClient`, `RangeHolderResponder`, `canonicalJson`, signatures
-- **auth/**: Authentication (Option 1 direct query, Option 2 token pool)
+- **auth/**: Authentication (Direct Query)
 - **routing/**: Direct routing request and negotiation
 - **emergency/**: Emergency services location
 - **encryption/**: Per-call Ed25519 identity keys (media keys come from DTLS-SRTP)
@@ -130,27 +130,16 @@ Every module finds the subject number's holder with `discover()` and calls
 from the Range Holder and retries **once** at the new holder (`retried: true`
 on the result).
 
-### Authentication Modes
+### Authentication: Direct Query
 
-#### Option 1: Direct Query
+Direct Query is the only authentication method. The terminating CP finds the
+caller ID's holder with Number Discovery and asks it whether the call is
+genuine:
+
 ```typescript
 const v = await client.verifyCall({ callerID, calledID, callReference });
 // POST {holder of callerID}/pstn2/v1/auth/verify
 ```
-
-#### Option 2: Token Pool
-```typescript
-// Originating CP, before sending the INVITE
-const token = await alpha.createToken({ callerID, calledID, ttl: 30 });
-// INVITE carries X-PSTN2-Token: token.tokenId
-
-// Terminating CP
-const data = await bravo.verifyToken(token.tokenId, callerID);    // null if unknown/expired
-const v = await bravo.verifyCall({ callerID, calledID, tokenId }); // token first, direct query fallback
-```
-
-Tokens are held by the CP that holds the caller ID (found by discovery). Set
-`tokenPoolUrl` (and `tokenPoolAuth`) to use a shared pool instead.
 
 ## Configuration
 
@@ -174,17 +163,11 @@ interface PSTN2Config {
   // Security
   privateKey?: string | KeyObject;    // Ed25519 PEM; a per-process key is generated if omitted
 
-  // Authentication
-  authMode?: AuthenticationMode;      // DirectQuery (default) or TokenPool
-  tokenPoolUrl?: string;              // shared pool (default: the caller ID's holder)
-  tokenPoolAuth?: string;             // bearer JWT for a shared pool
-
   // Network
   timeout?: number;                   // per request, ms (default 2000)
   retries?: number;                   // 503/504/network errors only (default 3; 100/200/400 ms)
   fetch?: typeof fetch;               // inject a fetch implementation
 
-  fallbackToTraditional?: boolean;    // default true
   logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';   // default warn
 }
 ```
@@ -207,11 +190,9 @@ interface PSTN2Config {
 | Member | Returns | |
 |---|---|---|
 | `discover(number, { onEvent? })` | `DiscoveryResult` | Who holds this number? |
-| `verifyCall({ callerID, calledID, callReference?, tokenId? })` | `VerificationResult` | Response + `holder`, `discovery`, `retried`, `fallbackToTraditional`, `reason` |
+| `verifyCall({ callerID, calledID, callReference? })` | `VerificationResult` | Response + `holder`, `discovery`, `retried`, `fallbackToTraditional`, `reason` |
 | `requestRouting({ destinationNumber, callerID, mediaCapabilities, … })` | `RoutingResult` | `accepted: true` with `connectionDetails`, or `accepted: false` with `reason`, `fallbackToTraditional` (never throws for rejections) |
 | `getEmergencyLocation({ callerID, psapID, callReference? })` | `EmergencyLocationResult` | Throws `DiscoveryError` / `PSTN2Error` so the PSAP can use other sources |
-| `createToken({ callerID, calledID, ttl?, branding? })` | `CreatedToken` | Token Pool, originating CP |
-| `verifyToken(tokenId, callerID?)` | `TokenData \| null` | Token Pool, terminating CP |
 | `start()` | `this` | Load the numbering list now |
 | `numberingList`, `cache`, `discovery` | | The discovery building blocks |
 | `publicKey` | `string` | Raw Ed25519 identity key (base64), sent in routing requests |
@@ -325,10 +306,9 @@ npm run example:01
 |---|---|---|
 | `example:01` | `examples/01-basic-authentication.ts` | Charlie (terminating) verifies Alpha, Bravo, a not-in-service caller ID (flag + PSTN fallback) and a ported caller ID (redirect → Bravo verifies) |
 | `example:02` | `examples/02-direct-routing.ts` | Alpha routes to +441614960123 at Bravo with codec/SRTP negotiation |
-| `example:03` | `examples/03-token-pool.ts` | Alpha creates a token; Bravo verifies it (and rejects a forged one) |
-| `example:04` | `examples/04-emergency-services.ts` | PSAP gets live location for a Bravo number, a ported number, and falls back for a not-in-service one |
-| `example:05` | `examples/05-complete-call-flow.ts` | Discovery with redirect → authentication → routing → summary, then a cache hit on the second call |
-| `example:06` | `examples/06-number-discovery.ts` | "Who has this number?" hop by hop: scenarios A–G locally, or the dummy test CPs live with signatures |
+| `example:03` | `examples/03-emergency-services.ts` | PSAP gets live location for a Bravo number, a ported number, and falls back for a not-in-service one |
+| `example:04` | `examples/04-complete-call-flow.ts` | Discovery with redirect → authentication → routing → summary, then a cache hit on the second call |
+| `example:05` | `examples/05-number-discovery.ts` | "Who has this number?" hop by hop: scenarios A–G locally, or the dummy test CPs live with signatures |
 
 Type-check everything with `npm run typecheck:examples`. Set
 `PSTN2_LOG_LEVEL=info` to see the SDK's own request log.
@@ -340,7 +320,7 @@ answers: Test CP A is Range Holder for 07700 900 0xx, Test CP B for
 07700 900 1xx.
 
 ```bash
-PSTN2_NETWORK=live npm run example:06
+PSTN2_NETWORK=live npm run example:05
 ```
 
 | Number | Expect |
@@ -356,10 +336,10 @@ To run the same thing against a local copy (static-host emulator):
 ```bash
 node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/testcp
 node test-environment/mock-network/static-server.mjs --dir /tmp/testcp --port 47902
-PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:06
+PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:05
 ```
 
-Examples 01–05 need the auth/routing/emergency endpoints of the mock network;
+Examples 01–04 need the auth/routing/emergency endpoints of the mock network;
 the dummy test CP only answers Number Discovery.
 
 ## Testing
@@ -378,7 +358,7 @@ npm run test:coverage
   `DiscoveryClient` parity (results and event sequences) with the reference
   engine for scenarios A–G, plus hop limit, loops, timeouts and signatures.
 - **Integration**: spawns `test-environment/mock-network/server.mjs` on a free
-  port and runs scenarios A–G in order with one client; auth, token pool,
+  port and runs scenarios A–G in order with one client; auth (Direct Query),
   routing and emergency including not_held → rediscover → retry; builds the
   dummy test CP into a temp dir, serves it with the static-host emulator and
   checks all six test numbers with signatures on, the stale-cache invalidation,

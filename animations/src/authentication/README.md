@@ -1,4 +1,4 @@
-# Authentication: Direct Query
+# Caller Authentication
 
 How a receiving provider verifies a caller ID in real time by asking the caller’s own provider (`POST /pstn2/v1/auth/verify`), found through PSTN2 number discovery (SPECIFICATION.md §5.1, §9).
 
@@ -10,7 +10,7 @@ Runs on the shared PSTN2 broadcast player (`../../shared/`, see its README).
 - `narration.json` — the script (captions and voice)
 - `scenes.js` — the animated diagrams, cued to the narration
 - `deck.css` — deck-specific styles
-- `audio/` — generated: `node tools/narrate/build-narration.mjs authentication-option1`
+- `audio/` — generated: `node tools/narrate/build-narration.mjs authentication`
 
 ## Scenes
 

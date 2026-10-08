@@ -941,38 +941,23 @@
                     <div class="presentation-card">
                         <div class="presentation-content">
                             <div class="presentation-number">3</div>
-                            <h4 class="presentation-title">Authentication Option 1</h4>
+                            <h4 class="presentation-title">Caller Authentication</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 10 scenes</span>
                                 <span class="meta-item">⏱️ ~4 min</span>
                             </div>
                             <p class="presentation-description">
-                                Direct query verification mechanism with real-time fraud prevention,
-                                performance analysis, and privacy considerations.
+                                How a provider proves a caller ID is genuine by asking the caller’s own provider,
+                                found through Ofcom’s numbering lists, with signed answers in under 100 ms.
                             </p>
-                            <a href="src/authentication-option1/index.html" class="presentation-link">Watch Presentation →</a>
+                            <a href="src/authentication/index.html" class="presentation-link">Watch Presentation →</a>
                         </div>
                     </div>
+
 
                     <div class="presentation-card">
                         <div class="presentation-content">
                             <div class="presentation-number">4</div>
-                            <h4 class="presentation-title">Authentication Option 2</h4>
-                            <div class="presentation-meta">
-                                <span class="meta-item">📊 11 scenes</span>
-                                <span class="meta-item">⏱️ ~4 min</span>
-                            </div>
-                            <p class="presentation-description">
-                                Token pool alternative with query reduction strategy, privacy trade-offs,
-                                and scalability analysis for high-volume scenarios.
-                            </p>
-                            <a href="src/authentication-option2/index.html" class="presentation-link">Watch Presentation →</a>
-                        </div>
-                    </div>
-
-                    <div class="presentation-card">
-                        <div class="presentation-content">
-                            <div class="presentation-number">5</div>
                             <h4 class="presentation-title">Direct Routing</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 12 scenes</span>
@@ -988,7 +973,7 @@
 
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">6</div>
+                            <div class="presentation-number">5</div>
                             <h4 class="presentation-title">Emergency Services</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 9 scenes</span>
@@ -1004,7 +989,7 @@
 
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">7</div>
+                            <div class="presentation-number">6</div>
                             <h4 class="presentation-title">Who Has This Number? (Distributed Database)</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 12 scenes</span>
@@ -1021,7 +1006,7 @@
 
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">8</div>
+                            <div class="presentation-number">7</div>
                             <h4 class="presentation-title">Test Harness: Live Demo</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 8 scenes</span>
@@ -1037,7 +1022,7 @@
 
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">9</div>
+                            <div class="presentation-number">8</div>
                             <h4 class="presentation-title">MAP Architecture</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 11 scenes</span>
@@ -1059,7 +1044,7 @@
                 <div class="presentation-grid">
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">10</div>
+                            <div class="presentation-number">9</div>
                             <h4 class="presentation-title">End-to-End Scenario</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 15 scenes</span>
@@ -1075,7 +1060,7 @@
 
                     <div class="presentation-card">
                         <div class="presentation-content">
-                            <div class="presentation-number">11</div>
+                            <div class="presentation-number">10</div>
                             <h4 class="presentation-title">Law Enforcement Access</h4>
                             <div class="presentation-meta">
                                 <span class="meta-item">📊 8 scenes</span>
@@ -1382,9 +1367,9 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>6 runnable examples, including live number discovery</li>
+                            <li>5 runnable examples, including live number discovery</li>
                             <li>Number Discovery client &amp; Range Holder responder</li>
-                            <li>Authentication (Direct Query & Token Pool)</li>
+                            <li>Caller authentication (direct query)</li>
                             <li>Direct routing with media negotiation</li>
                             <li>Emergency services integration</li>
                             <li>Zero runtime dependencies</li>
@@ -1404,11 +1389,11 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>6 runnable async examples</li>
+                            <li>5 runnable async examples</li>
                             <li>Number Discovery with signature checks</li>
                             <li>Typed with Pydantic v2 models</li>
                             <li>httpx client, Ed25519 via cryptography</li>
-                            <li>Auth, token pool, routing, emergency</li>
+                            <li>Authentication, routing, emergency</li>
                             <li>Unit &amp; integration tests (pytest)</li>
                         </ul>
                         <span class="code-status available">✓ Available Now</span>
@@ -1425,7 +1410,7 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>6 runnable Go examples</li>
+                            <li>5 runnable Go examples</li>
                             <li>context.Context throughout</li>
                             <li>Thread-safe discovery cache</li>
                             <li>Range Holder responder as http.Handler</li>
@@ -1467,8 +1452,8 @@
                     </div>
                     <div class="code-body">
                         <ul class="code-features">
-                            <li>All 11 narrated presentations + website source</li>
-                            <li>18 code examples (TypeScript/Python/Go)</li>
+                            <li>All 10 narrated presentations + website source</li>
+                            <li>15 code examples (TypeScript/Python/Go)</li>
                             <li>Test harness, mock network &amp; conformance suite</li>
                             <li>Complete documentation & specs</li>
                             <li>Claude.md AI guidance file</li>
@@ -1499,7 +1484,7 @@
                             <li>Two test Range Holders, one ported number</li>
                             <li>held, redirect, not_held and 404 answers</li>
                             <li>Ed25519-signed responses with published keys</li>
-                            <li>Works with all three SDKs (example 06)</li>
+                            <li>Works with all three SDKs (example 05)</li>
                             <li>Conformance suite in the harness download</li>
                         </ul>
                         <span class="code-status available">✓ Live</span>
@@ -1569,8 +1554,7 @@
                 <ul class="footer-links">
                     <li><a href="src/problem-statement/index.html">Problem Statement</a></li>
                     <li><a href="src/solution-overview/index.html">Solution Overview</a></li>
-                    <li><a href="src/authentication-option1/index.html">Authentication (Direct Query)</a></li>
-                    <li><a href="src/authentication-option2/index.html">Authentication Option 2</a></li>
+                    <li><a href="src/authentication/index.html">Caller Authentication</a></li>
                     <li><a href="src/direct-routing/index.html">Direct Routing</a></li>
                     <li><a href="src/emergency-services/index.html">Emergency Services</a></li>
                     <li><a href="src/distributed-database/index.html">Who Has This Number?</a></li>

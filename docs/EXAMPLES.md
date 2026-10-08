@@ -1,12 +1,12 @@
 # PSTN2 Code Examples
 
-Six working examples, in TypeScript, Python and Go, for PSTN2 protocol
+Five working examples, in TypeScript, Python and Go, for PSTN2 protocol
 **v1.1**. Every example uses **Number Discovery** to find the CP that holds a
 number now: the regulator's numbering list names the block's Range Holder, the
 Range Holder redirects if the number has been ported, and the holder answers.
 There is no central database.
 
-All examples run offline against the **local mock network**; example 06 also
+All examples run offline against the **local mock network**; example 05 also
 runs against the **dummy test CP** at https://pstn2.org/testcp/. Every example
 exits non-zero if something did not go as expected.
 
@@ -16,10 +16,9 @@ exits non-zero if something did not go as expected.
 |---|---|---|
 | 01 | **Basic Authentication** | A terminating CP verifies four inbound caller IDs (Direct Query), including a spoofed one and a ported one |
 | 02 | **Direct Routing** | An originating CP asks the destination's holder for a direct media path, with codec and SRTP negotiation |
-| 03 | **Token Pool** | The originating CP creates a token at the caller ID's holder; the terminating CP verifies it; a forged token is rejected |
-| 04 | **Emergency Services** | A PSAP gets live location for 999 callers from each number's holder, and falls back when there is none |
-| 05 | **Complete Call Flow** | Discovery with a Range Holder redirect → authentication → routing → timing summary, then a cache hit on the second call |
-| 06 | **Number Discovery** | "Who has this number?" hop by hop: scenarios A–G locally, or the six dummy test CP numbers with signatures verified |
+| 03 | **Emergency Services** | A PSAP gets live location for 999 callers from each number's holder, and falls back when there is none |
+| 04 | **Complete Call Flow** | Discovery with a Range Holder redirect → authentication → routing → timing summary, then a cache hit on the second call |
+| 05 | **Number Discovery** | "Who has this number?" hop by hop: scenarios A–G locally, or the six dummy test CP numbers with signatures verified |
 
 ## Directory Structure
 
@@ -29,27 +28,24 @@ code/
 │   └── examples/
 │       ├── 01-basic-authentication.ts
 │       ├── 02-direct-routing.ts
-│       ├── 03-token-pool.ts
-│       ├── 04-emergency-services.ts
-│       ├── 05-complete-call-flow.ts
-│       ├── 06-number-discovery.ts
+│       ├── 03-emergency-services.ts
+│       ├── 04-complete-call-flow.ts
+│       ├── 05-number-discovery.ts
 │       └── shared.ts                 # printing helpers (not part of the SDK)
 ├── python/                           # pstn2 (Python 3.11+)
 │   └── examples/
 │       ├── 01_basic_authentication.py
 │       ├── 02_direct_routing.py
-│       ├── 03_token_pool.py
-│       ├── 04_emergency_services.py
-│       ├── 05_complete_call_flow.py
-│       └── 06_number_discovery.py
+│       ├── 03_emergency_services.py
+│       ├── 04_complete_call_flow.py
+│       └── 05_number_discovery.py
 └── go/                               # pkg/pstn2 (Go 1.21+, standard library only)
     └── examples/                     # one main package per example
         ├── 01-basic-authentication/main.go
         ├── 02-direct-routing/main.go
-        ├── 03-token-pool/main.go
-        ├── 04-emergency-services/main.go
-        ├── 05-complete-call-flow/main.go
-        └── 06-number-discovery/main.go
+        ├── 03-emergency-services/main.go
+        ├── 04-complete-call-flow/main.go
+        └── 05-number-discovery/main.go
 ```
 
 Source: [TypeScript](https://github.com/njjholland-dot/pstn2/tree/main/code/typescript/examples) ·
@@ -86,7 +82,7 @@ See the language READMEs for the full SDK documentation:
 
 ## The Test Networks
 
-### Local mock network (examples 01–06)
+### Local mock network (examples 01–05)
 
 ```bash
 # from the repository root, in its own terminal
@@ -111,7 +107,7 @@ Manchester location for emergency queries. For a number it does not hold it
 answers `200 {"result":"not_held","cache":{"invalidate":true}}`, so the
 SDKs' rediscover-and-retry path is exercised too.
 
-### Dummy test CP (example 06)
+### Dummy test CP (example 05)
 
 https://pstn2.org/testcp/ is two fictional CPs hosted as static files with
 **signed** answers. Test CP A (`CP1-UK-9001`) is Range Holder for
@@ -125,7 +121,7 @@ Discovery only.
 node test-environment/mock-network/server.mjs
 
 # terminal 2
-cd code/typescript && npm run example:01            # … example:06
+cd code/typescript && npm run example:01            # … example:05
 cd code/python && .venv/bin/python examples/01_basic_authentication.py
 cd code/go && go run ./examples/01-basic-authentication
 ```
@@ -134,13 +130,12 @@ cd code/go && go run ./examples/01-basic-authentication
 |---|---|---|---|
 | 01 | `npm run example:01` | `.venv/bin/python examples/01_basic_authentication.py` | `go run ./examples/01-basic-authentication` |
 | 02 | `npm run example:02` | `.venv/bin/python examples/02_direct_routing.py` | `go run ./examples/02-direct-routing` |
-| 03 | `npm run example:03` | `.venv/bin/python examples/03_token_pool.py` | `go run ./examples/03-token-pool` |
-| 04 | `npm run example:04` | `.venv/bin/python examples/04_emergency_services.py` | `go run ./examples/04-emergency-services` |
-| 05 | `npm run example:05` | `.venv/bin/python examples/05_complete_call_flow.py` | `go run ./examples/05-complete-call-flow` |
-| 06 | `npm run example:06` | `.venv/bin/python examples/06_number_discovery.py` | `go run ./examples/06-number-discovery` |
+| 03 | `npm run example:03` | `.venv/bin/python examples/03_emergency_services.py` | `go run ./examples/03-emergency-services` |
+| 04 | `npm run example:04` | `.venv/bin/python examples/04_complete_call_flow.py` | `go run ./examples/04-complete-call-flow` |
+| 05 | `npm run example:05` | `.venv/bin/python examples/05_number_discovery.py` | `go run ./examples/05-number-discovery` |
 
 The TypeScript examples run with `ts-node`; `npm run typecheck:examples`
-type-checks them. Example 06 resets the mock network before and after it runs
+type-checks them. Example 05 resets the mock network before and after it runs
 (it ports a number in scenario D), so the examples can run in any order.
 
 ### Environment variables
@@ -153,8 +148,8 @@ type-checks them. Example 06 resets the mock network before and after it runs
 | `PSTN2_CP_ID` | per example; `CP1-UK-TEST-CLIENT` live | Acting CP |
 | `PSTN2_VERIFY_SIGNATURES` | on for live, off for local | `1` / `0` |
 | `PSTN2_LOG_LEVEL` | quiet | SDK request log (TypeScript `info`/`debug`; Python `INFO`/`DEBUG`) |
-| `PSTN2_PSAP_ID` | `UK-999-MANCHESTER-01` | Python and Go example 04 |
-| `PSTN2_TERMINATING_CP_ID` | `CP1-UK-0102` | Python examples 03 and 05 |
+| `PSTN2_PSAP_ID` | `UK-999-MANCHESTER-01` | Python and Go example 03 |
+| `PSTN2_TERMINATING_CP_ID` | `CP1-UK-0102` | Python example 04 |
 | `PSTN2_PRIVATE_KEY` | ephemeral | Python: Ed25519 key (PEM or base64) for request signatures |
 
 Each example starts by printing the network, numbering-list URL, acting CP,
@@ -259,47 +254,11 @@ from DTLS-SRTP. `requestRouting` never throws for a rejection: it returns
 
 ---
 
-## Example 3: Token Pool
+## Example 3: Emergency Services
 
-**Files:** `typescript/examples/03-token-pool.ts`,
-`python/examples/03_token_pool.py`,
-`go/examples/03-token-pool/main.go`
-
-**Acting CPs:** Alpha Telecom (`CP1-UK-0101`, originating) and Bravo Networks
-(`CP1-UK-0102`, terminating). Call +442079460100 → +441614960123, TTL 30 s.
-Tokens are held by the CP that holds the caller ID, found by discovery.
-
-```typescript
-// TypeScript
-const token = await alpha.createToken({ callerID, calledID, ttl: 30 });   // POST {holder}/pstn2/v1/auth/tokens
-// INVITE carries X-PSTN2-Token: token.tokenId
-const data = await bravo.verifyToken(token.tokenId, callerID);            // GET {holder}/pstn2/v1/auth/tokens/{id}; null if unknown
-const v = await bravo.verifyCall({ callerID, calledID, tokenId: token.tokenId }); // token first, Direct Query fallback
-```
-
-**Flow (all three SDKs):**
-
-1. Alpha creates a token for the call: discovery of the caller ID → held by
-   Alpha, 1 hop → `TK-xxxxxxxxxxxxxxxx` (matches `^TK-[A-Za-z0-9]{16}$`) with
-   its expiry and call reference.
-2. The call is signalled with `X-PSTN2-Token: TK-…` (simulated).
-3. Bravo verifies the token at Alpha: ✓ verified, originating CP
-   `CP1-UK-0101`, caller → called, call reference matches.
-4. A forged `TK-AAAAAAAAAAAAAAAA`:
-   - TypeScript: `verifyToken` returns `null` (treat as unverified); a
-     separate `verifyCall({ tokenId })` with the real token is ✓ verified.
-   - Python and Go: the pool answers 404 `invalid_token` → fall back to
-     Direct Query → ✓ verified by Alpha Telecom.
-
-A short TTL limits the fraud window; each call needs one create and one `GET`.
-
----
-
-## Example 4: Emergency Services
-
-**Files:** `typescript/examples/04-emergency-services.ts`,
-`python/examples/04_emergency_services.py`,
-`go/examples/04-emergency-services/main.go`
+**Files:** `typescript/examples/03-emergency-services.ts`,
+`python/examples/03_emergency_services.py`,
+`go/examples/03-emergency-services/main.go`
 
 **Acting party:** a PSAP, ID `UK-999-MANCHESTER-01` (TypeScript acts as
 `PSAP-UK-999-01`). For each 999 call it discovers the caller ID's holder and
@@ -329,11 +288,11 @@ so the PSAP always knows to use its other sources.
 
 ---
 
-## Example 5: Complete Call Flow
+## Example 4: Complete Call Flow
 
-**Files:** `typescript/examples/05-complete-call-flow.ts`,
-`python/examples/05_complete_call_flow.py`,
-`go/examples/05-complete-call-flow/main.go`
+**Files:** `typescript/examples/04-complete-call-flow.ts`,
+`python/examples/04_complete_call_flow.py`,
+`go/examples/04-complete-call-flow/main.go`
 
 Alice +442079460100 (Alpha) calls Bob +441134960456 (Charlie's range, ported
 to Bravo). Two clients: Alpha (originating) and Bravo (terminating).
@@ -386,11 +345,11 @@ to Bravo). Two clients: Alpha (originating) and Bravo (terminating).
 
 ---
 
-## Example 6: Number Discovery
+## Example 5: Number Discovery
 
-**Files:** `typescript/examples/06-number-discovery.ts`,
-`python/examples/06_number_discovery.py`,
-`go/examples/06-number-discovery/main.go`
+**Files:** `typescript/examples/05-number-discovery.ts`,
+`python/examples/05_number_discovery.py`,
+`go/examples/05-number-discovery/main.go`
 
 The heart of PSTN2 v1.1: "which CP currently holds this number?" The example
 prints every step of the algorithm through the SDK's discovery events
@@ -468,9 +427,9 @@ D. Number ports back: stale cache is invalidated: +441134960456 (0113 496 0456)
 ### Dummy test CP: six test numbers, signed
 
 ```bash
-PSTN2_NETWORK=live npm run example:06                               # TypeScript
-PSTN2_NETWORK=live .venv/bin/python examples/06_number_discovery.py  # Python
-PSTN2_NETWORK=live go run ./examples/06-number-discovery            # Go
+PSTN2_NETWORK=live npm run example:05                               # TypeScript
+PSTN2_NETWORK=live .venv/bin/python examples/05_number_discovery.py  # Python
+PSTN2_NETWORK=live go run ./examples/05-number-discovery            # Go
 ```
 
 Acting CP `CP1-UK-TEST-CLIENT`; signature verification is on by default in this
@@ -497,7 +456,7 @@ same signed files the way pstn2.org does (JSON for extensionless files, HTML
 ```bash
 node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/testcp-local
 node test-environment/mock-network/static-server.mjs --dir /tmp/testcp-local --port 47902
-PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:06
+PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json npm run example:05
 ```
 
 `build.mjs` signs with the keys in `$PSTN2_TESTCP_KEYS` or
@@ -629,7 +588,7 @@ Discovery conformance requirements.
 PSTN2 is designed to work alongside existing SIP infrastructure:
 
 1. **Inbound Calls**: When receiving a SIP INVITE:
-   - Extract the caller ID (and `X-PSTN2-Token`, if present)
+   - Extract the caller ID
    - Call `verifyCall()`: discovery finds the caller ID's holder
    - Add verification results to SIP headers
    - Route call to destination
@@ -677,8 +636,7 @@ Performance tips:
 1. Reuse one client per CP so its number cache stays warm (cached per number,
    24 h default TTL)
 2. Load the numbering list at start-up (`start()` / first discovery)
-3. Use Token Pool for high-volume scenarios
-4. Keep HTTP connections alive (the SDKs do)
+3. Keep HTTP connections alive (the SDKs do)
 
 ## Security Best Practices
 
@@ -686,10 +644,9 @@ All examples demonstrate:
 
 1. **Private Key Protection**: never hardcode keys; the examples use ephemeral keys
 2. **TLS Everywhere**: production APIs use HTTPS/TLS 1.3 (the mock network is plain HTTP on localhost only)
-3. **Signature Verification**: example 06 verifies every signed discovery answer from the dummy test CP
-4. **Short TTLs**: Token Pool tokens expire in 30 seconds
-5. **Descriptive User-Agent**: `pstn2-{language}-sdk/1.1.0`; generic agents are rejected by many WAFs
-6. **Error Information**: never expose sensitive data in error messages
+3. **Signature Verification**: example 05 verifies every signed discovery answer from the dummy test CP
+4. **Descriptive User-Agent**: `pstn2-{language}-sdk/1.1.0`; generic agents are rejected by many WAFs
+5. **Error Information**: never expose sensitive data in error messages
 
 ## Troubleshooting
 
@@ -703,7 +660,7 @@ All examples demonstrate:
 - The call is handled as traditional PSTN; that is the designed fallback
 
 ### Unexpected holder or "invalidated"
-- Example 06 ports +441134960456 during scenario D and resets the mock afterwards; if it was interrupted, reset with `curl -X POST -A pstn2-reset/1.1 http://127.0.0.1:47901/admin/reset` or restart the mock
+- Example 05 ports +441134960456 during scenario D and resets the mock afterwards; if it was interrupted, reset with `curl -X POST -A pstn2-reset/1.1 http://127.0.0.1:47901/admin/reset` or restart the mock
 
 ### "invalid_signature"
 - Signatures are only published by the dummy test CP; set `PSTN2_VERIFY_SIGNATURES=0` against the mock network (the default)
@@ -712,11 +669,6 @@ All examples demonstrate:
 ### "Routing rejected"
 - The destination may not support the offered codecs (`unsupported_codec`)
 - Fallback to traditional PSTN is normal
-
-### "Token expired"
-- Default TTL is 30 seconds
-- Increase TTL if needed for longer call setup times
-- Ensure clocks are synchronized (use NTP)
 
 ## Further Reading
 

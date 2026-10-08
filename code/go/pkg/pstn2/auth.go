@@ -3,8 +3,6 @@ package pstn2
 import (
 	"context"
 	"net/http"
-	"net/url"
-	"regexp"
 )
 
 // Verification reasons (Verification.Reason).
@@ -47,40 +45,8 @@ type Verification struct {
 	Via *HolderCall `json:"-"`
 }
 
-// TokenRequest creates a Token Pool token at the caller ID's holder (§5.2.1).
-type TokenRequest struct {
-	CallerID      string
-	CalledID      string
-	CallReference string    // generated when empty
-	TTL           int       // seconds (default 30)
-	Branding      *Branding // optional
-}
-
-// Token is a created token.
-type Token struct {
-	TokenID       string      `json:"tokenId"`
-	ExpiresAt     string      `json:"expiresAt"`
-	CallReference string      `json:"callReference"`
-	Via           *HolderCall `json:"-"`
-}
-
-// TokenVerification is the result of VerifyToken (§5.2.2).
-type TokenVerification struct {
-	TokenID       string      `json:"tokenId"`
-	OriginatingCP string      `json:"originatingCP"`
-	CallerID      string      `json:"callerID"`
-	CalledID      string      `json:"calledID"`
-	CallReference string      `json:"callReference"`
-	Verified      bool        `json:"verified"`
-	Branding      *Branding   `json:"branding,omitempty"`
-	ExpiresAt     string      `json:"expiresAt"`
-	Via           *HolderCall `json:"-"`
-}
-
-// TokenPattern is the §5.2.3 token format.
-var TokenPattern = regexp.MustCompile(`^TK-[A-Za-z0-9]{16}$`)
-
-// AuthModule implements caller ID authentication.
+// AuthModule implements caller ID authentication. Direct Query is the only
+// authentication method.
 type AuthModule struct{ c *Client }
 
 // VerifyCall verifies an inbound caller ID with Direct Query (§5.1): discover
@@ -137,75 +103,4 @@ func (a *AuthModule) VerifyCall(ctx context.Context, req VerifyCallRequest) (*Ve
 		v.Reason, v.Fallback = ReasonNotVerified, true
 	}
 	return &v, nil
-}
-
-// CreateToken creates a Token Pool token for an outbound call (§5.2.1). The
-// token is created at the CP that holds the caller ID (normally the calling
-// CP's own server), found with Discover().
-func (a *AuthModule) CreateToken(ctx context.Context, req TokenRequest) (*Token, error) {
-	ref := req.CallReference
-	if ref == "" {
-		ref = newUUID()
-	}
-	ttl := req.TTL
-	if ttl <= 0 {
-		ttl = 30
-	}
-	fields := map[string]any{
-		"originatingCP": a.c.cfg.CPID,
-		"callerID":      E164(req.CallerID),
-		"calledID":      E164(req.CalledID),
-		"callReference": ref,
-		"ttl":           ttl,
-	}
-	if req.Branding != nil {
-		fields["branding"] = req.Branding
-	}
-	res, via, err := a.c.callHolder(ctx, req.CallerID, http.MethodPost, "/auth/tokens", a.c.envelope(fields))
-	if err != nil {
-		return nil, err
-	}
-	if res.Status < 200 || res.Status > 299 {
-		return nil, errorFromResponse(res, CodeInternalError)
-	}
-	var t Token
-	if err := decodeJSON(res, &t); err != nil {
-		return nil, err
-	}
-	if !TokenPattern.MatchString(t.TokenID) {
-		return nil, &Error{Code: CodeInvalidToken, Message: "malformed token id " + t.TokenID, HTTPStatus: res.Status, URL: res.URL}
-	}
-	t.Via = via
-	return &t, nil
-}
-
-// VerifyToken verifies a Token Pool token presented with an inbound call
-// (§5.2.2): discover the caller ID's holder and GET /auth/tokens/{tokenId}
-// there. A missing token is an *Error with Code invalid_token (404); an
-// expired one has Code expired_token (410).
-func (a *AuthModule) VerifyToken(ctx context.Context, callerID, tokenID string) (*TokenVerification, error) {
-	if !TokenPattern.MatchString(tokenID) {
-		return nil, &Error{Code: CodeInvalidToken, Message: "token id does not match ^TK-[A-Za-z0-9]{16}$"}
-	}
-	res, via, err := a.c.callHolder(ctx, callerID, http.MethodGet, "/auth/tokens/"+url.PathEscape(tokenID), nil)
-	if err != nil {
-		return nil, err
-	}
-	switch {
-	case res.Status == http.StatusNotFound:
-		return nil, errorFromResponse(res, CodeInvalidToken)
-	case res.Status == http.StatusGone:
-		return nil, errorFromResponse(res, CodeExpiredToken)
-	case res.Status < 200 || res.Status > 299:
-		return nil, errorFromResponse(res, CodeInternalError)
-	}
-	var tv TokenVerification
-	if err := decodeJSON(res, &tv); err != nil {
-		return nil, err
-	}
-	if tv.CallerID != "" && E164(tv.CallerID) != E164(callerID) {
-		return nil, &Error{Code: CodeInvalidToken, Message: "token was issued for " + tv.CallerID, URL: res.URL}
-	}
-	tv.Via = via
-	return &tv, nil
 }

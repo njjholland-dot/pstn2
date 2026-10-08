@@ -1,5 +1,5 @@
 /*
-Example 04: Emergency Services location
+Example 03: Emergency Services location
 
 A 999 call from +441614960123 reaches the Manchester PSAP. The PSAP discovers
 the CP that currently holds the caller's number (Bravo Networks) and asks it
@@ -7,7 +7,7 @@ for the caller's live location. A second caller on a non-participating
 network (+441174960555) shows the fallback to traditional location sources.
 
 	node test-environment/mock-network/server.mjs     # in another terminal
-	go run ./examples/04-emergency-services
+	go run ./examples/03-emergency-services
 
 Environment: PSTN2_PSAP_ID (default UK-999-MANCHESTER-01).
 */
@@ -45,7 +45,7 @@ func main() {
 	defer client.Close()
 
 	fmt.Println(strings.Repeat("=", 64))
-	fmt.Println("PSTN2 Example 04: Emergency Services Location")
+	fmt.Println("PSTN2 Example 03: Emergency Services Location")
 	fmt.Println(strings.Repeat("=", 64))
 	fmt.Printf("Network: %s   Numbering list: %s\n", env.Network, env.NumberingListURL)
 	fmt.Printf("PSAP: %s\n\n", psapID)

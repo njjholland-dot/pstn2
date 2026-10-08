@@ -1,4 +1,4 @@
-/* Authentication: Direct Query — deck-specific styles */
+/* Caller Authentication — deck-specific styles */
 .aq-label { font-size: 16px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-4); margin-top: 4px; }
 .aq-num { font-family: var(--mono); font-size: 36px; font-weight: 700; color: #fff; letter-spacing: 0.02em; min-height: 44px; }
 .aq-num.aq-bad { color: var(--red-2); }

@@ -1,0 +1,238 @@
+{
+  "deck": "authentication",
+  "title": "Caller Authentication",
+  "titleHtml": "Caller <span>authentication</span>",
+  "kicker": "Technical deep dive",
+  "subtitle": "How a provider proves a caller ID is genuine by asking the caller’s own provider, in real time, during call setup.",
+  "endNote": "Next: Direct Routing, connecting the two providers directly.",
+  "scenes": [
+    {
+      "id": "problem",
+      "title": "Caller ID can be faked",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Today’s phone network has no reliable way to check who is really calling."
+        },
+        {
+          "id": "b",
+          "text": "Caller ID can be spoofed in seconds. Anyone can claim to be anyone, even your bank."
+        },
+        {
+          "id": "c",
+          "text": "The network passes the fake number straight through, and the customer sees it as genuine."
+        },
+        {
+          "id": "d",
+          "text": "That single gap enables fraud on a massive scale."
+        }
+      ]
+    },
+    {
+      "id": "ask",
+      "title": "Just ask the caller’s provider",
+      "segments": [
+        {
+          "id": "a",
+          "text": "PSTN2 closes that gap with a simple idea: ask."
+        },
+        {
+          "id": "b",
+          "text": "Alpha Telecom receives a call. The caller ID is 0161 496 0123, a number held by Bravo Networks."
+        },
+        {
+          "id": "c",
+          "text": "So Alpha asks Bravo directly: did you place this call?"
+        },
+        {
+          "id": "d",
+          "text": "Bravo gives a definitive, signed answer, typically within a hundred milliseconds."
+        }
+      ]
+    },
+    {
+      "id": "flow",
+      "title": "The query, step by step",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Here is the flow in detail. First, Alpha finds the provider that holds the caller ID, using PSTN2 number discovery."
+        },
+        {
+          "id": "b",
+          "text": "Then it sends Bravo a signed verification request, with the call details: the caller, the number called, and a call reference."
+        },
+        {
+          "id": "c",
+          "text": "Bravo checks its own record of the calls it has just placed."
+        },
+        {
+          "id": "d",
+          "text": "The call is there, so Bravo answers: verified. If it were not, Bravo would answer: not verified."
+        },
+        {
+          "id": "e",
+          "text": "Either way, Alpha now knows for certain."
+        }
+      ]
+    },
+    {
+      "id": "ported",
+      "title": "When the caller ID has been ported",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Numbers move between providers. So how does Alpha know which provider to ask?"
+        },
+        {
+          "id": "b",
+          "text": "This time the caller ID is 0113 496 0456. Ofcom’s numbering list names Charlie Comms as its Range Holder, so Alpha asks Charlie."
+        },
+        {
+          "id": "c",
+          "text": "But the number has been ported to Bravo Networks. So Charlie answers with a redirect to Bravo."
+        },
+        {
+          "id": "d",
+          "text": "Alpha sends its verification request to Bravo, the provider that holds the number today. Bravo confirms or denies the call."
+        },
+        {
+          "id": "e",
+          "text": "If a cached answer is ever out of date, the provider replies: not held, invalidate your cache. Alpha rediscovers and retries, within five hops in total."
+        }
+      ]
+    },
+    {
+      "id": "speed",
+      "title": "Faster than the first ring",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Verification happens in real time, typically in under a hundred milliseconds."
+        },
+        {
+          "id": "b",
+          "text": "That fits comfortably inside normal call setup, so it is finished before the phone even rings."
+        },
+        {
+          "id": "c",
+          "text": "The customer notices no delay. The experience is seamless."
+        }
+      ]
+    },
+    {
+      "id": "fraud",
+      "title": "Spoofed calls are caught",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Now watch a fraudster try. They spoof 0161 496 0123, Bravo’s number, and call an Alpha customer."
+        },
+        {
+          "id": "b",
+          "text": "Alpha asks Bravo: did you place this call? Bravo has no record of it, so it answers: not verified."
+        },
+        {
+          "id": "c",
+          "text": "Alpha can reject the call, or mark it as suspicious, before the customer’s phone even rings."
+        },
+        {
+          "id": "d",
+          "text": "With direct query, spoofing a PSTN2 number simply stops working."
+        }
+      ]
+    },
+    {
+      "id": "stir",
+      "title": "A definitive answer, not a confidence level",
+      "segments": [
+        {
+          "id": "a",
+          "text": "STIR/SHAKEN, used in North America, takes a different approach."
+        },
+        {
+          "id": "b",
+          "text": "It attaches an attestation level, A, B or C, which says how confident the originating carrier is."
+        },
+        {
+          "id": "c",
+          "text": "PSTN2 gives a definitive answer: yes, we placed this call, or no, we did not."
+        },
+        {
+          "id": "d",
+          "text": "STIR/SHAKEN also needs a certificate infrastructure, with authorities, certificates and governance to run."
+        },
+        {
+          "id": "e",
+          "text": "PSTN2 uses direct, signed messages between providers. Each provider simply publishes its own keys."
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Secured at every layer",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Every verification query travels over an encrypted TLS 1.3 connection."
+        },
+        {
+          "id": "b",
+          "text": "Every message is signed with Ed25519, so it cannot be forged or altered. A unique message ID and timestamp stop replays."
+        },
+        {
+          "id": "c",
+          "text": "Rate limits protect each provider from floods of queries."
+        },
+        {
+          "id": "d",
+          "text": "And every request is logged, so failed and suspicious checks leave an audit trail."
+        },
+        {
+          "id": "e",
+          "text": "The system is designed to stay resilient under attack."
+        }
+      ]
+    },
+    {
+      "id": "implement",
+      "title": "One endpoint to build",
+      "segments": [
+        {
+          "id": "a",
+          "text": "For a provider, implementation means one API endpoint."
+        },
+        {
+          "id": "b",
+          "text": "When a request arrives, it checks the provider’s own record of recent calls, and returns a signed answer."
+        },
+        {
+          "id": "c",
+          "text": "No central database is needed, and there is no certificate authority to run."
+        },
+        {
+          "id": "d",
+          "text": "Just direct queries between providers, found through Ofcom’s numbering lists."
+        }
+      ]
+    },
+    {
+      "id": "impact",
+      "title": "Restoring trust in the phone",
+      "segments": [
+        {
+          "id": "a",
+          "text": "Deployed across the major providers, PSTN2 authentication could cut fraud rates by eighty percent or more."
+        },
+        {
+          "id": "b",
+          "text": "Victims would be protected, and fraudsters stopped."
+        },
+        {
+          "id": "c",
+          "text": "Trust in phone calls would be restored, using technology that is available today."
+        }
+      ]
+    }
+  ]
+}

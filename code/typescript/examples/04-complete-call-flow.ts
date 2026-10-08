@@ -1,5 +1,5 @@
 /**
- * Example 5: Complete Call Flow
+ * Example 4: Complete Call Flow
  *
  * Alice (+442079460100, Alpha Telecom) calls Bob (+441134960456). Bob's number
  * is in Charlie Comms' range but was ported to Bravo Networks.
@@ -12,7 +12,7 @@
  *            one query, straight to Bravo.
  *
  * Run:  node test-environment/mock-network/server.mjs   (repo root)
- *       npm run example:05
+ *       npm run example:04
  */
 
 // In your application: import { PSTN2Client, DiscoveryEvent } from '@pstn2/core';
@@ -38,7 +38,7 @@ function hopPrinter(client: PSTN2Client) {
 }
 
 async function main() {
-  banner('PSTN2 Example 5 — Complete Call Flow', `${alice.name} (Alpha Telecom) → ${bob.name} (ported: Charlie → Bravo)`);
+  banner('PSTN2 Example 4 — Complete Call Flow', `${alice.name} (Alpha Telecom) → ${bob.name} (ported: Charlie → Bravo)`);
   const alpha = PSTN2Client.fromEnv({ cpId: 'CP1-UK-0101', cpName: 'Alpha Telecom' });
   const bravo = new PSTN2Client({ cpId: 'CP1-UK-0102', cpName: 'Bravo Networks', numberingListUrl: alpha.numberingList.url, verifySignatures: alpha.discovery.verifySignatures });
   await startOrExit(alpha);

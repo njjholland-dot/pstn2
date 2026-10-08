@@ -165,8 +165,7 @@ reference SDKs are organised):</p>
 │   │   ├── signatures.{...}       # Canonical JSON + Ed25519, key store per CP
 │   │   └── responder.{...}        # Server side: answer for your own numbers
 │   ├── auth/                      # Authentication module
-│   │   ├── direct-query.{...}
-│   │   └── token-pool.{...}
+│   │   └── direct-query.{...}
 │   ├── routing/                   # Routing module
 │   ├── encryption/                # Identity keys (media keys come from DTLS-SRTP)
 │   ├── emergency/                 # Emergency services
@@ -274,11 +273,10 @@ answer are successful <code>200 OK</code> responses, not errors: they
 are never retried against the same CP.</p>
 <h4 id="232-holder-calls-with-not_held-retry">2.3.2 Holder Calls with
 <code>not_held</code> Retry</h4>
-<p>Authentication, token pool, routing and emergency requests all go to
-the CP that currently holds the subject number (the caller ID for
-verification and emergency, the destination for routing). A cached
-holder can be stale, so every PSTN2 response may carry
-<code>"result": "not_held"</code> and
+<p>Authentication, routing and emergency requests all go to the CP that
+currently holds the subject number (the caller ID for verification and
+emergency, the destination for routing). A cached holder can be stale,
+so every PSTN2 response may carry <code>"result": "not_held"</code> and
 <code>"cache": {"invalidate": true}</code> (§5.1.2, §9.5):</p>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TypeScript: a simplified sketch of what the SDKs&#39; messaging layer does</span></span>
@@ -522,8 +520,8 @@ dozen bytes; bound the cache with an LRU if memory matters. Share one
 cache per CP process (the SDKs let several clients share a cache).</li>
 </ul>
 <h3 id="35-invalidation">3.5 Invalidation</h3>
-<p>Any PSTN2 response (discovery, verification, token, routing,
-emergency) MAY carry:</p>
+<p>Any PSTN2 response (discovery, verification, routing, emergency) MAY
+carry:</p>
 <div class="sourceCode" id="cb11"><pre
 class="sourceCode json"><code class="sourceCode json"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;cache&quot;</span><span class="er">:</span> <span class="fu">{</span> <span class="dt">&quot;invalidate&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span> <span class="dt">&quot;scope&quot;</span><span class="fu">:</span> <span class="st">&quot;number&quot;</span> <span class="fu">}</span></span></code></pre></div>
 <table>
@@ -780,36 +778,35 @@ class="sourceCode json"><code class="sourceCode json"><span id="cb19-1"><a href=
 <p>One <code>PSTN2Client</code> per acting CP. It wires Number Discovery
 into every module:</p>
 <div class="sourceCode" id="cb20"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { PSTN2Client<span class="op">,</span> AuthenticationMode } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { PSTN2Client } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> client <span class="op">=</span> <span class="kw">new</span> <span class="fu">PSTN2Client</span>({</span>
 <span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0103&#39;</span><span class="op">,</span></span>
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  numberingListUrl<span class="op">:</span> <span class="bu">process</span><span class="op">.</span><span class="at">env</span><span class="op">.</span><span class="at">PSTN2_NUMBERING_LIST_URL</span><span class="op">!,</span></span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  privateKey<span class="op">:</span> <span class="bu">process</span><span class="op">.</span><span class="at">env</span><span class="op">.</span><span class="at">PSTN2_PRIVATE_KEY_PEM</span><span class="op">,</span>   <span class="co">// Ed25519 PEM; ephemeral if omitted</span></span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  verifySignatures<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  authMode<span class="op">:</span> AuthenticationMode<span class="op">.</span><span class="at">DirectQuery</span><span class="op">,</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="co">// Authentication (Option 1): discovery finds the caller ID&#39;s holder, then POST /auth/verify there</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">:</span> <span class="st">&#39;+442079460100&#39;</span><span class="op">,</span> calledID<span class="op">:</span> <span class="st">&#39;+441134960789&#39;</span> })<span class="op">;</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (v<span class="op">.</span><span class="at">verified</span>) {</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`Verified by </span><span class="sc">${</span>v<span class="op">.</span><span class="at">holder</span><span class="op">?.</span><span class="at">cpName</span><span class="sc">}</span><span class="vs">`</span><span class="op">,</span> v<span class="op">.</span><span class="at">retried</span> <span class="op">?</span> <span class="st">&#39;(after not_held retry)&#39;</span> <span class="op">:</span> <span class="st">&#39;&#39;</span>)<span class="op">;</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> <span class="cf">if</span> (v<span class="op">.</span><span class="at">fallbackToTraditional</span>) {</span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`No PSTN2 holder (</span><span class="sc">${</span>v<span class="op">.</span><span class="at">reason</span><span class="sc">}</span><span class="vs">): traditional PSTN handling`</span>)<span class="op">;</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Holder did not confirm the call: flag as possible spoofing&#39;</span>)<span class="op">;</span></span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="co">// Routing: never throws for rejections</span></span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> route <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">requestRouting</span>({</span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>  destinationNumber<span class="op">:</span> <span class="st">&#39;+441614960123&#39;</span><span class="op">,</span></span>
-<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>  callerID<span class="op">:</span> <span class="st">&#39;+442079460100&#39;</span><span class="op">,</span></span>
-<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>  mediaCapabilities<span class="op">:</span> { codecs<span class="op">:</span> [<span class="st">&#39;opus&#39;</span><span class="op">,</span> <span class="st">&#39;g722&#39;</span><span class="op">,</span> <span class="st">&#39;pcmu&#39;</span>]<span class="op">,</span> encryption<span class="op">:</span> [<span class="st">&#39;srtp-aes256&#39;</span><span class="op">,</span> <span class="st">&#39;srtp-aes128&#39;</span>] }<span class="op">,</span></span>
-<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
-<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (route<span class="op">.</span><span class="at">accepted</span>) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(route<span class="op">.</span><span class="at">connectionDetails</span><span class="op">.</span><span class="at">fqdn</span><span class="op">,</span> route<span class="op">.</span><span class="at">connectionDetails</span><span class="op">.</span><span class="at">port</span>)<span class="op">;</span></span>
-<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Traditional PSTN:&#39;</span><span class="op">,</span> route<span class="op">.</span><span class="at">reason</span>)<span class="op">;</span></span>
-<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client<span class="op">.</span><span class="fu">close</span>()<span class="op">;</span></span></code></pre></div>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Authentication: discovery finds the caller ID&#39;s holder, then POST /auth/verify there</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">:</span> <span class="st">&#39;+442079460100&#39;</span><span class="op">,</span> calledID<span class="op">:</span> <span class="st">&#39;+441134960789&#39;</span> })<span class="op">;</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (v<span class="op">.</span><span class="at">verified</span>) {</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`Verified by </span><span class="sc">${</span>v<span class="op">.</span><span class="at">holder</span><span class="op">?.</span><span class="at">cpName</span><span class="sc">}</span><span class="vs">`</span><span class="op">,</span> v<span class="op">.</span><span class="at">retried</span> <span class="op">?</span> <span class="st">&#39;(after not_held retry)&#39;</span> <span class="op">:</span> <span class="st">&#39;&#39;</span>)<span class="op">;</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> <span class="cf">if</span> (v<span class="op">.</span><span class="at">fallbackToTraditional</span>) {</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`No PSTN2 holder (</span><span class="sc">${</span>v<span class="op">.</span><span class="at">reason</span><span class="sc">}</span><span class="vs">): traditional PSTN handling`</span>)<span class="op">;</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Holder did not confirm the call: flag as possible spoofing&#39;</span>)<span class="op">;</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="co">// Routing: never throws for rejections</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> route <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">requestRouting</span>({</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>  destinationNumber<span class="op">:</span> <span class="st">&#39;+441614960123&#39;</span><span class="op">,</span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>  callerID<span class="op">:</span> <span class="st">&#39;+442079460100&#39;</span><span class="op">,</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>  mediaCapabilities<span class="op">:</span> { codecs<span class="op">:</span> [<span class="st">&#39;opus&#39;</span><span class="op">,</span> <span class="st">&#39;g722&#39;</span><span class="op">,</span> <span class="st">&#39;pcmu&#39;</span>]<span class="op">,</span> encryption<span class="op">:</span> [<span class="st">&#39;srtp-aes256&#39;</span><span class="op">,</span> <span class="st">&#39;srtp-aes128&#39;</span>] }<span class="op">,</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (route<span class="op">.</span><span class="at">accepted</span>) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(route<span class="op">.</span><span class="at">connectionDetails</span><span class="op">.</span><span class="at">fqdn</span><span class="op">,</span> route<span class="op">.</span><span class="at">connectionDetails</span><span class="op">.</span><span class="at">port</span>)<span class="op">;</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Traditional PSTN:&#39;</span><span class="op">,</span> route<span class="op">.</span><span class="at">reason</span>)<span class="op">;</span></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> client<span class="op">.</span><span class="fu">close</span>()<span class="op">;</span></span></code></pre></div>
 <p><code>PSTN2Client.fromEnv()</code> builds a client from the
 <code>PSTN2_*</code> environment variables (see the <a
 href="#appendix-configuration-examples">Appendix</a>).</p>
@@ -885,7 +882,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href=
 ├── config.py        # NetworkConfig.from_env() (PSTN2_* variables)
 ├── discovery.py     # numbering list, cache, key store, discovery client, responder
 ├── _holder.py       # holder calls with not_held → rediscover → retry once
-├── auth.py          # Direct Query + Token Pool
+├── auth.py          # Caller authentication (direct query)
 ├── routing.py
 ├── emergency.py
 ├── crypto.py        # Ed25519, canonical JSON
@@ -937,14 +934,13 @@ already made.</p>
 / <code>fallback_to_pstn</code> helpers and <code>to_wire()</code> for
 the camelCase JSON form. Service results
 (<code>VerificationResult</code>, <code>RoutingResult</code>,
-<code>EmergencyLocationResult</code>, <code>TokenCreateResult</code>)
-are the wire response plus <code>holder</code>, <code>discovery</code>
-and <code>rediscovered</code>.</p>
+<code>EmergencyLocationResult</code>) are the wire response plus
+<code>holder</code>, <code>discovery</code> and
+<code>rediscovered</code>.</p>
 <p>Errors: <code>PSTN2Error</code> (with <code>.code</code>,
 <code>.status</code>) → <code>PSTN2TimeoutError</code>,
 <code>NetworkError</code>, <code>InvalidResponseError</code>,
 <code>ApiError</code> (<code>CallNotFoundError</code>,
-<code>TokenExpiredError</code>, <code>InvalidTokenError</code>,
 <code>RateLimitError</code>), <code>DiscoveryError</code>,
 <code>NotHeldError</code>, <code>ValidationError</code>.</p>
 <hr />
@@ -972,7 +968,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href=
 │       ├── signature.go     # SignBody, VerifySignature, KeyStore
 │       ├── canonical.go     # CanonicalJSON
 │       ├── responder.go     # RangeHolderResponder (http.Handler)
-│       ├── auth.go          # VerifyCall, CreateToken, VerifyToken
+│       ├── auth.go          # VerifyCall
 │       ├── routing.go
 │       ├── emergency.go
 │       ├── httpclient.go    # User-Agent, retries, timeouts
@@ -1066,8 +1062,8 @@ class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb28
 <p>Run against the <strong>local mock network</strong>
 (<code>node test-environment/mock-network/server.mjs</code>): a
 simulated Ofcom numbering list, Alpha, Bravo and Charlie participating,
-Delta not. It answers discovery, auth, tokens, routing and emergency
-over real HTTP, and has admin endpoints to port a number
+Delta not. It answers discovery, auth, routing and emergency over real
+HTTP, and has admin endpoints to port a number
 (<code>POST /admin/port</code>), reset (<code>POST /admin/reset</code>)
 and read the query log (<code>GET /admin/log</code>). Run scenarios A–G
 from <code>test-environment/fixtures/scenarios.json</code> in order with
@@ -1550,7 +1546,7 @@ CP)</li>
 Examples</h2>
 <h3 id="typescript">TypeScript</h3>
 <div class="sourceCode" id="cb39"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { PSTN2Client<span class="op">,</span> AuthenticationMode<span class="op">,</span> PSTN2Config } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { PSTN2Client<span class="op">,</span> PSTN2Config } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> config<span class="op">:</span> PSTN2Config <span class="op">=</span> {</span>
 <span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0001&#39;</span><span class="op">,</span></span>
@@ -1561,13 +1557,12 @@ class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb39
 <span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>  hopLimit<span class="op">:</span> <span class="dv">5</span><span class="op">,</span></span>
 <span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>  defaultTtl<span class="op">:</span> <span class="dv">86400</span><span class="op">,</span></span>
 <span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>  privateKey<span class="op">:</span> <span class="bu">process</span><span class="op">.</span><span class="at">env</span><span class="op">.</span><span class="at">PSTN2_PRIVATE_KEY_PEM</span><span class="op">,</span>   <span class="co">// Ed25519 PEM</span></span>
-<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>  authMode<span class="op">:</span> AuthenticationMode<span class="op">.</span><span class="at">DirectQuery</span><span class="op">,</span></span>
-<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>  timeout<span class="op">:</span> <span class="dv">2000</span><span class="op">,</span></span>
-<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>  retries<span class="op">:</span> <span class="dv">3</span><span class="op">,</span></span>
-<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>  fallbackToTraditional<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
-<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>  logLevel<span class="op">:</span> <span class="st">&#39;info&#39;</span><span class="op">,</span></span>
-<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
-<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> client <span class="op">=</span> <span class="kw">new</span> <span class="fu">PSTN2Client</span>(config)<span class="op">;</span></span></code></pre></div>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>  timeout<span class="op">:</span> <span class="dv">2000</span><span class="op">,</span></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>  retries<span class="op">:</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>  fallbackToTraditional<span class="op">:</span> <span class="kw">true</span><span class="op">,</span></span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>  logLevel<span class="op">:</span> <span class="st">&#39;info&#39;</span><span class="op">,</span></span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> client <span class="op">=</span> <span class="kw">new</span> <span class="fu">PSTN2Client</span>(config)<span class="op">;</span></span></code></pre></div>
 <h3 id="python">Python</h3>
 <div class="sourceCode" id="cb40"><pre
 class="sourceCode python"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pstn2 <span class="im">import</span> PSTN2Client</span>

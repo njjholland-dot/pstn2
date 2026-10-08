@@ -336,11 +336,8 @@ events also report <code>Signature</code> (<code>verified</code>,
 <div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Direct Query (§5.1): discover the caller ID&#39;s holder, POST /auth/verify there.</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>v<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>Auth<span class="op">().</span>VerifyCall<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>VerifyCallRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> CalledID<span class="op">:</span> calledID<span class="op">})</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">// v.Verified, v.Reason (verified | caller_id_unknown | unallocated | not_participating |</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">// call_not_found | not_verified | discovery_error), v.Fallback, v.Via (holder, discovery, retry)</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">// Token Pool (§5.2): created at the caller ID&#39;s holder, verified there by the terminating CP.</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>tok<span class="op">,</span> err <span class="op">:=</span> originating<span class="op">.</span>Auth<span class="op">().</span>CreateToken<span class="op">(</span>ctx<span class="op">,</span> pstn2<span class="op">.</span>TokenRequest<span class="op">{</span>CallerID<span class="op">:</span> callerID<span class="op">,</span> CalledID<span class="op">:</span> calledID<span class="op">,</span> TTL<span class="op">:</span> <span class="dv">30</span><span class="op">})</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>tv<span class="op">,</span> err <span class="op">:=</span> terminating<span class="op">.</span>Auth<span class="op">().</span>VerifyToken<span class="op">(</span>ctx<span class="op">,</span> callerID<span class="op">,</span> tok<span class="op">.</span>TokenID<span class="op">)</span> <span class="co">// invalid_token (404), expired_token (410)</span></span></code></pre></div>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">// call_not_found | not_verified | discovery_error), v.Fallback, v.Via (holder, discovery, retry)</span></span></code></pre></div>
+<p>Direct Query is the only authentication method.</p>
 <p>An unverifiable caller ID is an outcome, not an error:
 <code>VerifyCall</code> returns <code>Verified == false</code> with a
 <code>Reason</code> and <code>Fallback == true</code>. An error means
@@ -443,23 +440,18 @@ ported number (Range Holder redirect → Bravo verifies)</td>
 negotiation; a call to non-participating Delta falls back to PSTN</td>
 </tr>
 <tr>
-<td><code>03-token-pool</code></td>
-<td>Alpha creates a token, Bravo verifies it; a forged token is rejected
-and Bravo falls back to Direct Query</td>
-</tr>
-<tr>
-<td><code>04-emergency-services</code></td>
+<td><code>03-emergency-services</code></td>
 <td>A PSAP gets the live location of a 999 caller from the number's
 holder; a non-participating caller falls back to traditional
 location</td>
 </tr>
 <tr>
-<td><code>05-complete-call-flow</code></td>
+<td><code>04-complete-call-flow</code></td>
 <td>Discovery (with redirect), authentication, routing and timing
 summary; the second call is a cache hit</td>
 </tr>
 <tr>
-<td><code>06-number-discovery</code></td>
+<td><code>05-number-discovery</code></td>
 <td>"Who has this number?" hop by hop: scenarios A–G locally, or the
 dummy test CPs (signatures verified)</td>
 </tr>
@@ -472,11 +464,10 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href=
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># in another, from code/go:</span></span>
 <span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/01-basic-authentication</span>
 <span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/02-direct-routing</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/03-token-pool</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/04-emergency-services</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/05-complete-call-flow</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
-<p>Example 06 resets the mock network before and after it runs (it ports
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/03-emergency-services</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/04-complete-call-flow</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./examples/05-number-discovery</span></code></pre></div>
+<p>Example 05 resets the mock network before and after it runs (it ports
 a number in scenario D), so the examples can be run in any order.</p>
 <h3 id="live-dummy-test-cps">Live dummy test CPs</h3>
 <p><code>https://pstn2.org/testcp/</code> hosts two dummy CPs as static
@@ -513,15 +504,15 @@ invalidate (stale-cache test)</td>
 </tbody>
 </table>
 <div class="sourceCode" id="cb15"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">go</span> run ./examples/05-number-discovery</span></code></pre></div>
 <p>Or emulate them locally (same files, same 403-for-generic-agents
 behaviour):</p>
 <div class="sourceCode" id="cb16"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp-local</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp-local <span class="at">--port</span> 47902</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">go</span> run ./examples/06-number-discovery</span></code></pre></div>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">go</span> run ./examples/05-number-discovery</span></code></pre></div>
 <p>Only Number Discovery is available on the static test CPs; examples
-01–05 need the mock network.</p>
+01–04 need the mock network.</p>
 <h2 id="running-the-tests">Running the tests</h2>
 <div class="sourceCode" id="cb17"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> code/go</span>
@@ -545,7 +536,7 @@ signatures verified;</li>
 <li>compare <code>RangeHolderResponder</code> with the reference
 engine's <code>Network.respond()</code> and with the signed files from
 <code>build.mjs</code>;</li>
-<li>exercise auth, tokens, routing and emergency against the mock
+<li>exercise auth (Direct Query), routing and emergency against the mock
 network, including <code>not_held</code> → purge → rediscover → retry
 after <code>POST /admin/port</code>.</li>
 </ul>

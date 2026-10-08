@@ -21,8 +21,6 @@ class ErrorCode(str, Enum):
 
     CALL_NOT_FOUND = "call_not_found"
     INVALID_SIGNATURE = "invalid_signature"
-    EXPIRED_TOKEN = "expired_token"
-    INVALID_TOKEN = "invalid_token"
     CAPACITY_EXCEEDED = "capacity_exceeded"
     UNSUPPORTED_CODEC = "unsupported_codec"
     NUMBER_NOT_FOUND = "number_not_found"
@@ -94,14 +92,6 @@ class CallNotFoundError(ApiError):
     """404 ``call_not_found``: the claimed originating CP has no such call (possible spoofing)."""
 
 
-class TokenExpiredError(ApiError):
-    """410 ``expired_token``."""
-
-
-class InvalidTokenError(ApiError):
-    """404 ``invalid_token``."""
-
-
 class RateLimitError(ApiError):
     """429 ``rate_limit_exceeded``."""
 
@@ -145,8 +135,6 @@ class ValidationError(PSTN2Error):
 
 _CODE_CLASSES: dict[str, type[ApiError]] = {
     "call_not_found": CallNotFoundError,
-    "expired_token": TokenExpiredError,
-    "invalid_token": InvalidTokenError,
     "rate_limit_exceeded": RateLimitError,
 }
 
@@ -183,13 +171,11 @@ __all__ = [
     "DiscoveryError",
     "ErrorCode",
     "InvalidResponseError",
-    "InvalidTokenError",
     "NetworkError",
     "NotHeldError",
     "PSTN2Error",
     "PSTN2TimeoutError",
     "RateLimitError",
-    "TokenExpiredError",
     "ValidationError",
     "api_error_from_response",
 ]

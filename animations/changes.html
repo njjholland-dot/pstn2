@@ -97,7 +97,24 @@
 
     <main>
         <article class="release">
-            <h2>Number Discovery, broadcast presentations and a live test CP <span class="badge">LATEST</span></h2>
+            <h2>One way to authenticate: direct query <span class="badge">LATEST</span></h2>
+            <time datetime="2026-10-08">8 October 2026</time>
+            <p class="summary">
+                The Token Pool authentication option has been withdrawn. Direct query is simpler and fully
+                effective on its own. The receiving provider finds the caller ID’s holder with Number Discovery
+                and asks it to confirm the call, peer to peer, with signed answers. Token pools are no longer
+                offered anywhere on the site.
+            </p>
+            <ul>
+                <li><strong>Presentations:</strong> the “Authentication: Token Pool” presentation is removed. “Authentication: Direct Query” is now simply <a href="/src/authentication/">Caller Authentication</a> (the old address redirects). There are now 10 presentations, and every narration uses the Siri British English voice.</li>
+                <li><strong>Specification and API:</strong> the token pool section, endpoints (<code>/auth/tokens</code>), schemas, error codes and bearer-token scheme are removed. Authentication is a single mechanism (§5).</li>
+                <li><strong>SDKs and examples:</strong> token pool code and tests are removed from the TypeScript, Python and Go SDKs, and from the mock network. The examples are renumbered 01–05, with 05 the live number-discovery walkthrough.</li>
+                <li><strong>Documentation:</strong> the implementation guide, testing specification, examples guide and MAP guides are updated to match.</li>
+            </ul>
+        </article>
+
+        <article class="release">
+            <h2>Number Discovery, broadcast presentations and a live test CP</h2>
             <time datetime="2026-10-06">6 October 2026</time>
             <p class="summary">
                 PSTN2 now answers “who has this number?” in one consistent way across the whole site,
@@ -124,8 +141,8 @@
 
             <h3>💻 Code</h3>
             <ul>
-                <li><strong>Real SDKs in all three languages.</strong> TypeScript was reworked, and Python and Go were written from scratch; previously they were examples only. Each has a Number Discovery client, a Range Holder responder, signature verification, and auth, token pool, routing and emergency modules built on discovery.</li>
-                <li>Six runnable examples per language, including <strong>06 number discovery</strong>, which runs against the live test CP. Unit and integration tests in every language, plus a conformance suite that proves all three agree with the reference engine.</li>
+                <li><strong>Real SDKs in all three languages.</strong> TypeScript was reworked, and Python and Go were written from scratch; previously they were examples only. Each has a Number Discovery client, a Range Holder responder, signature verification, and authentication, routing and emergency modules built on discovery.</li>
+                <li>Runnable examples in every language, including a live <strong>number discovery</strong> walkthrough, which runs against the live test CP. Unit and integration tests in every language, plus a conformance suite that proves all three agree with the reference engine.</li>
                 <li><strong>New: live dummy test CP</strong> at <a href="/testcp/">pstn2.org/testcp</a>. It offers a test numbering list, two test Range Holders, one ported number, and signed answers.</li>
                 <li>The old MySQL test prototype was replaced with a dependency-free mock network and test environment. The Test Harness ZIP and Complete Download links now work.</li>
             </ul>

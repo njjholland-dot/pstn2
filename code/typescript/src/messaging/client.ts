@@ -31,7 +31,7 @@ export interface MessagingClientOptions {
 export interface HolderCallOptions {
   /** Non-2xx statuses to return instead of throwing (e.g. [503] for RoutingRejection). */
   acceptStatuses?: number[];
-  /** Extra headers (e.g. Authorization for a token pool). */
+  /** Extra request headers. */
   headers?: Record<string, string>;
   /** Skip the message envelope + signature (raw body). */
   raw?: boolean;

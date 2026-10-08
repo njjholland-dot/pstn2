@@ -34,8 +34,6 @@ from .types import (
     MediaCapabilities,
     NumberingListData,
     RoutingResult,
-    TokenCreateResult,
-    TokenVerifyResponse,
     VerificationResult,
 )
 
@@ -52,7 +50,7 @@ class PSTN2Client:
     Exactly one of ``numbering_list_url`` / ``numbering_list`` is required.
 
     Attributes: ``discovery`` (:class:`DiscoveryClient`), ``numbering_list``, ``cache``,
-    ``auth`` (``direct_query`` + ``token_pool``), ``routing``, ``emergency``, ``http``.
+    ``auth`` (``direct_query``), ``routing``, ``emergency``, ``http``.
     """
 
     def __init__(
@@ -68,8 +66,6 @@ class PSTN2Client:
         default_ttl: int = DEFAULT_TTL,
         list_refresh_seconds: float = DEFAULT_LIST_REFRESH,
         private_key: Any = None,
-        token_pool_url: Optional[str] = None,
-        token_pool_auth: Optional[str] = None,
         on_event: EventHandler | None = None,
         http_client: httpx.AsyncClient | None = None,
         transport: Transport | None = None,
@@ -101,7 +97,7 @@ class PSTN2Client:
             private_key = generate_key_pair().private_key
             logger.debug("no private key configured: using an ephemeral Ed25519 key")
         self._ctx = ServiceContext(cp_id, HolderCaller(self.discovery, self.http), private_key)
-        self.auth = AuthenticationModule(self._ctx, token_pool_url=token_pool_url, token_pool_auth=token_pool_auth)
+        self.auth = AuthenticationModule(self._ctx)
         self.routing = RoutingModule(self._ctx)
         self.emergency = EmergencyModule(self._ctx)
         logger.debug("PSTN2Client %s ready (pstn2-python-sdk %s)", cp_id, __version__)
@@ -142,13 +138,6 @@ class PSTN2Client:
     async def verify_call(self, caller_id: str, called_id: str, call_reference: Optional[str] = None,
                           **kw: Any) -> VerificationResult:
         return await self.auth.verify_call(caller_id, called_id, call_reference, **kw)
-
-    async def create_token(self, caller_id: str, called_id: str, call_reference: Optional[str] = None,
-                           **kw: Any) -> TokenCreateResult:
-        return await self.auth.create_token(caller_id, called_id, call_reference, **kw)
-
-    async def verify_token(self, token_id: str, caller_id: Optional[str] = None, **kw: Any) -> Optional[TokenVerifyResponse]:
-        return await self.auth.verify_token(token_id, caller_id, **kw)
 
     async def request_routing(self, destination_number: str, caller_id: str,
                               media_capabilities: MediaCapabilities | dict[str, Any] | None = None,

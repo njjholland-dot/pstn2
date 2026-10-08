@@ -2,12 +2,12 @@
 
 Number Discovery — "which CP currently holds this number?" — answered from the
 regulator numbering list and the Range Holder, with no central database — plus caller
-ID verification (Direct Query and Token Pool), direct routing and emergency location,
+ID verification (Direct Query), direct routing and emergency location,
 all addressed to the holder that discovery finds.
 """
 
 from ._version import PROTOCOL_VERSION, USER_AGENT, __version__
-from .auth import AuthenticationModule, DirectQueryAuth, TokenPoolAuth
+from .auth import AuthenticationModule, DirectQueryAuth
 from .client import PSTN2Client
 from .config import NetworkConfig
 from .crypto import (
@@ -39,13 +39,11 @@ from .errors import (
     DiscoveryError,
     ErrorCode,
     InvalidResponseError,
-    InvalidTokenError,
     NetworkError,
     NotHeldError,
     PSTN2Error,
     PSTN2TimeoutError,
     RateLimitError,
-    TokenExpiredError,
     ValidationError,
 )
 from .routing import RoutingModule
@@ -84,7 +82,6 @@ __all__ = [
     "ErrorCode",
     "HttpTransport",
     "InvalidResponseError",
-    "InvalidTokenError",
     "KeyPair",
     "KeyStore",
     "MediaCapabilities",
@@ -100,8 +97,6 @@ __all__ = [
     "RateLimitError",
     "ResponderAnswer",
     "RoutingModule",
-    "TokenExpiredError",
-    "TokenPoolAuth",
     "TransportResponse",
     "ValidationError",
     "canonical_json",

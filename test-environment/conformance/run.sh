@@ -5,7 +5,7 @@
 #
 #   test-environment/conformance/run.sh            # everything
 #   test-environment/conformance/run.sh --quick    # engine + SDK test suites only
-#   test-environment/conformance/run.sh --live     # also run example 06 against https://pstn2.org/testcp
+#   test-environment/conformance/run.sh --live     # also run example 05 against https://pstn2.org/testcp
 #
 # Needs: node 18+, python 3.11+, go 1.21+. No Docker, no database.
 set -uo pipefail
@@ -37,7 +37,7 @@ if [ "$QUICK" = 0 ]; then
     trap 'kill $MOCK 2>/dev/null' EXIT
     for _ in $(seq 1 30); do curl -s -A pstn2-conformance "http://127.0.0.1:$PORT/health" > /dev/null && break; sleep 0.2; done
     export PSTN2_MOCK_PORT="$PORT" PSTN2_NETWORK=local
-    for n in 01 02 03 04 05 06; do
+    for n in 01 02 03 04 05; do
         step "TypeScript example $n" bash -c "cd '$REPO/code/typescript' && npm run --silent example:$n > /dev/null"
         py=$(ls "$REPO/code/python/examples/${n}_"*.py)
         step "Python example $n" bash -c "cd '$REPO/code/python' && .venv/bin/python '$py' > /dev/null"
@@ -50,9 +50,9 @@ fi
 # --- 4. optional: the live dummy test CP ------------------------------------------
 if [ "$LIVE" = 1 ]; then
     export PSTN2_NETWORK=live; unset PSTN2_MOCK_PORT
-    step "TypeScript 06 live (pstn2.org/testcp)" bash -c "cd '$REPO/code/typescript' && npm run --silent example:06"
-    step "Python 06 live (pstn2.org/testcp)" bash -c "cd '$REPO/code/python' && .venv/bin/python examples/06_number_discovery.py"
-    step "Go 06 live (pstn2.org/testcp)" bash -c "cd '$REPO/code/go' && go run ./examples/06-number-discovery"
+    step "TypeScript 05 live (pstn2.org/testcp)" bash -c "cd '$REPO/code/typescript' && npm run --silent example:05"
+    step "Python 05 live (pstn2.org/testcp)" bash -c "cd '$REPO/code/python' && .venv/bin/python examples/05_number_discovery.py"
+    step "Go 05 live (pstn2.org/testcp)" bash -c "cd '$REPO/code/go' && go run ./examples/05-number-discovery"
 fi
 
 printf '\n\033[1mConformance: %d passed, %d failed\033[0m\n' "${#PASS[@]}" "${#FAIL[@]}"

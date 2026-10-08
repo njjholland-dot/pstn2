@@ -15,7 +15,7 @@ A **Managed Access Provider (MAP)** enables smaller Communication Providers (CPs
 **Purpose:** Provide PSTN2-only services to downstream CPs
 
 **Services Provided:**
-- PSTN2 authentication (Direct Query & Token Pool)
+- PSTN2 caller authentication (direct query)
 - Number Discovery for tenants: Range Holder answers for their blocks and discovery client for their calls
 - Emergency services location handling
 - Direct routing coordination
@@ -216,18 +216,18 @@ CPs. See MAP-MULTITENANT-DESIGN.md §3 for the data model and endpoints.
 
 ### Pure PSTN2 MAP Pricing
 
-**Option 1: Per-Call**
+**Model 1: Per-Call**
 - Authentication: $0.0001-$0.0005 per call
 - Emergency location: $0.001 per 999 call
 - Number Discovery query: $0.00001 per query
 
-**Option 2: Monthly Subscription**
+**Model 2: Monthly Subscription**
 - Tier 1: Up to 10,000 calls/month - $100/month
 - Tier 2: Up to 100,000 calls/month - $500/month
 - Tier 3: Up to 1M calls/month - $2,000/month
 - Enterprise: Custom pricing
 
-**Option 3: Hybrid**
+**Model 3: Hybrid**
 - Base fee: $50/month
 - Overage: $0.0002 per call above included amount
 

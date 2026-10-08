@@ -103,7 +103,7 @@ with <code>ETag</code> / <code>If-None-Match</code>.</p>
 <li>✅ <strong>Number Discovery</strong>: numbering list → Range Holder
 → redirect for ported numbers, cached per number</li>
 <li>✅ <strong>Authentication</strong>: verify caller IDs in real time
-(Option 1 Direct Query, Option 2 Token Pool)</li>
+by Direct Query to the caller ID's holder</li>
 <li>✅ <strong>Direct Routing</strong>: connection details and
 codec/SRTP negotiation for peer-to-peer calls</li>
 <li>✅ <strong>Emergency Services</strong>: live location for 999/112
@@ -185,8 +185,7 @@ because the CP that no longer holds the number answers
 <code>DiscoveryCache</code>, <code>DiscoveryClient</code>,
 <code>RangeHolderResponder</code>, <code>canonicalJson</code>,
 signatures</li>
-<li><strong>auth/</strong>: Authentication (Option 1 direct query,
-Option 2 token pool)</li>
+<li><strong>auth/</strong>: Authentication (Direct Query)</li>
 <li><strong>routing/</strong>: Direct routing request and
 negotiation</li>
 <li><strong>emergency/</strong>: Emergency services location</li>
@@ -203,57 +202,41 @@ keys come from DTLS-SRTP)</li>
 the SDK purges the cache entry, rediscovers from the Range Holder and
 retries <strong>once</strong> at the new holder
 (<code>retried: true</code> on the result).</p>
-<h3 id="authentication-modes">Authentication Modes</h3>
-<h4 id="option-1-direct-query">Option 1: Direct Query</h4>
+<h3 id="authentication-direct-query">Authentication: Direct Query</h3>
+<p>Direct Query is the only authentication method. The terminating CP
+finds the caller ID's holder with Number Discovery and asks it whether
+the call is genuine:</p>
 <div class="sourceCode" id="cb4"><pre
 class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> client<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">,</span> calledID<span class="op">,</span> callReference })<span class="op">;</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">// POST {holder of callerID}/pstn2/v1/auth/verify</span></span></code></pre></div>
-<h4 id="option-2-token-pool">Option 2: Token Pool</h4>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Originating CP, before sending the INVITE</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> token <span class="op">=</span> <span class="cf">await</span> alpha<span class="op">.</span><span class="fu">createToken</span>({ callerID<span class="op">,</span> calledID<span class="op">,</span> ttl<span class="op">:</span> <span class="dv">30</span> })<span class="op">;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">// INVITE carries X-PSTN2-Token: token.tokenId</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">// Terminating CP</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> data <span class="op">=</span> <span class="cf">await</span> bravo<span class="op">.</span><span class="fu">verifyToken</span>(token<span class="op">.</span><span class="at">tokenId</span><span class="op">,</span> callerID)<span class="op">;</span>    <span class="co">// null if unknown/expired</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> v <span class="op">=</span> <span class="cf">await</span> bravo<span class="op">.</span><span class="fu">verifyCall</span>({ callerID<span class="op">,</span> calledID<span class="op">,</span> tokenId })<span class="op">;</span> <span class="co">// token first, direct query fallback</span></span></code></pre></div>
-<p>Tokens are held by the CP that holds the caller ID (found by
-discovery). Set <code>tokenPoolUrl</code> (and
-<code>tokenPoolAuth</code>) to use a shared pool instead.</p>
 <h2 id="configuration">Configuration</h2>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> PSTN2Config {</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  cpId<span class="op">:</span> <span class="dt">string</span><span class="op">;</span>                       <span class="co">// your RCPID</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  cpName<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Numbering list (one of)</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  numberingListUrl<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>          <span class="co">// downloaded, cached, ETag-revalidated</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  numberingList<span class="op">?:</span> NumberingList <span class="op">|</span> NumberingListDocument<span class="op">;</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  listRefreshSeconds<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>        <span class="co">// default 86400</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Number Discovery</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  verifySignatures<span class="op">?:</span> <span class="dt">boolean</span><span class="op">;</span>         <span class="co">// default false</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  hopLimit<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                  <span class="co">// default 5</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  defaultTtl<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                <span class="co">// cache TTL when an answer has none (default 86400 s)</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  cache<span class="op">?:</span> DiscoveryCache<span class="op">;</span>             <span class="co">// share a cache between clients</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  onDiscoveryEvent<span class="op">?:</span> (e<span class="op">:</span> DiscoveryEvent) <span class="kw">=&gt;</span> <span class="dt">void</span><span class="op">;</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Security</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  privateKey<span class="op">?:</span> <span class="dt">string</span> <span class="op">|</span> KeyObject<span class="op">;</span>    <span class="co">// Ed25519 PEM; a per-process key is generated if omitted</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Authentication</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  authMode<span class="op">?:</span> AuthenticationMode<span class="op">;</span>      <span class="co">// DirectQuery (default) or TokenPool</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  tokenPoolUrl<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>              <span class="co">// shared pool (default: the caller ID&#39;s holder)</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  tokenPoolAuth<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>             <span class="co">// bearer JWT for a shared pool</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Network</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  timeout<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                   <span class="co">// per request, ms (default 2000)</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  retries<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                   <span class="co">// 503/504/network errors only (default 3; 100/200/400 ms)</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  fetch<span class="op">?:</span> <span class="kw">typeof</span> fetch<span class="op">;</span>               <span class="co">// inject a fetch implementation</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  fallbackToTraditional<span class="op">?:</span> <span class="dt">boolean</span><span class="op">;</span>    <span class="co">// default true</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  logLevel<span class="op">?:</span> <span class="st">&#39;silent&#39;</span> <span class="op">|</span> <span class="st">&#39;error&#39;</span> <span class="op">|</span> <span class="st">&#39;warn&#39;</span> <span class="op">|</span> <span class="st">&#39;info&#39;</span> <span class="op">|</span> <span class="st">&#39;debug&#39;</span><span class="op">;</span>   <span class="co">// default warn</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> PSTN2Config {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  cpId<span class="op">:</span> <span class="dt">string</span><span class="op">;</span>                       <span class="co">// your RCPID</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  cpName<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Numbering list (one of)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  numberingListUrl<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>          <span class="co">// downloaded, cached, ETag-revalidated</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  numberingList<span class="op">?:</span> NumberingList <span class="op">|</span> NumberingListDocument<span class="op">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  listRefreshSeconds<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>        <span class="co">// default 86400</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Number Discovery</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  verifySignatures<span class="op">?:</span> <span class="dt">boolean</span><span class="op">;</span>         <span class="co">// default false</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  hopLimit<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                  <span class="co">// default 5</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  defaultTtl<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                <span class="co">// cache TTL when an answer has none (default 86400 s)</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  cache<span class="op">?:</span> DiscoveryCache<span class="op">;</span>             <span class="co">// share a cache between clients</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  onDiscoveryEvent<span class="op">?:</span> (e<span class="op">:</span> DiscoveryEvent) <span class="kw">=&gt;</span> <span class="dt">void</span><span class="op">;</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Security</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  privateKey<span class="op">?:</span> <span class="dt">string</span> <span class="op">|</span> KeyObject<span class="op">;</span>    <span class="co">// Ed25519 PEM; a per-process key is generated if omitted</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Network</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  timeout<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                   <span class="co">// per request, ms (default 2000)</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  retries<span class="op">?:</span> <span class="dt">number</span><span class="op">;</span>                   <span class="co">// 503/504/network errors only (default 3; 100/200/400 ms)</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  fetch<span class="op">?:</span> <span class="kw">typeof</span> fetch<span class="op">;</span>               <span class="co">// inject a fetch implementation</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  logLevel<span class="op">?:</span> <span class="st">&#39;silent&#39;</span> <span class="op">|</span> <span class="st">&#39;error&#39;</span> <span class="op">|</span> <span class="st">&#39;warn&#39;</span> <span class="op">|</span> <span class="st">&#39;info&#39;</span> <span class="op">|</span> <span class="st">&#39;debug&#39;</span><span class="op">;</span>   <span class="co">// default warn</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p><code>PSTN2Client.fromEnv()</code> reads the same environment
 variables as the examples:</p>
 <table>
@@ -316,7 +299,7 @@ on pstn2.org</td>
 <td>Who holds this number?</td>
 </tr>
 <tr>
-<td><code>verifyCall({ callerID, calledID, callReference?, tokenId? })</code></td>
+<td><code>verifyCall({ callerID, calledID, callReference? })</code></td>
 <td><code>VerificationResult</code></td>
 <td>Response + <code>holder</code>, <code>discovery</code>,
 <code>retried</code>, <code>fallbackToTraditional</code>,
@@ -334,16 +317,6 @@ on pstn2.org</td>
 <td><code>EmergencyLocationResult</code></td>
 <td>Throws <code>DiscoveryError</code> / <code>PSTN2Error</code> so the
 PSAP can use other sources</td>
-</tr>
-<tr>
-<td><code>createToken({ callerID, calledID, ttl?, branding? })</code></td>
-<td><code>CreatedToken</code></td>
-<td>Token Pool, originating CP</td>
-</tr>
-<tr>
-<td><code>verifyToken(tokenId, callerID?)</code></td>
-<td><code>TokenData | null</code></td>
-<td>Token Pool, terminating CP</td>
 </tr>
 <tr>
 <td><code>start()</code></td>
@@ -370,19 +343,19 @@ PSAP can use other sources</td>
 </table>
 <h3 id="number-discovery-building-blocks">Number Discovery building
 blocks</h3>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { NumberingList<span class="op">,</span> DiscoveryCache<span class="op">,</span> DiscoveryClient } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> list <span class="op">=</span> <span class="cf">await</span> NumberingList<span class="op">.</span><span class="fu">load</span>(<span class="st">&#39;https://pstn2.org/testcp/numbering-list.json&#39;</span>)<span class="op">;</span> <span class="co">// or NumberingList.fromObject(doc)</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>list<span class="op">.</span><span class="fu">findBlock</span>(<span class="st">&#39;+447700900003&#39;</span>)<span class="op">;</span>   <span class="co">// longest prefix, numberLength must match → block | null</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> list<span class="op">.</span><span class="fu">refresh</span>()<span class="op">;</span>              <span class="co">// revalidate if older than refreshSeconds (If-None-Match → 304)</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cache <span class="op">=</span> <span class="kw">new</span> <span class="fu">DiscoveryCache</span>()<span class="op">;</span>          <span class="co">// number → { holder, ported, expiresAt }</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> discovery <span class="op">=</span> <span class="kw">new</span> <span class="fu">DiscoveryClient</span>({ cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-TEST-CLIENT&#39;</span><span class="op">,</span> numberingList<span class="op">:</span> list<span class="op">,</span> cache<span class="op">,</span> verifySignatures<span class="op">:</span> <span class="kw">true</span> })<span class="op">;</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r <span class="op">=</span> <span class="cf">await</span> discovery<span class="op">.</span><span class="fu">discover</span>(<span class="st">&#39;+447700900004&#39;</span><span class="op">,</span> {</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  onEvent<span class="op">:</span> (e) <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(e<span class="op">.</span><span class="at">type</span>)<span class="op">,</span>       <span class="co">// cache-hit | cache-miss | list-lookup | query | response |</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span>                                          <span class="co">// redirect | cache-purge | cache-store | result</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>cache<span class="op">.</span><span class="fu">purge</span>(<span class="st">&#39;+447700900004&#39;</span>)<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { NumberingList<span class="op">,</span> DiscoveryCache<span class="op">,</span> DiscoveryClient } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> list <span class="op">=</span> <span class="cf">await</span> NumberingList<span class="op">.</span><span class="fu">load</span>(<span class="st">&#39;https://pstn2.org/testcp/numbering-list.json&#39;</span>)<span class="op">;</span> <span class="co">// or NumberingList.fromObject(doc)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>list<span class="op">.</span><span class="fu">findBlock</span>(<span class="st">&#39;+447700900003&#39;</span>)<span class="op">;</span>   <span class="co">// longest prefix, numberLength must match → block | null</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">await</span> list<span class="op">.</span><span class="fu">refresh</span>()<span class="op">;</span>              <span class="co">// revalidate if older than refreshSeconds (If-None-Match → 304)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cache <span class="op">=</span> <span class="kw">new</span> <span class="fu">DiscoveryCache</span>()<span class="op">;</span>          <span class="co">// number → { holder, ported, expiresAt }</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> discovery <span class="op">=</span> <span class="kw">new</span> <span class="fu">DiscoveryClient</span>({ cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-TEST-CLIENT&#39;</span><span class="op">,</span> numberingList<span class="op">:</span> list<span class="op">,</span> cache<span class="op">,</span> verifySignatures<span class="op">:</span> <span class="kw">true</span> })<span class="op">;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> r <span class="op">=</span> <span class="cf">await</span> discovery<span class="op">.</span><span class="fu">discover</span>(<span class="st">&#39;+447700900004&#39;</span><span class="op">,</span> {</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  onEvent<span class="op">:</span> (e) <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(e<span class="op">.</span><span class="at">type</span>)<span class="op">,</span>       <span class="co">// cache-hit | cache-miss | list-lookup | query | response |</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span>                                          <span class="co">// redirect | cache-purge | cache-store | result</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>cache<span class="op">.</span><span class="fu">purge</span>(<span class="st">&#39;+447700900004&#39;</span>)<span class="op">;</span></span></code></pre></div>
 <p>A custom
 <code>transport: (cp, number) =&gt; Promise&lt;{ status, body }&gt;</code>
 can replace HTTP (the tests use one to run in memory).</p>
@@ -391,38 +364,38 @@ can replace HTTP (the tests use one to run in memory).</p>
 <p>Build your CP's answer to <code>GET /pstn2/v1/numbers/{digits}</code>
 from your own number database (matches the reference engine's
 <code>Network.respond()</code>):</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { RangeHolderResponder<span class="op">,</span> NumberingList } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> responder <span class="op">=</span> <span class="kw">new</span> <span class="fu">RangeHolderResponder</span>(</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  {</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0103&#39;</span><span class="op">,</span> cpName<span class="op">:</span> <span class="st">&#39;Charlie Comms&#39;</span><span class="op">,</span> url<span class="op">:</span> <span class="st">&#39;https://pstn2.charlie-comms.example&#39;</span><span class="op">,</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    ranges<span class="op">:</span> [<span class="st">&#39;441134960&#39;</span>]<span class="op">,</span>                                        <span class="co">// blocks you are Range Holder for</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    inService<span class="op">:</span> [<span class="st">&#39;+441134960789&#39;</span>]<span class="op">,</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    portedIn<span class="op">:</span> [{ <span class="dt">number</span><span class="op">:</span> <span class="st">&#39;+442079460321&#39;</span><span class="op">,</span> fromCpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0101&#39;</span> }]<span class="op">,</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    portedOut<span class="op">:</span> [{ <span class="dt">number</span><span class="op">:</span> <span class="st">&#39;+441134960456&#39;</span><span class="op">,</span> toCpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0102&#39;</span> }]<span class="op">,</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    previouslyHeld<span class="op">:</span> []<span class="op">,</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  {</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    resolve<span class="op">:</span> (cpId) <span class="kw">=&gt;</span> knownCps<span class="op">.</span><span class="fu">get</span>(cpId)<span class="op">,</span>          <span class="co">// cpId → { cpId, cpName, url }</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    numberingList<span class="op">,</span>                                  <span class="co">// so non-held numbers in others&#39; blocks get not_held</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    signer<span class="op">:</span> { privateKey<span class="op">:</span> pem<span class="op">,</span> kid<span class="op">:</span> <span class="st">&#39;charlie-2026-10&#39;</span> }<span class="op">,</span> <span class="co">// optional Ed25519 signing</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>)<span class="op">;</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> { status<span class="op">,</span> body } <span class="op">=</span> responder<span class="op">.</span><span class="fu">respond</span>(<span class="st">&#39;+441134960456&#39;</span>)<span class="op">;</span>   <span class="co">// 200 redirect → Bravo</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>responder<span class="op">.</span><span class="fu">handle</span>(<span class="st">&#39;/pstn2/v1/keys&#39;</span>)<span class="op">;</span>                              <span class="co">// your published key set</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { RangeHolderResponder<span class="op">,</span> NumberingList } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> responder <span class="op">=</span> <span class="kw">new</span> <span class="fu">RangeHolderResponder</span>(</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    cpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0103&#39;</span><span class="op">,</span> cpName<span class="op">:</span> <span class="st">&#39;Charlie Comms&#39;</span><span class="op">,</span> url<span class="op">:</span> <span class="st">&#39;https://pstn2.charlie-comms.example&#39;</span><span class="op">,</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ranges<span class="op">:</span> [<span class="st">&#39;441134960&#39;</span>]<span class="op">,</span>                                        <span class="co">// blocks you are Range Holder for</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    inService<span class="op">:</span> [<span class="st">&#39;+441134960789&#39;</span>]<span class="op">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    portedIn<span class="op">:</span> [{ <span class="dt">number</span><span class="op">:</span> <span class="st">&#39;+442079460321&#39;</span><span class="op">,</span> fromCpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0101&#39;</span> }]<span class="op">,</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    portedOut<span class="op">:</span> [{ <span class="dt">number</span><span class="op">:</span> <span class="st">&#39;+441134960456&#39;</span><span class="op">,</span> toCpId<span class="op">:</span> <span class="st">&#39;CP1-UK-0102&#39;</span> }]<span class="op">,</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    previouslyHeld<span class="op">:</span> []<span class="op">,</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    resolve<span class="op">:</span> (cpId) <span class="kw">=&gt;</span> knownCps<span class="op">.</span><span class="fu">get</span>(cpId)<span class="op">,</span>          <span class="co">// cpId → { cpId, cpName, url }</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    numberingList<span class="op">,</span>                                  <span class="co">// so non-held numbers in others&#39; blocks get not_held</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    signer<span class="op">:</span> { privateKey<span class="op">:</span> pem<span class="op">,</span> kid<span class="op">:</span> <span class="st">&#39;charlie-2026-10&#39;</span> }<span class="op">,</span> <span class="co">// optional Ed25519 signing</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>)<span class="op">;</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> { status<span class="op">,</span> body } <span class="op">=</span> responder<span class="op">.</span><span class="fu">respond</span>(<span class="st">&#39;+441134960456&#39;</span>)<span class="op">;</span>   <span class="co">// 200 redirect → Bravo</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>responder<span class="op">.</span><span class="fu">handle</span>(<span class="st">&#39;/pstn2/v1/keys&#39;</span>)<span class="op">;</span>                              <span class="co">// your published key set</span></span></code></pre></div>
 <p><code>DirectQueryAuth.handleVerificationRequest</code>,
 <code>RoutingModule.handleRoutingRequest</code> and
 <code>EmergencyModule.handleLocationRequest</code> return a
 <code>not_held</code> answer when you don't hold the number.</p>
 <h3 id="signatures">Signatures</h3>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { canonicalJson<span class="op">,</span> signBody<span class="op">,</span> verifyBody<span class="op">,</span> rawPublicKey } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">canonicalJson</span>({ b<span class="op">:</span> <span class="dv">1</span><span class="op">,</span> a<span class="op">:</span> <span class="st">&#39;x/y&#39;</span> })<span class="op">;</span>         <span class="co">// &#39;{&quot;a&quot;:&quot;x/y&quot;,&quot;b&quot;:1}&#39; — sorted keys, no whitespace, / unescaped</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> signed <span class="op">=</span> <span class="fu">signBody</span>(body<span class="op">,</span> privateKey<span class="op">,</span> <span class="st">&#39;my-kid&#39;</span>)<span class="op">;</span>   <span class="co">// adds kid + signature</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">verifyBody</span>(signed<span class="op">,</span> rawPublicKeyBase64)<span class="op">;</span>    <span class="co">// true / false (never throws)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { canonicalJson<span class="op">,</span> signBody<span class="op">,</span> verifyBody<span class="op">,</span> rawPublicKey } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">canonicalJson</span>({ b<span class="op">:</span> <span class="dv">1</span><span class="op">,</span> a<span class="op">:</span> <span class="st">&#39;x/y&#39;</span> })<span class="op">;</span>         <span class="co">// &#39;{&quot;a&quot;:&quot;x/y&quot;,&quot;b&quot;:1}&#39; — sorted keys, no whitespace, / unescaped</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> signed <span class="op">=</span> <span class="fu">signBody</span>(body<span class="op">,</span> privateKey<span class="op">,</span> <span class="st">&#39;my-kid&#39;</span>)<span class="op">;</span>   <span class="co">// adds kid + signature</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">verifyBody</span>(signed<span class="op">,</span> rawPublicKeyBase64)<span class="op">;</span>    <span class="co">// true / false (never throws)</span></span></code></pre></div>
 <p>With <code>verifySignatures: true</code>, every <code>200</code>
 discovery answer must carry a <code>kid</code> + <code>signature</code>
 that verifies against the answering CP's key set
@@ -467,23 +440,23 @@ subclasses:</p>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { DiscoveryError<span class="op">,</span> PSTN2Error } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> {</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> loc <span class="op">=</span> <span class="cf">await</span> psap<span class="op">.</span><span class="fu">getEmergencyLocation</span>({ callerID<span class="op">,</span> psapID<span class="op">:</span> <span class="st">&#39;UK-999-LONDON-01&#39;</span> })<span class="op">;</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>} <span class="cf">catch</span> (err) {</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (err <span class="kw">instanceof</span> DiscoveryError) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;No PSTN2 holder:&#39;</span><span class="op">,</span> err<span class="op">.</span><span class="at">discovery</span><span class="op">.</span><span class="at">result</span>)<span class="op">;</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (err <span class="kw">instanceof</span> PSTN2Error) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;PSTN2 error:&#39;</span><span class="op">,</span> err<span class="op">.</span><span class="at">code</span>)<span class="op">;</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">// either way: use the PSAP&#39;s other location sources</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> { DiscoveryError<span class="op">,</span> PSTN2Error } <span class="im">from</span> <span class="st">&#39;@pstn2/core&#39;</span><span class="op">;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span> {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> loc <span class="op">=</span> <span class="cf">await</span> psap<span class="op">.</span><span class="fu">getEmergencyLocation</span>({ callerID<span class="op">,</span> psapID<span class="op">:</span> <span class="st">&#39;UK-999-LONDON-01&#39;</span> })<span class="op">;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>} <span class="cf">catch</span> (err) {</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (err <span class="kw">instanceof</span> DiscoveryError) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;No PSTN2 holder:&#39;</span><span class="op">,</span> err<span class="op">.</span><span class="at">discovery</span><span class="op">.</span><span class="at">result</span>)<span class="op">;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (err <span class="kw">instanceof</span> PSTN2Error) <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;PSTN2 error:&#39;</span><span class="op">,</span> err<span class="op">.</span><span class="at">code</span>)<span class="op">;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">// either way: use the PSAP&#39;s other location sources</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <h2 id="examples">Examples</h2>
 <p>Start the local mock network (3 CPs: Alpha, Bravo, Charlie; Delta not
 participating) from the repository root, then run the examples from
 <code>code/typescript</code>:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs     <span class="co"># serves http://127.0.0.1:47901</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run example:01</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/server.mjs     <span class="co"># serves http://127.0.0.1:47901</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run example:01</span></code></pre></div>
 <table>
 <thead>
 <tr>
@@ -508,25 +481,19 @@ negotiation</td>
 </tr>
 <tr>
 <td><code>example:03</code></td>
-<td><code>examples/03-token-pool.ts</code></td>
-<td>Alpha creates a token; Bravo verifies it (and rejects a forged
-one)</td>
-</tr>
-<tr>
-<td><code>example:04</code></td>
-<td><code>examples/04-emergency-services.ts</code></td>
+<td><code>examples/03-emergency-services.ts</code></td>
 <td>PSAP gets live location for a Bravo number, a ported number, and
 falls back for a not-in-service one</td>
 </tr>
 <tr>
-<td><code>example:05</code></td>
-<td><code>examples/05-complete-call-flow.ts</code></td>
+<td><code>example:04</code></td>
+<td><code>examples/04-complete-call-flow.ts</code></td>
 <td>Discovery with redirect → authentication → routing → summary, then a
 cache hit on the second call</td>
 </tr>
 <tr>
-<td><code>example:06</code></td>
-<td><code>examples/06-number-discovery.ts</code></td>
+<td><code>example:05</code></td>
+<td><code>examples/05-number-discovery.ts</code></td>
 <td>"Who has this number?" hop by hop: scenarios A–G locally, or the
 dummy test CPs live with signatures</td>
 </tr>
@@ -539,8 +506,8 @@ log.</p>
 <p>The dummy test CPs at <code>https://pstn2.org/testcp/</code> are
 static files with signed answers: Test CP A is Range Holder for 07700
 900 0xx, Test CP B for 07700 900 1xx.</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">npm</span> run example:06</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NETWORK</span><span class="op">=</span>live <span class="ex">npm</span> run example:05</span></code></pre></div>
 <table>
 <thead>
 <tr>
@@ -574,18 +541,18 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href=
 </table>
 <p>To run the same thing against a local copy (static-host
 emulator):</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp <span class="at">--port</span> 47902</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">npm</span> run example:06</span></code></pre></div>
-<p>Examples 01–05 need the auth/routing/emergency endpoints of the mock
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> tools/testcp/build.mjs <span class="at">--base</span> http://127.0.0.1:47902/testcp <span class="at">--out</span> /tmp/testcp</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> test-environment/mock-network/static-server.mjs <span class="at">--dir</span> /tmp/testcp <span class="at">--port</span> 47902</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="va">PSTN2_NUMBERING_LIST_URL</span><span class="op">=</span>http://127.0.0.1:47902/testcp/numbering-list.json <span class="ex">npm</span> run example:05</span></code></pre></div>
+<p>Examples 01–04 need the auth/routing/emergency endpoints of the mock
 network; the dummy test CP only answers Number Discovery.</p>
 <h2 id="testing">Testing</h2>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> test                   <span class="co"># everything (offline)</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:unit</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:integration</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:coverage</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> test                   <span class="co"># everything (offline)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:unit</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:integration</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run test:coverage</span></code></pre></div>
 <ul>
 <li><strong>Unit</strong>: numbering list (longest prefix, length check,
 ETag/304, refresh), cache TTL/purge, canonical JSON and Ed25519
@@ -597,24 +564,24 @@ number in both fixtures, and <code>DiscoveryClient</code> parity
 A–G, plus hop limit, loops, timeouts and signatures.</li>
 <li><strong>Integration</strong>: spawns
 <code>test-environment/mock-network/server.mjs</code> on a free port and
-runs scenarios A–G in order with one client; auth, token pool, routing
-and emergency including not_held → rediscover → retry; builds the dummy
-test CP into a temp dir, serves it with the static-host emulator and
-checks all six test numbers with signatures on, the stale-cache
-invalidation, tamper detection and the WAF's 403 for generic user
-agents.</li>
+runs scenarios A–G in order with one client; auth (Direct Query),
+routing and emergency including not_held → rediscover → retry; builds
+the dummy test CP into a temp dir, serves it with the static-host
+emulator and checks all six test numbers with signatures on, the
+stale-cache invalidation, tamper detection and the WAF's 403 for generic
+user agents.</li>
 </ul>
 <h2 id="development">Development</h2>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> ci</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run build              <span class="co"># → dist/</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run watch</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run typecheck:examples</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> ci</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run build              <span class="co"># → dist/</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run watch</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run typecheck:examples</span></code></pre></div>
 <h2 id="api-documentation">API Documentation</h2>
 <p>Full API documentation generated with TypeDoc:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run docs</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Open docs/index.html</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run docs</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Open docs/index.html</span></span></code></pre></div>
 <h2 id="license">License</h2>
 <p>Public domain: the PSTN2 project is released under CC0 1.0 Universal
 (commercial use, modification and distribution allowed; no warranty).

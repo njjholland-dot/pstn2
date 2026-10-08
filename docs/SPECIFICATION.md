@@ -1,7 +1,7 @@
 # PSTN2 Protocol Specification v1.1
 
 **Status:** Draft
-**Last Updated:** 2026-10-06
+**Last Updated:** 2026-10-08
 **Authors:** Nick Holland, Comms Council UK
 
 ## Table of Contents
@@ -172,7 +172,6 @@ Content-Type: application/json; charset=utf-8
 User-Agent: pstn2-{language}-sdk/{version}
 X-PSTN2-Version: 1.1
 X-PSTN2-CP-ID: {RCPID}
-Authorization: Bearer {JWT-token}  (optional, for token pool)
 ```
 
 Clients MUST send a descriptive `User-Agent`. Many hosting WAFs reject generic
@@ -201,9 +200,11 @@ is required on requests with a body; Number Discovery `GET` requests have none.
 
 ## 5. Authentication
 
-### 5.1 Option 1: Direct Query
+Caller authentication is a direct, real-time query to the CP that holds the caller ID.
+The terminating CP finds that holder with Number Discovery (§9) and sends it a signed
+verification request; the holder confirms whether it placed the call.
 
-Direct real-time query to originating CP.
+### 5.1 Caller Authentication (Direct Query)
 
 #### 5.1.1 Verification Request
 
@@ -278,63 +279,6 @@ result and a cache-invalidation instruction:
 This is a successful (HTTP 200) response, not an error. The client MUST purge its cached
 entry for the caller ID, rediscover the holder starting from the Range Holder (§9.4), and
 retry the verification there. Maximum 5 discovery hops in total.
-
-### 5.2 Option 2: Token Pool
-
-Shared token repository for reduced query load.
-
-#### 5.2.1 Create Token
-
-**Endpoint:** `POST /pstn2/v1/auth/tokens`
-
-**Request:**
-```json
-{
-  "messageId": "uuid",
-  "timestamp": "ISO-8601",
-  "originatingCP": "CP1-UK-0001",
-  "callerID": "+441234567890",
-  "calledID": "+447700900123",
-  "callReference": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-  "ttl": 30,
-  "signature": "base64"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "tokenId": "TK-abc123XYZ789defG",
-  "expiresAt": "2025-11-30T21:30:30.000Z",
-  "callReference": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
-}
-```
-
-#### 5.2.2 Verify Token
-
-**Endpoint:** `GET /pstn2/v1/auth/tokens/{tokenId}`
-
-**Response (200 OK):**
-```json
-{
-  "tokenId": "TK-abc123XYZ789defG",
-  "originatingCP": "CP1-UK-0001",
-  "callerID": "+441234567890",
-  "calledID": "+447700900123",
-  "callReference": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-  "verified": true,
-  "branding": {...},
-  "expiresAt": "2025-11-30T21:30:30.000Z"
-}
-```
-
-#### 5.2.3 Token Format
-
-- **Prefix**: `TK-`
-- **Length**: Exactly 16 characters (after prefix)
-- **Charset**: Alphanumeric `[A-Za-z0-9]`
-- **Pattern**: `^TK-[A-Za-z0-9]{16}$`
-- **Example**: `TK-abc123XYZ789defG`
 
 ---
 
@@ -772,8 +716,6 @@ reconstruct, the national map of who holds every number.
 **Authentication:**
 - `call_not_found`: No matching call record
 - `invalid_signature`: Signature verification failed
-- `expired_token`: Token has expired
-- `invalid_token`: Token not found or invalid
 
 **Routing:**
 - `capacity_exceeded`: CP at capacity
@@ -895,7 +837,7 @@ seen with `401 Unauthorized` and error code `REPLAY_DETECTED`.
 ### 12.1 Mandatory Features
 
 **All implementations MUST support:**
-- ✅ Authentication Option 1 (Direct Query)
+- ✅ Caller authentication (direct query)
 - ✅ Routing discovery and setup
 - ✅ Number Discovery (numbering list, Range Holder query, redirects, caching, invalidation)
 - ✅ TLS 1.3
@@ -907,7 +849,6 @@ seen with `401 Unauthorized` and error code `REPLAY_DETECTED`.
 ### 12.2 Optional Features
 
 **Implementations MAY support:**
-- Authentication Option 2 (Token Pool)
 - Emergency location services
 - Call branding
 - Video calling
@@ -1014,6 +955,7 @@ Total time: ~800ms (vs 5-8 seconds traditional PSTN)
   - Removed `/directory/all`, `/directory/publish`, `/directory/lookup`, hourly sync and
     eventual-consistency replication
   - Keys published per CP at `/pstn2/v1/keys`
+  - Token Pool authentication option removed; direct query is the only authentication method
 - **v1.0** (2025-11-30): Initial specification
   - Core authentication (Option 1 & 2)
   - Direct routing

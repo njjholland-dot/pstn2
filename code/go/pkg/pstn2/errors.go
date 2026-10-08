@@ -11,8 +11,6 @@ import (
 const (
 	CodeCallNotFound      = "call_not_found"
 	CodeInvalidSignature  = "invalid_signature"
-	CodeExpiredToken      = "expired_token"
-	CodeInvalidToken      = "invalid_token"
 	CodeCapacityExceeded  = "capacity_exceeded"
 	CodeUnsupportedCodec  = "unsupported_codec"
 	CodeNumberNotFound    = "number_not_found"

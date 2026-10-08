@@ -18,12 +18,6 @@ export type Timestamp = string;
 /** Base64 encoded binary data. */
 export type Base64String = string;
 
-/** Authentication mode. */
-export enum AuthenticationMode {
-  DirectQuery = 'direct_query',
-  TokenPool = 'token_pool',
-}
-
 // ---------------------------------------------------------------------------
 // Number Discovery (SPECIFICATION.md §9)
 // ---------------------------------------------------------------------------
@@ -210,35 +204,6 @@ export interface BrandingInfo {
   callPurpose?: string;
 }
 
-/** POST /auth/tokens request. */
-export interface TokenCreateRequest extends MessageEnvelope {
-  originatingCP: RCPID;
-  callerID: PhoneNumber;
-  calledID: PhoneNumber;
-  callReference: CallReference;
-  ttl: number;
-  branding?: BrandingInfo;
-}
-
-/** POST /auth/tokens response. */
-export interface TokenCreateResponse {
-  tokenId: string;
-  expiresAt: Timestamp;
-  callReference: CallReference;
-}
-
-/** GET /auth/tokens/{tokenId} response. */
-export interface TokenData {
-  tokenId: string;
-  originatingCP: RCPID;
-  callerID: PhoneNumber;
-  calledID: PhoneNumber;
-  callReference: CallReference;
-  verified: boolean;
-  branding?: BrandingInfo;
-  expiresAt: Timestamp;
-}
-
 // ---------------------------------------------------------------------------
 // Routing (§6)
 // ---------------------------------------------------------------------------
@@ -345,8 +310,6 @@ export enum ErrorCode {
   // Spec (§10.2)
   CallNotFound = 'call_not_found',
   InvalidSignature = 'invalid_signature',
-  ExpiredToken = 'expired_token',
-  InvalidToken = 'invalid_token',
   CapacityExceeded = 'capacity_exceeded',
   UnsupportedCodec = 'unsupported_codec',
   NumberNotFound = 'number_not_found',

@@ -108,7 +108,6 @@ tenants:
     rate_limit: "5000 req/min"
     endpoints:
       - /auth/verify
-      - /auth/tokens
       - /routing/request
 
 # Public, unauthenticated, cacheable: Number Discovery for every tenant
@@ -128,8 +127,7 @@ outside API-key authentication. Rate-limit them per source (≥ 200 req/s per CP
 **Responsibilities:**
 - Receive authentication requests via API
 - Sign requests with downstream CP's private key
-- Discover the caller ID's current holder and query it (Direct Query mode), retrying once after a `not_held` answer
-- Manage token pools (Token Pool mode)
+- Discover the caller ID's current holder and query it (direct query), retrying once after a `not_held` answer
 - Return verification results
 - Log all authentication attempts
 
@@ -141,7 +139,6 @@ CREATE TABLE cp_tenants (
     cp_name VARCHAR(255) NOT NULL,
     private_key_encrypted TEXT NOT NULL,  -- Ed25519 private key
     public_key TEXT NOT NULL,              -- Ed25519 public key
-    auth_mode VARCHAR(20) NOT NULL,        -- 'direct_query' or 'token_pool'
     api_key_hash VARCHAR(128) NOT NULL,
     pstn2_url VARCHAR(255) NOT NULL,       -- tenant base URL, published as its Range Holder URL
     key_id VARCHAR(50) NOT NULL,           -- kid for signed discovery answers
@@ -1001,7 +998,7 @@ RPO (Recovery Point Objective): 5 minutes
 ```typescript
 // Onboarding API endpoint
 async function onboardNewCP(req: Request, res: Response) {
-  const { cp_name, contact_email, country, auth_mode } = req.body;
+  const { cp_name, contact_email, country } = req.body;
 
   // 1. Generate unique CP ID
   const cp_id = generateCPID(country); // e.g., "CP1-UK-0123"
@@ -1023,9 +1020,9 @@ async function onboardNewCP(req: Request, res: Response) {
   // 5. Insert into database
   await db.query(
     `INSERT INTO cp_tenants
-     (cp_id, cp_name, private_key_encrypted, public_key, api_key_hash, pstn2_url, key_id, auth_mode, contact_email)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-    [cp_id, cp_name, encryptedPrivateKey, publicKey, apiKeyHash, pstn2_url, key_id, auth_mode, contact_email]
+     (cp_id, cp_name, private_key_encrypted, public_key, api_key_hash, pstn2_url, key_id, contact_email)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [cp_id, cp_name, encryptedPrivateKey, publicKey, apiKeyHash, pstn2_url, key_id, contact_email]
   );
 
   // 6. Create default configuration

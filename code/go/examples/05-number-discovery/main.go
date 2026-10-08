@@ -1,5 +1,5 @@
 /*
-Example 06: Number Discovery — "who has this number?"
+Example 05: Number Discovery — "who has this number?"
 
 Walks through Number Discovery (SPECIFICATION.md §9) hop by hop.
 
@@ -8,18 +8,18 @@ test-environment/fixtures/scenarios.json, in order, with one client so the
 cache carries over (scenario D ports a number back with POST /admin/port):
 
 	node test-environment/mock-network/server.mjs     # in another terminal
-	go run ./examples/06-number-discovery
+	go run ./examples/05-number-discovery
 
 Live dummy test CPs at https://pstn2.org/testcp (signatures verified):
 
-	PSTN2_NETWORK=live go run ./examples/06-number-discovery
+	PSTN2_NETWORK=live go run ./examples/05-number-discovery
 
 or a local copy of them (static host emulator):
 
 	node tools/testcp/build.mjs --base http://127.0.0.1:47902/testcp --out /tmp/testcp-local
 	node test-environment/mock-network/static-server.mjs --dir /tmp/testcp-local --port 47902
 	PSTN2_NUMBERING_LIST_URL=http://127.0.0.1:47902/testcp/numbering-list.json \
-	    go run ./examples/06-number-discovery
+	    go run ./examples/05-number-discovery
 
 The test-CP walkthrough is chosen automatically when the numbering list holds
 the 07700 900 test blocks.
@@ -87,7 +87,7 @@ func main() {
 	}
 
 	fmt.Println(strings.Repeat("=", 72))
-	fmt.Println("PSTN2 Example 06: Number Discovery — who has this number?")
+	fmt.Println("PSTN2 Example 05: Number Discovery — who has this number?")
 	fmt.Println(strings.Repeat("=", 72))
 	fmt.Printf("SDK:            %s\n", pstn2.UserAgent)
 	fmt.Printf("Numbering list: %s\n", env.NumberingListURL)

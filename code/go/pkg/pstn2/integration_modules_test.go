@@ -125,15 +125,6 @@ func TestModulesNotHeldRetry(t *testing.T) {
 		t.Fatalf("emergency: %+v %v", loc, err)
 	}
 
-	// Token creation: Charlie's +441134960789 ports to Bravo.
-	adminPost(t, base, "/admin/reset", map[string]any{})
-	n = "+441134960789"
-	charlie2 := mockClient(t, base, charlieID, portAfterFirstDiscovery(t, base, n, charlieID, bravoID))
-	tok, err := charlie2.Auth().CreateToken(ctx, TokenRequest{CallerID: n, CalledID: "+442079460100"})
-	if err != nil || !tok.Via.Retried || tok.Via.Holder.CPID != bravoID {
-		t.Fatalf("token: %+v %v", tok, err)
-	}
-
 	// A stale *cache* (port before the call) is handled inside discovery
 	// itself: the cached holder answers not_held to the discovery query.
 	adminPost(t, base, "/admin/reset", map[string]any{})
@@ -148,31 +139,11 @@ func TestModulesNotHeldRetry(t *testing.T) {
 	}
 }
 
-func TestModulesTokenRoutingEmergency(t *testing.T) {
+func TestModulesRoutingEmergency(t *testing.T) {
 	base := startMock(t)
 	ctx := context.Background()
 	alpha := mockClient(t, base, alphaID, nil)
 	bravo := mockClient(t, base, bravoID, nil)
-
-	// Token Pool: Alpha creates a token for its caller ID, Bravo verifies it.
-	tok, err := alpha.Auth().CreateToken(ctx, TokenRequest{CallerID: "+442079460100", CalledID: "+441614960123", TTL: 30})
-	if err != nil || !TokenPattern.MatchString(tok.TokenID) || tok.ExpiresAt == "" || tok.Via.Holder.CPID != alphaID {
-		t.Fatalf("create: %+v %v", tok, err)
-	}
-	tv, err := bravo.Auth().VerifyToken(ctx, "+442079460100", tok.TokenID)
-	if err != nil || !tv.Verified || tv.OriginatingCP != alphaID || tv.CallReference != tok.CallReference || tv.CalledID != "+441614960123" {
-		t.Fatalf("verify: %+v %v", tv, err)
-	}
-	if _, err := bravo.Auth().VerifyToken(ctx, "+442079460100", "TK-AAAAAAAAAAAAAAAA"); ErrorCode(err) != CodeInvalidToken {
-		t.Fatalf("unknown token: %v", err)
-	}
-	if _, err := bravo.Auth().VerifyToken(ctx, "+442079460100", "bogus"); ErrorCode(err) != CodeInvalidToken {
-		t.Fatalf("malformed token: %v", err)
-	}
-	// A token is only valid at the caller ID's holder.
-	if _, err := bravo.Auth().VerifyToken(ctx, "+441614960123", tok.TokenID); ErrorCode(err) != CodeInvalidToken {
-		t.Fatalf("token at wrong holder: %v", err)
-	}
 
 	// Routing with media negotiation.
 	r, err := alpha.Routing().RequestRouting(ctx, RoutingRequest{
