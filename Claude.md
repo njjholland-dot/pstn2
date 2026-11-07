@@ -182,6 +182,26 @@ export PSTN2_FTP_PASSWORD='<SFTP password>'   # from the local credentials vault
 
 Credentials are never stored in the repo. The test-CP signing keys live in `tools/testcp/.keys.json` (gitignored) and in the vault.
 
+## Operations: nothing runs permanently
+
+PSTN2 has **no long-running local processes, launchd jobs or cron entries**. A reboot needs no recovery:
+- **Live site:** https://pstn2.org is static files on NetworkSolutions hosting. It doesn't depend on this machine.
+- **Development servers:** start them by hand when needed and stop them afterwards.
+
+  | Purpose | Command |
+  |---|---|
+  | Mock network (3 CPs + Ofcom) | `node test-environment/mock-network/server.mjs` (port 47901) |
+  | Preview the presentations | `python3 -m http.server 47910 --bind 127.0.0.1 --directory animations` |
+  | Automation Chrome, for visual QA | `~/Projects/Claude-RD3/Claude_Tools/chrome-debug.sh` |
+
+  `test-environment/conformance/run.sh` starts and stops its own mock network.
+- **Narration re-renders:** these need the macOS System Voice set to **Siri British English, voice C** (Accessibility › Read & Speak). The setting persists across reboots. Check it with `defaults read com.apple.Accessibility SpokenContentDefaultVoiceSelectionsByLanguage`, then run `PSTN2_VOICE=system node tools/narrate/build-narration.mjs`.
+- **State that survives a reboot:**
+  - everything in git (github.com/njjholland-dot/pstn2);
+  - `tools/testcp/.keys.json` (gitignored; copy in vault §14);
+  - `tools/narrate/.cache/` (rebuildable);
+  - `code/python/.venv` and `code/typescript/node_modules` (rebuildable with `pip install -e '.[dev]'` and `npm ci`).
+
 ## License & Usage
 
 **Open source / public domain** (see LICENSE)

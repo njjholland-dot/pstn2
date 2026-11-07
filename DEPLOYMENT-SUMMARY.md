@@ -2,7 +2,7 @@
 
 **Site:** https://pstn2.org (NetworkSolutions static hosting, SFTP, shared host under `/htdocs`)
 **Script:** `./deploy.sh` at the repository root (lftp mirror, upload newer files only, never deletes)
-**Current release:** protocol v1.1, 2026-10-06
+**Current release:** protocol v1.1 (2026-10-06; Token Pool removed 2026-10-08). Nothing runs on the developer machine; the site is static and survives local reboots.
 
 ## What is deployed where
 
